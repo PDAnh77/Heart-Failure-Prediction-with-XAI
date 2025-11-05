@@ -13,4 +13,9 @@ class PatientSchema(BaseModel):
     exercise_angina: str = Field(...)
     oldpeak: float = Field(..., ge=0.0)
     st_slope: str = Field(...)
+
+class PatientGet(PatientSchema):
+    heart_disease: Optional[int] = Field(None, ge=0, le=1)
+    
+class PatientCreate(PatientSchema):
     heart_disease: Optional[int] = Field(None, ge=0, le=1)

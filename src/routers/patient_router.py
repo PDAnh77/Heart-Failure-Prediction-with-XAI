@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 from db.database import supabase
-from schemas.patient_schema import PatientSchema
+from schemas.patient_schema import PatientGet, PatientCreate
 
 router = APIRouter()
 
@@ -12,7 +12,7 @@ def get_patients(limit: int = Query(10, ge=1, le=100, description="Số bản gh
     data = supabase.table(TABLE_NAME).select("*").range(offset, offset + limit - 1).execute()
     return {"data": data.data, "count": len(data.data)}
 
-@router.get("/{patient_id}")
+@router.get("/{patient_id}", response_model=PatientGet)
 def get_patient(patient_id: str):
     data = supabase.table(TABLE_NAME).select("*").eq("id", patient_id).execute()
     if not data.data:
@@ -20,7 +20,7 @@ def get_patient(patient_id: str):
     return data.data[0]
 
 @router.post("/")
-def create_patient(patient: PatientSchema):
+def create_patient(patient: PatientCreate):
     result = supabase.table(TABLE_NAME).insert(patient.model_dump()).execute()
     return result.data[0]
 

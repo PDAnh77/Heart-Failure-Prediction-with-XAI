@@ -24,29 +24,26 @@ new_sample = pd.DataFrame([
 ], columns=['Age','Sex','ChestPainType','RestingBP','Cholesterol','FastingBS',
             'RestingECG','MaxHR','ExerciseAngina','Oldpeak','ST_Slope','HeartDisease'])
 
-model, features, target = joblib.load("./models/model_lr.pkl")
+pipeline = joblib.load("../src/models/model_lr.pkl")
 
-# Label encoding - Biến dữ liệu dạng chữ (categorical) → dạng số (integer).
-le = LabelEncoder()
+model = pipeline['model']                       # classifier LogisticRegression
+label_encoders = pipeline['label_encoders']    # dict các LabelEncoder
+scalers = pipeline['scalers']                  # dict các scaler
+features = pipeline['features']                # Index object hoặc list cột
+target = pipeline['target']                    # tên cột target
+
 df1 = new_sample.copy(deep = True)
 
-df1['Sex'] = le.fit_transform(df1['Sex'])
-df1['ChestPainType'] = le.fit_transform(df1['ChestPainType'])
-df1['RestingECG'] = le.fit_transform(df1['RestingECG'])
-df1['ExerciseAngina'] = le.fit_transform(df1['ExerciseAngina'])
-df1['ST_Slope'] = le.fit_transform(df1['ST_Slope'])
+# Label encoding - Biến dữ liệu dạng chữ (categorical) → dạng số (integer).
+df1['Sex'] = label_encoders['Sex'].transform(df1['Sex'])
+df1['ChestPainType'] = label_encoders['ChestPainType'].transform(df1['ChestPainType'])
+df1['RestingECG'] = label_encoders['RestingECG'].transform(df1['RestingECG'])
+df1['ExerciseAngina'] = label_encoders['ExerciseAngina'].transform(df1['ExerciseAngina'])
+df1['ST_Slope'] = label_encoders['ST_Slope'].transform(df1['ST_Slope'])
 
 # Feature Scaling (Normalization / Standardization) - Chuẩn hóa dữ liệu số (numeric) về cùng thang đo
-mms = MinMaxScaler() # Normalization
-ss = StandardScaler() # Standardization
-
-df1['Oldpeak'] = mms.fit_transform(df1[['Oldpeak']])
-df1['Age'] = ss.fit_transform(df1[['Age']])
-df1['RestingBP'] = ss.fit_transform(df1[['RestingBP']])
-df1['Cholesterol'] = ss.fit_transform(df1[['Cholesterol']])
-df1['MaxHR'] = ss.fit_transform(df1[['MaxHR']])
-
-# Load model
+df1['Oldpeak'] = scalers['MinMax_Oldpeak'].transform(df1[['Oldpeak']])
+df1[['Age','RestingBP','Cholesterol','MaxHR']] = scalers['Standard_Numeric'].transform(df1[['Age','RestingBP','Cholesterol','MaxHR']])
 
 # print(model.coef_)       # nếu ra mảng số → đã train
 # print(model.intercept_)
