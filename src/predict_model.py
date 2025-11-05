@@ -24,6 +24,8 @@ new_sample = pd.DataFrame([
 ], columns=['Age','Sex','ChestPainType','RestingBP','Cholesterol','FastingBS',
             'RestingECG','MaxHR','ExerciseAngina','Oldpeak','ST_Slope','HeartDisease'])
 
+model, features, target = joblib.load("./models/model_lr.pkl")
+
 # Label encoding - Biến dữ liệu dạng chữ (categorical) → dạng số (integer).
 le = LabelEncoder()
 df1 = new_sample.copy(deep = True)
@@ -45,7 +47,6 @@ df1['Cholesterol'] = ss.fit_transform(df1[['Cholesterol']])
 df1['MaxHR'] = ss.fit_transform(df1[['MaxHR']])
 
 # Load model
-model, features, target = joblib.load("../models/model_lr.pkl")
 
 # print(model.coef_)       # nếu ra mảng số → đã train
 # print(model.intercept_)
