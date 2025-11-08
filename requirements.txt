@@ -11,3 +11,5 @@ fastapi==0.121.0
 uvicorn==0.34.0
 python-dotenv==1.1.0
 supabase==2.23.2
+pwdlib[argon2]
+python-multipart
