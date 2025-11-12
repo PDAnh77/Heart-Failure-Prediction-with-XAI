@@ -1,9 +1,12 @@
 import joblib
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
+import os
 
 # Load model khi service khởi động
-pipeline = joblib.load("../src/models/model_lr.pkl")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(BASE_DIR, "../models/model_lr.pkl")
+pipeline = joblib.load(model_path)
 
 # Chuẩn bị các encoder / scaler
 le = LabelEncoder()

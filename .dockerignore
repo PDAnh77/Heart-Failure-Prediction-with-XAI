@@ -1,0 +1,10 @@
+venv/
+notebooks/
+data/
+.github/
+.git/
+.gitignore
+.env
+src/**/__pycache__/
+src/test_model.py
+requirements-dev.txt
