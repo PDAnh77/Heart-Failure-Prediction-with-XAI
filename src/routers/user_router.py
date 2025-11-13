@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from db.database import supabase
 from schemas.user_schema import UserBase
-from services.auth import generate_token, verify_password, get_password_hash, validate_token
+from services.auth_service import generate_token, verify_password, get_password_hash, validate_token
 from typing import Annotated
 from fastapi.security import OAuth2PasswordRequestForm
 

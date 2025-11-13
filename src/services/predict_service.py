@@ -1,6 +1,5 @@
 import joblib
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler, StandardScaler
 import os
 
 # Load model khi service khởi động
@@ -8,20 +7,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(BASE_DIR, "../models/model_lr.pkl")
 pipeline = joblib.load(model_path)
 
-# Chuẩn bị các encoder / scaler
-le = LabelEncoder()
-mms = MinMaxScaler()
-ss = StandardScaler()
-
-def preprocess(data):
-    if isinstance(data, list):
-        # 1. Nếu là list (batch) -> tạo DataFrame N hàng
-        df = pd.DataFrame(data)
-    else:
-        # 2. Nếu là dict (single) -> tạo DataFrame 1 hàng
-        df = pd.DataFrame([data])
-
-    rename_map = {
+RENAME_MAP = {
     "age": "Age",
     "sex": "Sex",
     "chest_pain_type": "ChestPainType",
@@ -33,8 +19,17 @@ def preprocess(data):
     "exercise_angina": "ExerciseAngina",
     "oldpeak": "Oldpeak",
     "st_slope": "ST_Slope"
-    }
-    df.rename(columns=rename_map, inplace=True)
+}
+
+def preprocess(data):
+    if isinstance(data, list):
+        # 1. Nếu là list (batch) -> tạo DataFrame N hàng
+        df = pd.DataFrame(data)
+    else:
+        # 2. Nếu là dict (single) -> tạo DataFrame 1 hàng
+        df = pd.DataFrame([data])
+
+    df.rename(columns=RENAME_MAP, inplace=True)
 
     label_encoders = pipeline['label_encoders']
     scalers = pipeline['scalers']

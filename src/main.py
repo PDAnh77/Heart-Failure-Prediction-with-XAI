@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends
 from routers import patient_router, predict_router, user_router
-from services.auth import validate_token
+from services.auth_service import validate_token
 from contextlib import asynccontextmanager
 import httpx, asyncio, os
 
@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Heart Disease Prediction API", openapi_url="/api/openapi.json", docs_url="/docs", lifespan=lifespan)
 
 app.include_router(user_router.router, prefix="/api/user", tags=["User"])
-app.include_router(predict_router.router, prefix="/api/predict", tags=["Heart failure prediction"])
+app.include_router(predict_router.router, prefix="/api/predict", tags=["Heart failure prediction"], dependencies=[Depends(validate_token)])
 app.include_router(patient_router.router, prefix="/api/patients", tags=["Patients"], dependencies=[Depends(validate_token)])
 
 @app.get("/")

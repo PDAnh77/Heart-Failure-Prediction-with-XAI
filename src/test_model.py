@@ -1,11 +1,6 @@
 import joblib
-import numpy as np
 import pandas as pd
-import sys
-
-from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import accuracy_score
-from sklearn.preprocessing import MinMaxScaler,StandardScaler
 
 # Load data
 data = pd.read_csv("../data/heart.csv")
