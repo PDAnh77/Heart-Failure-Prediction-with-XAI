@@ -6,5 +6,5 @@ data/
 .gitignore
 .env
 src/**/__pycache__/
-src/test_model.py
+src/models/
 requirements-dev.txt

@@ -8,3 +8,4 @@ python-multipart
 python-dotenv==1.1.0
 supabase==2.23.2
 pwdlib[argon2]
+shap==0.48.0
