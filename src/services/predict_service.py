@@ -4,7 +4,7 @@ from db.database import supabase
 
 # Load model khi service khởi động
 BUCKET_NAME = "heart-prediction-models"
-MODEL_FILENAME = "model_lr.pkl"
+MODEL_FILENAME = "model_predict.pkl"
 LOCAL_MODEL_PATH = f"/tmp/{MODEL_FILENAME}"
 
 def load_pipeline():
@@ -28,12 +28,6 @@ def load_pipeline():
 
 pipeline = load_pipeline()
 print("Model loaded successfully.")
-
-# # Load model khi service khởi động (local)
-# import os
-# BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# model_path = os.path.join(BASE_DIR, "../models/model_lr.pkl")
-# pipeline = joblib.load(model_path)
 
 RENAME_MAP = {
     "age": "Age",
@@ -75,7 +69,8 @@ def preprocess(data):
 def predict_result(patient_data):
     model = pipeline['model']
     features = pipeline['features']
-    background_data = pipeline['background_data']
+    background_data = pipeline['shap_background']
+    lime_data = pipeline['lime_training_data']
 
     df = preprocess(patient_data)
     x = df[features]

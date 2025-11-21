@@ -1,0 +1,25 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build_image:
+    runs-on: ubuntu-latest
+    env:
+      DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKER_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        run: echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+      - name: Build Docker image
+        run: docker build -t $DOCKER_USERNAME/heart-failure-api:latest .
+
+      - name: Push Docker image
+        run: docker push $DOCKER_USERNAME/heart-failure-api:latest
