@@ -7,14 +7,20 @@ import httpx, asyncio, os
 RENDER_APP_URL = os.getenv("RENDER_APP_URL")
 
 async def ping_self():
-    if not RENDER_APP_URL or "onrender.com" not in RENDER_APP_URL:
-        print("Skipping self-ping")
+    url = RENDER_APP_URL
+    if not url:
+        print("Skipping self-ping: RENDER_APP_URL not set")
         return
+    if "onrender.com" not in url:
+        print("Skipping self-ping: Not running on Render")
+        return
+    health_url = f"{url.rstrip('/')}/health"
+
     while True:
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
-                r = await client.get(RENDER_APP_URL)
-                print(f"Pinged self: {r.status_code}")
+                r = await client.get(health_url)
+                print(f"Pinged self: ({health_url}): {r.status_code}")
         except Exception as e:
             print(f"Error pinging self: {e}")
         await asyncio.sleep(10 * 60)
@@ -34,3 +40,7 @@ app.include_router(patient_router.router, prefix="/api/patients", tags=["Patient
 @app.get("/")
 def root():
     return {"message": "API is running"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
