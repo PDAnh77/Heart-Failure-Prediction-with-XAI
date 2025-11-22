@@ -3,6 +3,7 @@ from routers import patient_router, predict_router, user_router
 from services.auth_service import validate_token
 from contextlib import asynccontextmanager
 import httpx, asyncio, os
+from core.model_loader import load_model_startup
 
 RENDER_APP_URL = os.getenv("RENDER_APP_URL")
 
@@ -27,6 +28,7 @@ async def ping_self():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    load_model_startup()
     task = asyncio.create_task(ping_self())
     yield
     task.cancel() # Hủy task khi API tắt

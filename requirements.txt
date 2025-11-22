@@ -11,3 +11,4 @@ pwdlib[argon2]
 shap==0.48.0
 lime==0.2.0.1
 xgboost==3.0.5
+matplotlib==3.10.6

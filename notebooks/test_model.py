@@ -58,15 +58,15 @@ shap_values.display_data = new_sample[features].values
 i = 0 # sample
 print(f"Giải thích cho bệnh nhân thứ {i}:")
 shap.plots.waterfall(shap_values[i], show=False)
-plt.title(f"Local Feature Contribution for Sample {i}", fontsize=16)  
+plt.title(f"Individual Prediction Explanation", fontsize=16)  
 plt.show()
 
 shap.plots.bar(shap_values, show=False)
-plt.title("Mean Absolute SHAP Values (Global Feature Importance)", fontsize=16)
+plt.title("Local Feature Importance Ranking", fontsize=16)
 plt.show()
 
 shap.plots.beeswarm(shap_values, show=False)
-plt.title("SHAP Value Distribution Across All Features", fontsize=16)
+plt.title("Global Feature Impact Distribution", fontsize=16)
 plt.show()
 
 explainer = LimeTabularExplainer(

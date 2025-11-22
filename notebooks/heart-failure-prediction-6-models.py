@@ -114,65 +114,81 @@ def model_evaluation(classifier):
 # ----------------------------------------------------------
 # Train models
 # ----------------------------------------------------------
-# classifier_lr = LogisticRegression(random_state=0, C=10, penalty='l2')
-# model(classifier_lr)
-# model_evaluation(classifier_lr)
+classifier_lr = LogisticRegression(random_state=0, C=10, penalty='l2')
+model(classifier_lr)
+model_evaluation(classifier_lr)
 
-# classifier_svc = SVC(kernel = 'linear',C = 0.1)
-# model(classifier_svc)
-# model_evaluation(classifier_svc)
+classifier_svc = SVC(kernel = 'linear',C = 0.1)
+model(classifier_svc)
+model_evaluation(classifier_svc)
 
-# classifier_dt = DecisionTreeClassifier(random_state = 1000,max_depth = 4,min_samples_leaf = 1)
-# model(classifier_dt) 
-# model_evaluation(classifier_dt)
+classifier_dt = DecisionTreeClassifier(random_state = 1000,max_depth = 4,min_samples_leaf = 1)
+model(classifier_dt) 
+model_evaluation(classifier_dt)
 
-# classifier_rf = RandomForestClassifier(max_depth = 4,random_state = 0)
-# model(classifier_rf)
-# model_evaluation(classifier_rf)
+classifier_rf = RandomForestClassifier(max_depth = 4,random_state = 0)
+model(classifier_rf)
+model_evaluation(classifier_rf)
 
-# classifier_knn = KNeighborsClassifier(leaf_size = 1, n_neighbors = 3,p = 1)
-# model(classifier_knn)
-# model_evaluation(classifier_knn)
+classifier_knn = KNeighborsClassifier(leaf_size = 1, n_neighbors = 3,p = 1)
+model(classifier_knn)
+model_evaluation(classifier_knn)
 
-param_grid = {
-    'n_estimators': [50, 100, 150, 200],      # Số lượng cây
-    'learning_rate': [0.01, 0.105, 0.2],   # Tốc độ học
-    'max_depth': [3, 5, 7],                  # Độ sâu cây (thấp để tránh overfit)
-    'subsample': [0.8, 0.9, 1.0],              # Tỷ lệ mẫu dùng để train mỗi cây
-    'colsample_bytree': [0.8, 0.9, 1.0],       # Tỷ lệ đặc trưng dùng cho mỗi cây
-}
-
-# 1. Thiết lập tìm kiếm
-# Dùng lại cv giống model() để đảm bảo tính nhất quán
-cv_search = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
-
-grid_search = GridSearchCV(
-    estimator=XGBClassifier(
-        random_state=0, 
-        eval_metric='logloss', 
-    ),
-    param_grid=param_grid,
-    scoring='roc_auc',  # Tối ưu hóa theo ROC AUC
-    cv=cv_search,
-    n_jobs=-1,          # Chạy song song full CPU
-    verbose=1
+classifier_xgb = XGBClassifier(
+    random_state=0,
+    n_estimators=50,
+    max_depth=3,
+    learning_rate=0.105,
+    subsample=0.8,
+    colsample_bytree=0.9,
+    eval_metric='logloss'
 )
-
-# 2. Chạy tìm kiếm
-print("Đang tối ưu hóa XGBoost...")
-grid_search.fit(x_train, y_train)
-
-# 3. Lấy tham số tốt nhất
-print("\n--- KẾT QUẢ TỐI ƯU ---")
-print(f"Tham số tốt nhất: {grid_search.best_params_}")
-print(f"ROC AUC (Cross-Validation) cao nhất: {grid_search.best_score_:.2%}")
-
-# 4. Lấy model đã tối ưu gán vào biến classifier_xgb
-classifier_xgb = grid_search.best_estimator_
-
-print("\n--- CHẠY ĐÁNH GIÁ VỚI MODEL TỐI ƯU ---")
-model(classifier_xgb)
+model(classifier_xgb) 
 model_evaluation(classifier_xgb)
+
+# ----------------------------------------------------------
+# GridSearch để tìm bộ tham số có điểm ROC AUC cao nhất
+# ----------------------------------------------------------
+
+# param_grid = {
+#     'n_estimators': [50, 100, 150, 200],      # Số lượng cây
+#     'learning_rate': [0.01, 0.105, 0.2],   # Tốc độ học
+#     'max_depth': [3, 5, 7],                  # Độ sâu cây (thấp để tránh overfit)
+#     'subsample': [0.8, 0.9, 1.0],              # Tỷ lệ mẫu dùng để train mỗi cây
+#     'colsample_bytree': [0.8, 0.9, 1.0],       # Tỷ lệ đặc trưng dùng cho mỗi cây
+# }
+
+# # 1. Thiết lập tìm kiếm
+# # Dùng lại cv giống model() để đảm bảo tính nhất quán
+# cv_search = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
+
+# grid_search = GridSearchCV(
+#     estimator=XGBClassifier(
+#         random_state=0, 
+#         eval_metric='logloss', 
+#     ),
+#     param_grid=param_grid,
+#     scoring='roc_auc',  # Tối ưu hóa theo ROC AUC
+#     cv=cv_search,
+#     n_jobs=-1,          # Chạy song song full CPU
+#     verbose=1
+# )
+
+# # 2. Chạy tìm kiếm
+# print("Đang tối ưu hóa XGBoost...")
+# grid_search.fit(x_train, y_train)
+
+# # 3. Lấy tham số tốt nhất
+# print("\n--- KẾT QUẢ TỐI ƯU ---")
+# print(f"Tham số tốt nhất: {grid_search.best_params_}")
+# print(f"ROC AUC (Cross-Validation) cao nhất: {grid_search.best_score_:.2%}")
+
+# # 4. Lấy model đã tối ưu gán vào biến classifier_xgb
+# classifier_xgb = grid_search.best_estimator_
+
+# print("\n--- CHẠY ĐÁNH GIÁ VỚI MODEL TỐI ƯU ---")
+# model(classifier_xgb)
+# model_evaluation(classifier_xgb)
 
 # ----------------------------------------------------------
 # SHAP (hoạt động trên DataFrame, nên có tên cột)
@@ -184,17 +200,20 @@ shap_values = shap_explainer(x_test)                       # x_test là DataFram
 # Plot SHAP
 print(f"Giải thích cho bệnh nhân thứ {i}:")
 shap.plots.waterfall(shap_values[i], show=False)
-plt.title(f"Local Feature Contribution for Sample {i}", fontsize=16)  
+plt.title(f"Individual Prediction Explanation", fontsize=16)  
 plt.show()
 
 shap.plots.bar(shap_values, show=False)
-plt.title("Mean Absolute SHAP Values (Global Feature Importance)", fontsize=16)
+plt.title("Local Feature Importance Ranking", fontsize=16)
 plt.show()
 
 shap.plots.beeswarm(shap_values, show=False)
-plt.title("SHAP Value Distribution Across All Features", fontsize=16)
+plt.title("Global Feature Impact Distribution", fontsize=16)
 plt.show()
 
+# ----------------------------------------------------------
+# LIME
+# ----------------------------------------------------------
 explainer = LimeTabularExplainer(
     training_data=x_train.values,
     feature_names=x_train.columns,

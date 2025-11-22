@@ -8,11 +8,9 @@ router = APIRouter()
 @router.post("/")
 def predict(patient: PatientBase):
     result = predict_result(patient.model_dump())
-    return {"prediction": result}
+    return result
 
 @router.post("/batch")
 def predict_batch(patients: List[PatientBase]):
-    patient_data_list = [p.model_dump() for p in patients]
-    predictions_list = predict_result(patient_data_list)
-    output = [{"prediction": int(pred)} for pred in predictions_list]
-    return output
+    patient_data_list = [patient.model_dump() for patient in patients]
+    return predict_result(patient_data_list)
