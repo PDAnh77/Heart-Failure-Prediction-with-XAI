@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from core.model_loader import get_pipeline
-from services.xai_service import generate_all_xai_images
+from services.xai_service import generate_patient_xai_images, generate_batch_xai_images
 
 RENAME_MAP = {
     "age": "Age",
@@ -47,7 +47,7 @@ def predict_result(patient_data):
 
     raw_df.rename(columns=RENAME_MAP, inplace=True)
 
-    df_processed = preprocess(raw_df, pipeline)
+    df_processed = preprocess(raw_df.copy(), pipeline)
     x_processed = df_processed[features]
 
     predictions = model.predict(x_processed.values)
@@ -57,22 +57,34 @@ def predict_result(patient_data):
         results = []
         for i, pred in enumerate(predictions):
             confidence = float(np.max(probs_matrix[i]))
-            
+
             results.append({
+                "patient_index": i,
                 "prediction": int(pred),
                 "probability": round(confidence, 4)
             })
-        return results
+
+        batch_plots = {}
+        batch_plots = generate_batch_xai_images(
+            model=model,
+            background_data=background_data,
+            processed_batch_df=x_processed
+        )
+
+        return {
+            "predictions": results,
+            **batch_plots
+        }
     else:
         pred = predictions[0]
         confidence = float(np.max(probs_matrix[0]))
         
-        plots = generate_all_xai_images(
+        plots = generate_patient_xai_images(
             model=model,
             background_data=background_data,
             lime_train_data=lime_data,
             features_list=features,
-            processed_row=x_processed, 
+            processed_df=x_processed, 
             raw_row=raw_df[features]
         )
 
