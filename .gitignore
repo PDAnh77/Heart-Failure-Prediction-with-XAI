@@ -1,5 +1,4 @@
 /venv
-/src/**/__pycache__/
+/api/**/__pycache__/
 .env
-/notebooks/lime_sample*.html
-/src/models/
+/api/models/

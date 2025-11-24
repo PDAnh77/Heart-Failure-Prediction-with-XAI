@@ -5,6 +5,6 @@ data/
 .git/
 .gitignore
 .env
-src/**/__pycache__/
-src/models/
+api/**/__pycache__/
+api/models/
 requirements-dev.txt
