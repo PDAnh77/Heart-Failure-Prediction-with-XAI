@@ -22,7 +22,7 @@ new_sample = data.sample(50)
 # ], columns=['Age','Sex','ChestPainType','RestingBP','Cholesterol','FastingBS',
 #             'RestingECG','MaxHR','ExerciseAngina','Oldpeak','ST_Slope','HeartDisease'])
 
-pipeline = joblib.load("../src/models/model_predict.pkl")
+pipeline = joblib.load("../models/model_predict.pkl")
 
 model = pipeline['model']                      # classifier LogisticRegression
 label_encoders = pipeline['label_encoders']    # dict các LabelEncoder

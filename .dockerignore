@@ -6,5 +6,6 @@ data/
 .gitignore
 .env
 api/**/__pycache__/
-api/models/
+models/
 requirements-dev.txt
+web/

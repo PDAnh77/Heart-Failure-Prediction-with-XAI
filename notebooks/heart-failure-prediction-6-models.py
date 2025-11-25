@@ -252,5 +252,5 @@ lime_training_data = x_train.values
 #         "shap_background": background_summary,  # Lưu bản tóm tắt
 #         "lime_training_data": lime_training_data
 #     },
-#     "../src/models/model_predict.pkl"
+#     "../models/model_predict.pkl"
 # )
