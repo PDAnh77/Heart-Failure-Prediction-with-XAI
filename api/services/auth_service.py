@@ -5,10 +5,11 @@ from typing import Annotated
 from fastapi import HTTPException, Depends
 from pwdlib import PasswordHash
 from fastapi.security import OAuth2PasswordBearer
+from core.config import settings
 
 load_dotenv()
 algorithm = "HS256"
-secret = os.getenv("SECRET_JWT_KEY")
+secret = settings.SECRET_JWT_KEY
 password_hash = PasswordHash.recommended()
 
 def verify_password(plain_password: str, hashed_password: str):

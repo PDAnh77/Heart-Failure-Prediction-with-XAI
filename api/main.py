@@ -4,11 +4,11 @@ from services.auth_service import validate_token
 from contextlib import asynccontextmanager
 import httpx, asyncio, os
 from core.model_loader import load_model_startup
-
-RENDER_APP_URL = os.getenv("RENDER_APP_URL")
+from core.config import settings
+from fastapi.middleware.cors import CORSMiddleware
 
 async def ping_self():
-    url = RENDER_APP_URL
+    url = settings.RENDER_APP_URL
     if not url:
         print("Skipping self-ping: RENDER_APP_URL not set")
         return
@@ -34,6 +34,14 @@ async def lifespan(app: FastAPI):
     task.cancel() # Hủy task khi API tắt
 
 app = FastAPI(title="Heart Disease Prediction API", openapi_url="/api/openapi.json", docs_url="/docs", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(user_router.router, prefix="/api/user", tags=["User"])
 app.include_router(predict_router.router, prefix="/api/predict", tags=["Heart failure prediction"], dependencies=[Depends(validate_token)])
