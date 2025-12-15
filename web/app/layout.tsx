@@ -4,6 +4,8 @@ import "./globals.css";
 
 import Snow from "@/components/snow";
 import Sidebar from "@/components/sidebar";
+import { Slide, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,6 +35,7 @@ export default function RootLayout({
           <Sidebar />
           <main className="flex-1 p-6 h-full overflow-y-auto">
             {children}
+            <ToastContainer position="top-right" transition={Slide} autoClose={3000} hideProgressBar />
           </main>
         </div>
       </body>

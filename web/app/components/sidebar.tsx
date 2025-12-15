@@ -1,11 +1,31 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from 'react-toastify';
 
-import { FaSistrix, FaListUl, FaMicroscope, FaGear, FaHouse, FaRightToBracket, FaRocket } from "react-icons/fa6";
+import { FaSistrix, FaListUl, FaMicroscope, FaGear, FaHouse, FaRightToBracket, FaRightFromBracket, FaRocket } from "react-icons/fa6";
 
 export default function Sidebar() {
     const pathname = usePathname();
+    const [username, setUsername] = useState<string | null>(null);
+
+    useEffect(() => {
+        const storedUser = localStorage.getItem("username");
+        if (storedUser) {
+            setUsername(storedUser);
+        }
+    }, []);
+
+    const handleLogout = () => {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("token_type");
+        localStorage.removeItem("username");
+        localStorage.removeItem("current_user_id")
+        localStorage.removeItem("isLoggedIn")
+        setUsername(null);
+        toast.success("Logout successful.");
+    };
 
     const itemClass = (active: boolean) =>
         `rounded-xl transition 
@@ -31,18 +51,29 @@ export default function Sidebar() {
                     </li>
 
                     <li className={itemClass(pathname === "/setting")}>
-                        <Link href="/setting" className="flex items-center gap-2 p-2 w-full hover:cursor-pointer">
+                        <Link href="/setting" className="flex items-center gap-2 p-2 w-full">
                             <FaGear className="text-lg" />
                             <span>Setting</span>
                         </Link>
                     </li>
 
-                    <li className={itemClass(pathname === "/login")}>
-                        <Link href="/login" className="flex items-center gap-2 p-2 w-full hover:cursor-pointer">
-                            <FaRightToBracket className="text-lg" />
-                            <span>Sign in</span>
-                        </Link>
-                    </li>
+                    {username ? (
+                        // Nếu đã đăng nhập -> Hiển thị nút Logout
+                        <li className={itemClass(false)} onClick={handleLogout}>
+                            <div className="flex items-center gap-2 p-2 w-full hover:cursor-pointer">
+                                <FaRightFromBracket className="text-lg" />
+                                <span>Logout</span>
+                            </div>
+                        </li>
+                    ) : (
+                        // Nếu chưa đăng nhập -> Hiển thị nút Sign in
+                        <li className={itemClass(pathname === "/login")}>
+                            <Link href="/login" className="flex items-center gap-2 p-2 w-full">
+                                <FaRightToBracket className="text-lg" />
+                                <span>Sign in</span>
+                            </Link>
+                        </li>
+                    )}
                 </ul>
 
                 <div className="p-2 pb-4">
@@ -55,7 +86,9 @@ export default function Sidebar() {
                             </div>
 
                             <div className="flex flex-col">
-                                <span className="text-sm font-bold text-gray-900">Guest</span>
+                                <span className="text-sm font-bold text-gray-900">
+                                    {username || "Guest"}
+                                </span>
                             </div>
                         </div>
                     </div>

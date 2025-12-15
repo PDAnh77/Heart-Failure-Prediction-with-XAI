@@ -1,10 +1,29 @@
+"use client"
+
+import { useRouter } from "next/navigation";
+import { FormEvent } from "react";
+import { toast } from "react-toastify";
+
 export default function Predict() {
+    const router = useRouter();
+
+    const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        const token = localStorage.getItem("access_token");
+
+        if (!token) {
+            toast.warning("You must be logged in to submit a prediction.")
+            router.push("/login");
+            return;
+        }
+    };
+
     return (
         <div className="p-4">
             <h1 className="text-2xl font-bold">Patient Information</h1>
             <p className="mt-1 text-base/6 text-gray-600 dark:text-gray-400">Please provide accurate patient information for better prediction results.</p>
 
-            <div className="mt-16 border-b border-gray-900/10 pb-12 px-12 dark:border-white/10">
+            <form onSubmit={handleSubmit} className="mt-16 border-b border-gray-900/10 pb-12 px-12 dark:border-white/10">
                 <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
                     
                     {/* --- First Name --- */}
@@ -182,7 +201,7 @@ export default function Predict() {
                     <button type="button" className="rounded-md px-8 py-2 text-sm font-semibold text-gray-900 cursor-pointer hover:bg-gray-100 hover:text-indigo-600 dark:text-white dark:hover:bg-white/10 dark:hover:text-indigo-400 transition-colors">Reset</button>
                     <button type="submit" className="rounded-md bg-indigo-600 px-8 py-2 text-sm font-semibold text-white shadow-sm cursor-pointer hover:bg-indigo-500 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Predict</button>
                 </div>
-            </div>
+            </form>
         </div>
     )
 }

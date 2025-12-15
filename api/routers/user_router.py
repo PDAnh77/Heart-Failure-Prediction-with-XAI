@@ -11,11 +11,11 @@ TABLE_NAME = "user"
 @router.post("/auth")
 def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     existing_user = supabase.table(TABLE_NAME).select("*").eq("username", form_data.username).execute().data
-    if existing_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+    if not existing_user:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
     current_user = existing_user[0]
     if not verify_password(form_data.password, current_user["password"]):
-        raise HTTPException(status_code=401, detail="Incorrect password")
+        raise HTTPException(status_code=401, detail="Invalid username or password")
     access_token = generate_token(current_user["username"])
     return {
         "access_token": access_token,
