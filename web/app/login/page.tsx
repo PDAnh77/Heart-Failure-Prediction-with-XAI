@@ -1,11 +1,8 @@
 "use client"
-
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { toast } from 'react-toastify';
 
 export default function Login() {
-    const router = useRouter()
     const [username, setUsername] = useState("")
     const [password, setPassword] = useState("")
     const [loading, setLoading] = useState(false)
@@ -29,8 +26,12 @@ export default function Login() {
             })
 
             if (!res.ok) {
-                const errorData = await res.json().catch(() => null)
-                throw new Error(errorData?.detail || "Invalid username or password.")
+                if (res.status === 401) {
+                    toast.error("Invalid username or password.");
+                } else {
+                    toast.error("An error occurred. Please try again later.");
+                }
+                return;
             }
 
             const data = await res.json()
@@ -45,11 +46,7 @@ export default function Login() {
             }, 2000)
 
         } catch (err: any) {
-            if (err.response?.status === 401) {
-                toast.error("Invalid username or password.");
-            } else {
-                toast.error("An error occurred. Please try again later.");
-            }
+            toast.error("Network error. Please try again later.");
         } finally {
             setLoading(false)
         }

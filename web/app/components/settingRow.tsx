@@ -12,7 +12,7 @@ export default function SettingRow({ title, description, enabled, setEnabled }: 
             <button
                 onClick={() => setEnabled(!enabled)}
                 className={`
-                    relative inline-flex h-6 w-12 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out
+                    relative inline-flex h-6 w-12 shrink-0 items-center rounded-full transition-colors duration-200 ease-in-out cursor-pointer
                     ${enabled ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'}
                 `}>
                 <span

@@ -3,12 +3,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from 'react-toastify';
-
-import { FaSistrix, FaListUl, FaMicroscope, FaGear, FaHouse, FaRightToBracket, FaRightFromBracket, FaRocket } from "react-icons/fa6";
+import LogoutModal from "@/components/modalLogout";
+import { FaMicroscope, FaGear, FaHouse, FaRightToBracket, FaRightFromBracket, FaRocket } from "react-icons/fa6";
 
 export default function Sidebar() {
     const pathname = usePathname();
     const [username, setUsername] = useState<string | null>(null);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     useEffect(() => {
         const storedUser = localStorage.getItem("username");
@@ -17,13 +18,16 @@ export default function Sidebar() {
         }
     }, []);
 
+    const handleLogoutClick = () => {
+        setShowLogoutModal(true);
+    };
+
     const handleLogout = () => {
         localStorage.removeItem("access_token");
         localStorage.removeItem("token_type");
         localStorage.removeItem("username");
-        localStorage.removeItem("current_user_id")
-        localStorage.removeItem("isLoggedIn")
         setUsername(null);
+        setShowLogoutModal(false);
         toast.success("Logout successful.");
     };
 
@@ -59,7 +63,7 @@ export default function Sidebar() {
 
                     {username ? (
                         // Nếu đã đăng nhập -> Hiển thị nút Logout
-                        <li className={itemClass(false)} onClick={handleLogout}>
+                        <li className={itemClass(false)} onClick={handleLogoutClick}>
                             <div className="flex items-center gap-2 p-2 w-full hover:cursor-pointer">
                                 <FaRightFromBracket className="text-lg" />
                                 <span>Logout</span>
@@ -94,6 +98,12 @@ export default function Sidebar() {
                     </div>
                 </div>
             </div>
+
+            <LogoutModal 
+                isOpen={showLogoutModal} 
+                onClose={() => setShowLogoutModal(false)} 
+                onConfirm={handleLogout} 
+            />
         </aside>
     );
 }
