@@ -1,10 +1,8 @@
-import jwt, os
+import jwt
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
-from typing import Annotated
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException, Request
 from pwdlib import PasswordHash
-from fastapi.security import OAuth2PasswordBearer
 from core.config import settings
 
 load_dotenv()
@@ -26,21 +24,21 @@ def generate_token(username: str):
     encode_jwt = jwt.encode(to_encode, secret, algorithm=algorithm)
     return encode_jwt
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/user/auth")
-
-def validate_token(token: Annotated[str, Depends(oauth2_scheme)]):
-    credentials_exception = HTTPException(
-        status_code=401,
-        detail="Invalid token",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+def validate_token(request: Request):
+    token = request.cookies.get("session")
+    if not token:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated",
+        )
     try:
         payload = jwt.decode(token, secret, algorithms=algorithm)
         username = payload.get("username")
-        if username is None:
-            raise credentials_exception
-    except jwt.ExpiredSignatureError:
-        raise credentials_exception
-    except jwt.InvalidTokenError:
-        raise credentials_exception
+        if not username:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return username
     
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
