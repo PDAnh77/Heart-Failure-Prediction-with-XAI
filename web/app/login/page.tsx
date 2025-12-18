@@ -3,7 +3,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react"
 import { toast } from 'react-toastify';
 import { useAuth } from "@/context/authcontext";
-import { apiFetch } from "@/lib/api";
 
 export default function Login() {
     const [username, setUsername] = useState("")
@@ -23,8 +22,11 @@ export default function Login() {
                 username: username,
                 password: password
             }
-            const res = await apiFetch("/user/auth", {
+            const res = await fetch("/api/user/auth", {
                 method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
                 credentials: "include",
                 body: JSON.stringify(payload)
             })

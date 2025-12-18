@@ -7,6 +7,8 @@ import Sidebar from "@/components/sidebar";
 import { AuthProvider } from "@/context/authcontext";
 import { Slide, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { Analytics } from "@vercel/analytics/next"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,12 +34,14 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>
-          <div className="flex h-screen">
-            <Snow />
+          <div className="flex flex-col md:flex-row h-screen">
             <Sidebar />
             <main className="flex-1 p-6 h-full overflow-y-auto">
+              <Snow />
               {children}
               <ToastContainer position="top-right" transition={Slide} autoClose={3000} hideProgressBar />
+              <Analytics />
+              <SpeedInsights />
             </main>
           </div>
         </AuthProvider>

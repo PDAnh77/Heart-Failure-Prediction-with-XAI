@@ -5,10 +5,11 @@ import { useState } from "react";
 import { toast } from 'react-toastify';
 import LogoutModal from "@/components/modalLogout";
 import { useAuth } from "@/context/authcontext"
-import { apiFetch } from "@/lib/api";
+import { TbLayoutSidebarFilled } from "react-icons/tb";
 import { FaMicroscope, FaGear, FaHouse, FaRightToBracket, FaRightFromBracket, FaRocket } from "react-icons/fa6";
 
 export default function Sidebar() {
+    const [open, setOpen] = useState(false);
     const pathname = usePathname();
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const { user, logout } = useAuth();
@@ -19,17 +20,14 @@ export default function Sidebar() {
 
     const handleLogout = async () => {
         try {
-            const res = await apiFetch("/user/logout", {
+            const res = await fetch("/api/user/logout", {
                 method: "POST",
                 credentials: "include"
             });
-
-            if (!res.ok) {
-                throw new Error("Logout failed");
-            }
-
+            if (!res.ok) throw new Error("Logout failed");
             logout();
             setShowLogoutModal(false);
+            setOpen(false);
             toast.success("Logout successful.");
         } catch (err) {
             toast.error("Logout failed.");
@@ -37,78 +35,101 @@ export default function Sidebar() {
     };
 
     const itemClass = (active: boolean) =>
-        `rounded-xl transition 
-     ${active ? "bg-gray-100 font-bold dark:text-white dark:bg-white/10" : "hover:bg-gray-100 font-normal dark:hover:bg-white/10"}`;
+        `rounded-xl transition ${active ? "bg-gray-100 font-bold dark:text-white dark:bg-white/10" : "hover:bg-gray-100 font-normal dark:hover:bg-white/10"}`;
 
     return (
-        <aside className="w-72 min-h-screen p-2">
-            <div className="bg-gray-50 rounded-xl h-full border border-gray-200 shadow-md flex flex-col justify-between dark:bg-[#141516] dark:border-[#FFFFFF1A]">
-                <ul className="space-y-2 mt-8 pb-8 px-2 ">
-                    <p className="text-sm font-bold mb-4 mx-2">Heart failure predict</p>
-                    <li className={itemClass(pathname === "/")}>
-                        <Link href="/" className="flex items-center gap-2 p-2">
-                            <FaHouse className="text-lg" />
-                            <span>Home</span>
-                        </Link>
-                    </li>
+        <>
+            <div className="md:hidden flex items-center p-2 bg-white dark:bg-[#141516] border border-gray-200 dark:border-[#FFFFFF1A] sticky top-0 z-40">
+                <button
+                    className="p-2 rounded-xl cursor-pointer"
+                    onClick={() => setOpen(true)}
+                >
+                    <TbLayoutSidebarFilled className="text-xl" />
+                </button>
+                <span className="font-bold ml-2">Heart failure predict</span>
+            </div>
 
-                    <li className={itemClass(pathname === "/predict")}>
-                        <Link href="/predict" className="flex items-center gap-2 p-2">
-                            <FaMicroscope className="text-lg" />
-                            <span>Predict</span>
-                        </Link>
-                    </li>
+            <div
+                className={`
+                    fixed inset-0 bg-black/50 z-40 md:hidden 
+                    transition-all duration-300 ease-in-out
+                    ${open
+                        ? "opacity-100 visible pointer-events-auto"
+                        : "opacity-0 invisible pointer-events-none"
+                    }
+                `}
+                onClick={() => setOpen(false)}
+            />
 
-                    <li className={itemClass(pathname === "/setting")}>
-                        <Link href="/setting" className="flex items-center gap-2 p-2 w-full">
-                            <FaGear className="text-lg" />
-                            <span>Setting</span>
-                        </Link>
-                    </li>
+            <aside className={`
+                fixed inset-y-0 left-0 z-50 md:z-40 w-72 p-2 transition-transform duration-300 ease-in-out bg-gray-50 dark:bg-[#141516] md:bg-transparent md:dark:bg-transparent
+                ${open ? "translate-x-0" : "-translate-x-full"} 
+                md:static md:translate-x-0 md:min-h-screen
+            `}>
+                <div className="bg-gray-50 rounded-xl h-full md:border md:border-gray-200 md:shadow-md flex flex-col justify-between dark:bg-[#141516] dark:border-[#FFFFFF1A] relative">
+                    <ul className="space-y-2 mt-8 pb-8 px-2 ">
+                        <p className="font-bold mb-4 mx-2">Heart failure predict</p>
 
-                    {user ? (
-                        // Nếu đã đăng nhập -> Hiển thị nút Logout
-                        <li className={itemClass(false)} onClick={handleLogoutClick}>
-                            <div className="flex items-center gap-2 p-2 w-full hover:cursor-pointer">
-                                <FaRightFromBracket className="text-lg" />
-                                <span>Logout</span>
-                            </div>
-                        </li>
-                    ) : (
-                        // Nếu chưa đăng nhập -> Hiển thị nút Sign in
-                        <li className={itemClass(pathname === "/login")}>
-                            <Link href="/login" className="flex items-center gap-2 p-2 w-full">
-                                <FaRightToBracket className="text-lg" />
-                                <span>Sign in</span>
+                        <li className={itemClass(pathname === "/")} onClick={() => setOpen(false)}>
+                            <Link href="/" className="flex items-center gap-2 p-2">
+                                <FaHouse className="text-lg" />
+                                <span>Home</span>
                             </Link>
                         </li>
-                    )}
-                </ul>
 
-                <div className="p-2 pb-4">
-                    <div className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-200 transition border border-transparent dark:hover:bg-white/10">
+                        <li className={itemClass(pathname === "/predict")} onClick={() => setOpen(false)}>
+                            <Link href="/predict" className="flex items-center gap-2 p-2">
+                                <FaMicroscope className="text-lg" />
+                                <span>Predict</span>
+                            </Link>
+                        </li>
 
-                        {/* Avatar & Name Group */}
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-xl bg-black flex items-center justify-center text-white">
-                                <FaRocket className="text-sm" />
-                            </div>
+                        <li className={itemClass(pathname === "/setting")} onClick={() => setOpen(false)}>
+                            <Link href="/setting" className="flex items-center gap-2 p-2 w-full">
+                                <FaGear className="text-lg" />
+                                <span>Setting</span>
+                            </Link>
+                        </li>
 
-                            <div className="flex flex-col">
-                                <span className="text-sm font-bold text-gray-900 dark:text-white">
-                                    {user ? user.username : "Guest"}
-                                </span>
+                        {user ? (
+                            <li className={itemClass(false)} onClick={handleLogoutClick}>
+                                <div className="flex items-center gap-2 p-2 w-full hover:cursor-pointer">
+                                    <FaRightFromBracket className="text-lg" />
+                                    <span>Logout</span>
+                                </div>
+                            </li>
+                        ) : (
+                            <li className={itemClass(pathname === "/login")} onClick={() => setOpen(false)}>
+                                <Link href="/login" className="flex items-center gap-2 p-2 w-full">
+                                    <FaRightToBracket className="text-lg" />
+                                    <span>Sign in</span>
+                                </Link>
+                            </li>
+                        )}
+                    </ul>
+
+                    <div className="p-2 pb-4">
+                        <div className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-100 transition border border-transparent dark:hover:bg-white/10">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-xl bg-black flex items-center justify-center text-white">
+                                    <FaRocket className="text-sm" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-bold text-gray-900 dark:text-white">
+                                        {user ? user.username : "Guest"}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </aside>
 
             <LogoutModal
                 isOpen={showLogoutModal}
                 onClose={() => setShowLogoutModal(false)}
                 onConfirm={handleLogout}
             />
-        </aside>
+        </>
     );
 }

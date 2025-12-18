@@ -2,7 +2,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { User } from "@/types/user";
 import { AuthContextType } from "@/types/authcontext";
-import { apiFetch } from "@/lib/api";
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -12,7 +11,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const res = await apiFetch("/user/me", {
+        const res = await fetch("/api/user/me", {
           credentials: "include"
         });
         if (res.ok) {

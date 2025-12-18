@@ -21,7 +21,7 @@ def login(response: Response, data: UserBase):
         value=access_token,
         secure=True,
         httponly=True,
-        samesite=None,
+        samesite="lax",
         max_age=60*60,
         path="/"
     )

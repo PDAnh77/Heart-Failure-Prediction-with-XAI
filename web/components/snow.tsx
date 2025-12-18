@@ -47,5 +47,5 @@ export default function Snow() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    return <canvas id="snow" className="fixed inset-0 pointer-events-none" />;
+    return <canvas id="snow" className="fixed inset-0 pointer-events-none z-40" />;
 }

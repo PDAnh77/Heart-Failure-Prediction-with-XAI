@@ -4,7 +4,6 @@ import { FormEvent, useState, useRef, useEffect } from "react";
 import { toast } from "react-toastify";
 import { PredictionResult } from "@/types/prediction";
 import { useAuth } from "@/context/authcontext";
-import { apiFetch } from "@/lib/api";
 import Image from "next/image";
 
 export default function Predict() {
@@ -122,8 +121,11 @@ export default function Predict() {
         console.log("Payload sending to API:", JSON.stringify(payload, null, 2));
 
         try {
-            const res = await apiFetch("/predict/", {
+            const res = await fetch("/api/predict", {
                 method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
                 credentials: "include",
                 body: JSON.stringify(payload)
             });
