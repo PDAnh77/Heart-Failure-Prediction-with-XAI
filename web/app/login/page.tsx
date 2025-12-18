@@ -1,11 +1,17 @@
 "use client"
+import { useRouter } from "next/navigation";
 import { useState } from "react"
 import { toast } from 'react-toastify';
+import { useAuth } from "@/context/authcontext";
+import { apiFetch } from "@/lib/api";
 
 export default function Login() {
     const [username, setUsername] = useState("")
     const [password, setPassword] = useState("")
     const [loading, setLoading] = useState(false)
+    const router = useRouter()
+
+    const { login } = useAuth();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -13,16 +19,14 @@ export default function Login() {
         toast.dismiss(); // Xóa các toast cũ trước khi submit mới
 
         try {
-            const body = new URLSearchParams()
-            body.append("username", username)
-            body.append("password", password)
-
-            const res = await fetch("https://heart-failure-api-uwqj.onrender.com/api/user/auth", {
+            const payload = {
+                username: username,
+                password: password
+            }
+            const res = await apiFetch("/user/auth", {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body,
+                credentials: "include",
+                body: JSON.stringify(payload)
             })
 
             if (!res.ok) {
@@ -34,17 +38,11 @@ export default function Login() {
                 return;
             }
 
-            const data = await res.json()
+            const data = await res.json();
 
-            localStorage.setItem("access_token", data.access_token)
-            localStorage.setItem("token_type", data.token_type)
-            localStorage.setItem("username", username)
-
-            toast.success("Login successful.", { autoClose: 1500 });
-            setTimeout(() => {
-                window.location.href = "/predict"
-            }, 2000)
-
+            toast.success("Login successful.");
+            login({ username: data.username })
+            router.push("/predict")
         } catch (err: any) {
             toast.error("Network error. Please try again later.");
         } finally {

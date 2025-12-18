@@ -1,4 +1,11 @@
-export default function SettingRow({ title, description, enabled, setEnabled }: { title: string; description: string; enabled: boolean; setEnabled: (value: boolean) => void }) {
+interface SettingRowProps {
+    title: string;
+    description: string;
+    enabled: boolean;
+    setEnabled: (value: boolean) => void;
+}
+
+export default function SettingRow({ title, description, enabled, setEnabled }: SettingRowProps) {
     return (
         <div className="flex items-center justify-between py-4">
             <div className="flex flex-col pr-4">

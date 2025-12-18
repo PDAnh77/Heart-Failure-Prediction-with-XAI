@@ -1,44 +1,49 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from 'react-toastify';
 import LogoutModal from "@/components/modalLogout";
+import { useAuth } from "@/context/authcontext"
+import { apiFetch } from "@/lib/api";
 import { FaMicroscope, FaGear, FaHouse, FaRightToBracket, FaRightFromBracket, FaRocket } from "react-icons/fa6";
 
 export default function Sidebar() {
     const pathname = usePathname();
-    const [username, setUsername] = useState<string | null>(null);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-
-    useEffect(() => {
-        const storedUser = localStorage.getItem("username");
-        if (storedUser) {
-            setUsername(storedUser);
-        }
-    }, []);
+    const { user, logout } = useAuth();
 
     const handleLogoutClick = () => {
         setShowLogoutModal(true);
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("token_type");
-        localStorage.removeItem("username");
-        setUsername(null);
-        setShowLogoutModal(false);
-        toast.success("Logout successful.");
+    const handleLogout = async () => {
+        try {
+            const res = await apiFetch("/user/logout", {
+                method: "POST",
+                credentials: "include"
+            });
+
+            if (!res.ok) {
+                throw new Error("Logout failed");
+            }
+
+            logout();
+            setShowLogoutModal(false);
+            toast.success("Logout successful.");
+        } catch (err) {
+            toast.error("Logout failed.");
+        }
     };
 
     const itemClass = (active: boolean) =>
         `rounded-xl transition 
-     ${active ? "bg-gray-100 font-bold" : "hover:bg-gray-100 font-normal"}`;
+     ${active ? "bg-gray-100 font-bold dark:text-white dark:bg-white/10" : "hover:bg-gray-100 font-normal dark:hover:bg-white/10"}`;
 
     return (
         <aside className="w-72 min-h-screen p-2">
-            <div className="bg-gray-50 rounded-lg h-full border border-gray-200 shadow-md flex flex-col justify-between">
-                <ul className="space-y-2 mt-8 pb-8 px-2">
+            <div className="bg-gray-50 rounded-xl h-full border border-gray-200 shadow-md flex flex-col justify-between dark:bg-[#141516] dark:border-[#FFFFFF1A]">
+                <ul className="space-y-2 mt-8 pb-8 px-2 ">
                     <p className="text-sm font-bold mb-4 mx-2">Heart failure predict</p>
                     <li className={itemClass(pathname === "/")}>
                         <Link href="/" className="flex items-center gap-2 p-2">
@@ -61,7 +66,7 @@ export default function Sidebar() {
                         </Link>
                     </li>
 
-                    {username ? (
+                    {user ? (
                         // Nếu đã đăng nhập -> Hiển thị nút Logout
                         <li className={itemClass(false)} onClick={handleLogoutClick}>
                             <div className="flex items-center gap-2 p-2 w-full hover:cursor-pointer">
@@ -81,7 +86,7 @@ export default function Sidebar() {
                 </ul>
 
                 <div className="p-2 pb-4">
-                    <div className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-200 transition border border-transparent hover:border-gray-200">
+                    <div className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-200 transition border border-transparent dark:hover:bg-white/10">
 
                         {/* Avatar & Name Group */}
                         <div className="flex items-center gap-3">
@@ -90,8 +95,8 @@ export default function Sidebar() {
                             </div>
 
                             <div className="flex flex-col">
-                                <span className="text-sm font-bold text-gray-900">
-                                    {username || "Guest"}
+                                <span className="text-sm font-bold text-gray-900 dark:text-white">
+                                    {user ? user.username : "Guest"}
                                 </span>
                             </div>
                         </div>
@@ -99,10 +104,10 @@ export default function Sidebar() {
                 </div>
             </div>
 
-            <LogoutModal 
-                isOpen={showLogoutModal} 
-                onClose={() => setShowLogoutModal(false)} 
-                onConfirm={handleLogout} 
+            <LogoutModal
+                isOpen={showLogoutModal}
+                onClose={() => setShowLogoutModal(false)}
+                onConfirm={handleLogout}
             />
         </aside>
     );

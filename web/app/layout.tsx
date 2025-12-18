@@ -4,6 +4,7 @@ import "./globals.css";
 
 import Snow from "@/components/snow";
 import Sidebar from "@/components/sidebar";
+import { AuthProvider } from "@/context/authcontext";
 import { Slide, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -30,14 +31,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <div className="flex h-screen">
-          <Snow />
-          <Sidebar />
-          <main className="flex-1 p-6 h-full overflow-y-auto">
-            {children}
-            <ToastContainer position="top-right" transition={Slide} autoClose={3000} hideProgressBar />
-          </main>
-        </div>
+        <AuthProvider>
+          <div className="flex h-screen">
+            <Snow />
+            <Sidebar />
+            <main className="flex-1 p-6 h-full overflow-y-auto">
+              {children}
+              <ToastContainer position="top-right" transition={Slide} autoClose={3000} hideProgressBar />
+            </main>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

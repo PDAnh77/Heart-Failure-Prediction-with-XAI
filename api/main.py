@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends
 from routers import patient_router, predict_router, user_router
 from services.auth_service import validate_token
 from contextlib import asynccontextmanager
-import httpx, asyncio, os
+import httpx, asyncio
 from core.model_loader import load_model_startup
 from core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,9 +35,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Heart Disease Prediction API", openapi_url="/api/openapi.json", docs_url="/docs", lifespan=lifespan)
 
+origins = [
+    "http://localhost:3000",
+]
+
+if settings.NEXT_APP_URL:
+    origins.append(settings.NEXT_APP_URL)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

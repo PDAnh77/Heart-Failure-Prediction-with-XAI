@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     DATABASE_KEY: str
     SECRET_JWT_KEY: str
     RENDER_APP_URL: str
+    NEXT_APP_URL: str
 
     model_config = SettingsConfigDict(
         env_file=".env",
