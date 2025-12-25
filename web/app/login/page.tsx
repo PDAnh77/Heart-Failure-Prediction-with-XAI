@@ -1,6 +1,6 @@
 "use client"
 import { useRouter } from "next/navigation";
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { toast } from 'react-toastify';
 import { useAuth } from "@/context/authcontext";
 
@@ -9,8 +9,13 @@ export default function Login() {
     const [password, setPassword] = useState("")
     const [loading, setLoading] = useState(false)
     const router = useRouter()
-
-    const { login } = useAuth();
+    const { login, user } = useAuth();
+    
+    useEffect(() => {
+        if (user) {
+            router.push("/predict")
+        }
+    }, [user])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -43,7 +48,7 @@ export default function Login() {
             const data = await res.json();
 
             toast.success("Login successful.");
-            login({ username: data.username })
+            login({ username: data.username, email: data.email })
             router.push("/predict")
         } catch (err: any) {
             toast.error("Network error. Please try again later.");

@@ -34,9 +34,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>
-          <div className="flex flex-col md:flex-row h-screen">
+          <div className="flex flex-col lg:flex-row h-screen">
             <Sidebar />
-            <main className="flex-1 p-6 h-full overflow-y-auto">
+            <main className="flex-1 p-4 h-full overflow-y-auto">
               <Snow />
               {children}
               <ToastContainer position="top-right" transition={Slide} autoClose={3000} hideProgressBar />

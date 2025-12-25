@@ -11,51 +11,64 @@ export default function Predict() {
     const [submitting, setSubmitting] = useState(false);
     const [result, setResult] = useState<PredictionResult | null>(null);
     const formRef = useRef<HTMLFormElement>(null);
+    const autoFillBtnRef = useRef<HTMLButtonElement>(null);
     const topRef = useRef<HTMLDivElement>(null);
     const resultRef = useRef<HTMLDivElement>(null);
     const { user, loading: authLoading, logout } = useAuth();
 
     const RequiredMark = () => <span className="text-red-500">*</span>;
 
-    // --- Sample patient for quick auto-fill testing ---
-    const SAMPLE_PATIENTS = [
-        {
-            first_name: "Nguyen",
-            last_name: "Van A",
-            age: 40,
-            sex: "M",
-            chest_pain_type: "NAP",
-            resting_bp: 130,
-            cholesterol: 215,
-            fasting_bs: 0,
-            resting_ecg: "Normal",
-            max_hr: 138,
-            exercise_angina: "N",
-            oldpeak: 0,
-            st_slope: "Up",
-            heart_disease: 0
+    const handleAutoFillForm = async () => {
+        toast.dismiss();
+        if (!user) {
+            toast.warning("You must be logged in to submit a prediction.");
+            router.push("/login");
+            return;
         }
-    ];
-
-    const fillFormWithSample = (patient: any) => {
         if (!formRef.current) return;
         const form = formRef.current;
 
-        (form.querySelector('#first-name') as HTMLInputElement).value = String(patient.first_name);
-        (form.querySelector('#last-name') as HTMLInputElement).value = String(patient.last_name);
-        (form.querySelector('#age') as HTMLInputElement).value = String(patient.age);
-        (form.querySelector('#gender') as HTMLSelectElement).value = patient.sex;
-        (form.querySelector('#chest-pain-type') as HTMLSelectElement).value = patient.chest_pain_type;
-        (form.querySelector('#resting-bp') as HTMLInputElement).value = String(patient.resting_bp);
-        (form.querySelector('#cholesterol') as HTMLInputElement).value = String(patient.cholesterol);
-        (form.querySelector('#fasting-bs') as HTMLInputElement).value = patient.fasting_bs ? '130' : '95';
-        (form.querySelector('#resting-ecg') as HTMLSelectElement).value = patient.resting_ecg;
-        (form.querySelector('#max-hr') as HTMLInputElement).value = String(patient.max_hr);
-        (form.querySelector('#exercise-angina') as HTMLSelectElement).value = patient.exercise_angina;
-        (form.querySelector('#oldpeak') as HTMLInputElement).value = String(patient.oldpeak);
-        (form.querySelector('#st-slope') as HTMLSelectElement).value = patient.st_slope;
+        try {
+            if (autoFillBtnRef.current) {
+                autoFillBtnRef.current.innerText = "Loading...";
+                autoFillBtnRef.current.disabled = true;
+            }
 
-        toast.info("Form auto-filled with sample data.");
+            const response = await fetch('/api/patients/rand');
+            if (response.status == 401) {
+                logout()
+                toast.warning("Session expired. Please sign in again.");
+                router.push("/login");
+                return
+            }
+
+            const result = await response.json();
+            const patient = result.data[0];
+
+            if (!patient) return;
+
+            (form.querySelector('#age') as HTMLInputElement).value = String(patient.age);
+            (form.querySelector('#gender') as HTMLSelectElement).value = String(patient.sex);
+            (form.querySelector('#chest-pain-type') as HTMLSelectElement).value = String(patient.chest_pain_type);
+            (form.querySelector('#resting-bp') as HTMLInputElement).value = String(patient.resting_bp);
+            (form.querySelector('#cholesterol') as HTMLInputElement).value = String(patient.cholesterol);
+            (form.querySelector('#fasting-bs') as HTMLInputElement).value = String(patient.fasting_bs);
+            (form.querySelector('#resting-ecg') as HTMLSelectElement).value = String(patient.resting_ecg);
+            (form.querySelector('#max-hr') as HTMLInputElement).value = String(patient.max_hr);
+            (form.querySelector('#exercise-angina') as HTMLSelectElement).value = String(patient.exercise_angina);
+            (form.querySelector('#oldpeak') as HTMLInputElement).value = String(patient.oldpeak);
+            (form.querySelector('#st-slope') as HTMLSelectElement).value = String(patient.st_slope);
+
+            toast.info("Form auto-filled with sample data.");
+        } catch (error: any) {
+            console.error(error.message);
+            toast.error("Failed to auto-fill form.");
+        } finally {
+            if (autoFillBtnRef.current) {
+                autoFillBtnRef.current.innerText = "Auto-fill sample";
+                autoFillBtnRef.current.disabled = false;
+            }
+        }
     };
 
     const handleReset = () => {
@@ -179,41 +192,39 @@ export default function Predict() {
             <div className="mt-4">
                 <button
                     type="button"
-                    onClick={() => {
-                        fillFormWithSample(SAMPLE_PATIENTS[0]);
-                        formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-                    }}
-                    className="rounded-md px-4 py-2 bg-gray-200 text-sm font-medium dark:text-black hover:bg-gray-300"
+                    onClick={handleAutoFillForm}
+                    ref={autoFillBtnRef}
+                    className="rounded-md px-4 py-2 bg-gray-200 text-sm font-medium dark:text-black hover:bg-gray-300 cursor-pointer"
                 >
                     Auto-fill sample
                 </button>
             </div>
-            <form ref={formRef} onSubmit={handleSubmit} className="mt-12 border-b border-gray-900/10 pb-12 px-2 sm:px-12 dark:border-white/10">
-                <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+            <form ref={formRef} onSubmit={handleSubmit} className="mt-12 border-b border-gray-900/10 pb-8 px-2 md:px-8 dark:border-white/10">
+                <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6">
 
                     {/* --- First Name --- */}
-                    <div className="sm:col-span-3">
+                    <div className="md:col-span-3">
                         <label htmlFor="first-name" className="block text-base/6 font-medium text-gray-900 dark:text-white">First name</label>
                         <div className="mt-2">
                             <input id="first-name" type="text" name="first-name" autoComplete="given-name" placeholder="e.g. John"
-                                className="block w-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
+                                className="block w-full rounded-lg shadow-sm transition h-10 bg-white px-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 md:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
                         </div>
                     </div>
 
                     {/* --- Last Name --- */}
-                    <div className="sm:col-span-3">
+                    <div className="md:col-span-3">
                         <label htmlFor="last-name" className="block text-base/6 font-medium text-gray-900 dark:text-white">Last name</label>
                         <div className="mt-2">
                             <input id="last-name" type="text" name="last-name" autoComplete="family-name" placeholder="e.g. Doe"
-                                className="block w-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
+                                className="block w-full rounded-lg shadow-sm transition h-10 bg-white px-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 md:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
                         </div>
                     </div>
 
                     {/* --- Gender --- */}
-                    <div className="sm:col-span-3">
+                    <div className="md:col-span-3">
                         <label htmlFor="gender" className="block text-base/6 font-medium text-gray-900 dark:text-white">Gender <RequiredMark /></label>
                         <div className="mt-2">
-                            <select id="gender" required defaultValue="M" name="gender" className="block w-full rounded-lg bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-indigo-500">
+                            <select id="gender" required defaultValue="M" name="gender" className="block w-full rounded-lg shadow-sm transition h-10 bg-white px-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 md:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-indigo-500">
                                 <option className="dark:bg-gray-800 dark:text-white" value="M">Male</option>
                                 <option className="dark:bg-gray-800 dark:text-white" value="F">Female</option>
                             </select>
@@ -221,20 +232,20 @@ export default function Predict() {
                     </div>
 
                     {/* --- Age --- */}
-                    <div className="sm:col-span-3">
+                    <div className="md:col-span-3">
                         <label htmlFor="age" className="block text-base/6 font-medium text-gray-900 dark:text-white">Age <RequiredMark /></label>
                         <div className="mt-2">
                             <input id="age" required type="number" name="age" min={1} max={120} placeholder="e.g. 45"
-                                className="block w-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
+                                className="block w-full rounded-lg shadow-sm transition h-10 bg-white px-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 md:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
                         </div>
                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Allowed range: <strong>1 - 120</strong> years.</p>
                     </div>
 
                     {/* --- Chest Pain Type --- */}
-                    <div className="sm:col-span-3">
+                    <div className="md:col-span-3">
                         <label htmlFor="chest-pain-type" className="block text-base/6 font-medium text-gray-900 dark:text-white">Chest pain type <RequiredMark /></label>
                         <div className="mt-2">
-                            <select id="chest-pain-type" required defaultValue="" name="chest-pain-type" className="block w-full rounded-lg bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-indigo-500">
+                            <select id="chest-pain-type" required defaultValue="" name="chest-pain-type" className="block w-full rounded-lg shadow-sm transition h-10 bg-white px-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 md:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-indigo-500">
                                 <option className="dark:bg-gray-800 dark:text-white" value="" disabled>Select the type of chest pain...</option>
                                 <option className="dark:bg-gray-800 dark:text-white" value="TA">Typical Angina</option>
                                 <option className="dark:bg-gray-800 dark:text-white" value="ATA">Atypical Angina</option>
@@ -246,40 +257,46 @@ export default function Predict() {
                     </div>
 
                     {/* --- Resting BP --- */}
-                    <div className="sm:col-span-3">
+                    <div className="md:col-span-3">
                         <label htmlFor="resting-bp" className="block text-base/6 font-medium text-gray-900 dark:text-white">Resting blood pressure <RequiredMark /></label>
                         <div className="mt-2">
                             <input id="resting-bp" required type="number" name="resting-bp" min={50} max={250} placeholder="e.g. 120"
-                                className="block w-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
+                                className="block w-full rounded-lg shadow-sm transition h-10 bg-white px-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 md:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
                         </div>
                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Systolic BP in <strong>mmHg</strong> (Range: 50 - 250).</p>
                     </div>
 
                     {/* --- Cholesterol --- */}
-                    <div className="sm:col-span-3">
+                    <div className="md:col-span-3">
                         <label htmlFor="cholesterol" className="block text-base/6 font-medium text-gray-900 dark:text-white">Cholesterol <RequiredMark /></label>
                         <div className="mt-2">
                             <input id="cholesterol" required type="number" name="cholesterol" min={0} max={600} placeholder="e.g. 210"
-                                className="block w-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
+                                className="block w-full rounded-lg shadow-sm transition h-10 bg-white px-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 md:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
                         </div>
                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Serum cholesterol in <strong>mg/dl</strong> (Range: 0 - 600).</p>
                     </div>
 
                     {/* --- Fasting BS --- */}
-                    <div className="sm:col-span-3">
+                    <div className="md:col-span-3">
                         <label htmlFor="fasting-bs" className="block text-base/6 font-medium text-gray-900 dark:text-white">Fasting blood sugar <RequiredMark /></label>
                         <div className="mt-2">
-                            <input id="fasting-bs" required type="number" name="fasting-bs" min={0} max={500} placeholder="e.g. 95"
-                                className="block w-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
+                            <select id="fasting-bs" name="fasting-bs" required defaultValue="" className="block w-full rounded-lg shadow-sm transition h-10 bg-white px-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 md:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-indigo-500">
+                                <option className="dark:bg-gray-800 dark:text-white rounded-2xl" value="" disabled> Is fasting blood sugar {'>'} 120 mg/dl?
+                                </option>
+                                <option className="dark:bg-gray-800 dark:text-white" value="1"> Yes ({'>'} 120 mg/dl)
+                                </option>
+                                <option className="dark:bg-gray-800 dark:text-white" value="0"> No (≤ 120 mg/dl)
+                                </option>
+                            </select>
                         </div>
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Measured in <strong>mg/dl</strong> after fasting (Range: 0 - 500).</p>
+                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Measured in <strong>mg/dl</strong> after fasting.</p>
                     </div>
 
                     {/* --- Resting ECG --- */}
-                    <div className="sm:col-span-3">
+                    <div className="md:col-span-3">
                         <label htmlFor="resting-ecg" className="block text-base/6 font-medium text-gray-900 dark:text-white">Resting ECG <RequiredMark /></label>
                         <div className="mt-2">
-                            <select id="resting-ecg" required defaultValue="" name="resting-ecg" className="block w-full rounded-lg bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-indigo-500">
+                            <select id="resting-ecg" required defaultValue="" name="resting-ecg" className="block w-full rounded-lg shadow-sm transition h-10 bg-white px-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 md:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-indigo-500">
                                 <option className="dark:bg-gray-800 dark:text-white" value="" disabled>Select result...</option>
                                 <option className="dark:bg-gray-800 dark:text-white" value="Normal">Normal</option>
                                 <option className="dark:bg-gray-800 dark:text-white" value="ST">ST-T wave abnormality</option>
@@ -290,20 +307,20 @@ export default function Predict() {
                     </div>
 
                     {/* --- Max Heart Rate --- */}
-                    <div className="sm:col-span-3">
+                    <div className="md:col-span-3">
                         <label htmlFor="max-hr" className="block text-base/6 font-medium text-gray-900 dark:text-white">Max heart rate <RequiredMark /></label>
                         <div className="mt-2">
                             <input id="max-hr" required type="number" name="max-hr" min={60} max={220} placeholder="e.g. 150"
-                                className="block w-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
+                                className="block w-full rounded-lg shadow-sm transition h-10 bg-white px-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 md:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
                         </div>
                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Max HR achieved in <strong>bpm</strong> (Range: 60 - 220).</p>
                     </div>
 
                     {/* --- Exercise Angina --- */}
-                    <div className="sm:col-span-3">
+                    <div className="md:col-span-3">
                         <label htmlFor="exercise-angina" className="block text-base/6 font-medium text-gray-900 dark:text-white">Exercise-induced angina <RequiredMark /></label>
                         <div className="mt-2">
-                            <select id="exercise-angina" required defaultValue="" name="exercise-angina" className="block w-full rounded-lg bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-indigo-500">
+                            <select id="exercise-angina" required defaultValue="" name="exercise-angina" className="block w-full rounded-lg shadow-sm transition h-10 bg-white px-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 md:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-indigo-500">
                                 <option className="dark:bg-gray-800 dark:text-white" value="" disabled>Did patient have angina?</option>
                                 <option className="dark:bg-gray-800 dark:text-white" value="Y">Yes</option>
                                 <option className="dark:bg-gray-800 dark:text-white" value="N">No</option>
@@ -313,20 +330,20 @@ export default function Predict() {
                     </div>
 
                     {/* --- Oldpeak --- */}
-                    <div className="sm:col-span-3">
+                    <div className="md:col-span-3">
                         <label htmlFor="oldpeak" className="block text-base/6 font-medium text-gray-900 dark:text-white">Oldpeak <RequiredMark /></label>
                         <div className="mt-2">
                             <input id="oldpeak" required type="number" name="oldpeak" step="0.1" min="0" max="6.2" placeholder="e.g. 1.5"
-                                className="block w-full rounded-lg bg-white px-3 py-1.5 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
+                                className="block w-full rounded-lg shadow-sm transition h-10 bg-white px-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 md:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
                         </div>
                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">ST depression induced by exercise (Range: 0 - 6.2).</p>
                     </div>
 
                     {/* --- ST Slope --- */}
-                    <div className="sm:col-span-3">
+                    <div className="md:col-span-3">
                         <label htmlFor="st-slope" className="block text-base/6 font-medium text-gray-900 dark:text-white">ST Slope <RequiredMark /></label>
                         <div className="mt-2">
-                            <select id="st-slope" required defaultValue="" name="st-slope" className="block w-full rounded-lg bg-white px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-indigo-500">
+                            <select id="st-slope" required defaultValue="" name="st-slope" className="block w-full rounded-lg shadow-sm transition h-10 bg-white px-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 md:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:focus:outline-indigo-500">
                                 <option className="dark:bg-gray-800 dark:text-white" value="" disabled>Select the slope curve...</option>
                                 <option className="dark:bg-gray-800 dark:text-white" value="Up">Upsloping</option>
                                 <option className="dark:bg-gray-800 dark:text-white" value="Flat">Flat</option>
@@ -351,14 +368,14 @@ export default function Predict() {
 
             {/* --- HIỂN THỊ KẾT QUẢ --- */}
             {result && (
-                <div ref={resultRef} className="mt-12 mb-12 animate-fade-in px-2 sm:px-8">
+                <div ref={resultRef} className="mt-12 mb-12 animate-fade-in px-2 md:px-8">
                     <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white pb-2 border-b border-gray-200 dark:border-gray-700">
                         Analysis Results
                     </h2>
 
                     {/* 1. Kết quả chẩn đoán */}
-                    <div className={`p-6 rounded-xl border-l-8 shadow-md mb-8 transition-all ${result.prediction === 1 ? 'bg-red-50 border-red-500 dark:bg-red-900/20' : 'bg-green-50 border-green-500 dark:bg-green-900/20'}`}>
-                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div className={`p-4 rounded-xl border-l-8 shadow-md mb-8 transition-all ${result.prediction === 1 ? 'bg-red-50 border-red-500 dark:bg-red-900/20' : 'bg-green-50 border-green-500 dark:bg-green-900/20'}`}>
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                             <div>
                                 <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">Diagnosis Prediction:</h3>
                                 <p className={`text-3xl font-bold mt-1 ${result.prediction === 1 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
@@ -378,8 +395,8 @@ export default function Predict() {
                         Detailed Explanation
                     </h3>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <div className="lg:col-span-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="md:col-span-2">
                             {renderChartImage(result.shap_waterfall, "Feature Impact Analysis (SHAP Waterfall)")}
                             <p className="text-sm text-gray-500 mt-2 text-center italic dark:text-gray-200">
                                 Visualizes how individual factors shift the prediction from the baseline.
@@ -387,13 +404,13 @@ export default function Predict() {
                                 while <span className="font-bold text-blue-500"> Blue bars</span> indicate factors decreasing the risk.
                             </p>
                         </div>
-                        <div className="lg:col-span-2">
+                        <div className="md:col-span-2">
                             {renderChartImage(result.shap_bar, "Global Feature Importance (SHAP Bar)")}
                             <p className="text-sm text-gray-500 mt-2 text-center italic dark:text-gray-200">
                                 Ranks the health indicators by their absolute impact on this prediction. Longer bars mean the AI considered these factors most critical for this patient.
                             </p>
                         </div>
-                        <div className="lg:col-span-2">
+                        <div className="md:col-span-2">
                             {renderChartImage(result.lime, "Local Interpretation (LIME)")}
                             <p className="text-sm text-gray-500 mt-2 text-center italic dark:text-gray-200">
                                 Independent verification: Analyzing which specific features support a "High Risk" diagnosis versus those supporting a "Normal" diagnosis.

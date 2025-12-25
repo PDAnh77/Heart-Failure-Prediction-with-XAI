@@ -191,11 +191,11 @@ model_evaluation(classifier_xgb)
 # model_evaluation(classifier_xgb)
 
 # ----------------------------------------------------------
-# SHAP (hoạt động trên DataFrame, nên có tên cột)
+# Local
 # ----------------------------------------------------------
 i = 0 # sample
-shap_explainer = shap.Explainer(classifier_xgb, x_train)    # x_train là DataFrame
-shap_values = shap_explainer(x_test)                       # x_test là DataFrame
+shap_explainer = shap.Explainer(classifier_xgb, x_train)
+shap_values = shap_explainer(x_test)                      
 
 # Plot SHAP
 print(f"Giải thích cho bệnh nhân thứ {i}:")
@@ -203,17 +203,10 @@ shap.plots.waterfall(shap_values[i], show=False)
 plt.title(f"Individual Prediction Explanation", fontsize=16)  
 plt.show()
 
-shap.plots.bar(shap_values, show=False)
+shap.plots.bar(shap_values[i], show=False)
 plt.title("Local Feature Importance Ranking", fontsize=16)
 plt.show()
 
-shap.plots.beeswarm(shap_values, show=False)
-plt.title("Global Feature Impact Distribution", fontsize=16)
-plt.show()
-
-# ----------------------------------------------------------
-# LIME
-# ----------------------------------------------------------
 explainer = LimeTabularExplainer(
     training_data=x_train.values,
     feature_names=x_train.columns,
@@ -227,6 +220,18 @@ exp = explainer.explain_instance(
 )
 
 fig = exp.as_pyplot_figure()
+plt.show()
+
+# ----------------------------------------------------------
+# Global
+# ----------------------------------------------------------
+
+shap.plots.bar(shap_values, show=False)
+plt.title("Globel Feature Importance Ranking", fontsize=16)
+plt.show()
+
+shap.plots.beeswarm(shap_values, show=False)
+plt.title("Global Feature Impact Distribution", fontsize=16)
 plt.show()
 
 # Cung cấp dữ liệu tham chiếu trước khi giải thích một dự đoán cụ thể

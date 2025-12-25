@@ -7,6 +7,7 @@ from services.patient_service import (
     create_patient_service,
     update_patient_service,
     delete_patient_service,
+    get_random_patient_service
 )
 
 router = APIRouter()
@@ -17,6 +18,10 @@ def get_patients(
     offset: int = Query(0, ge=0, description="Starting index"),
 ):
     return get_patients_service(limit, offset)
+
+@router.get("/rand")
+def get_random_patient():
+    return get_random_patient_service()
 
 @router.get("/{patient_id}", response_model=PatientGet)
 def get_patient(patient_id: str):

@@ -39,7 +39,7 @@ export default function Sidebar() {
 
     return (
         <>
-            <div className="md:hidden flex items-center p-2 bg-white dark:bg-[#141516] border border-gray-200 dark:border-[#FFFFFF1A] sticky top-0 z-40">
+            <div className="lg:hidden flex items-center p-2 bg-white dark:bg-[#141516] border-b border-gray-200 dark:border-[#FFFFFF1A] sticky top-0 z-40">
                 <button
                     className="p-2 rounded-xl cursor-pointer"
                     onClick={() => setOpen(true)}
@@ -51,7 +51,7 @@ export default function Sidebar() {
 
             <div
                 className={`
-                    fixed inset-0 bg-black/50 z-40 md:hidden 
+                    fixed inset-0 bg-black/50 z-40 lg:hidden 
                     transition-all duration-300 ease-in-out
                     ${open
                         ? "opacity-100 visible pointer-events-auto"
@@ -62,11 +62,11 @@ export default function Sidebar() {
             />
 
             <aside className={`
-                fixed inset-y-0 left-0 z-50 md:z-40 w-72 p-2 transition-transform duration-300 ease-in-out bg-gray-50 dark:bg-[#141516] md:bg-transparent md:dark:bg-transparent
+                fixed inset-y-0 left-0 z-50 lg:z-40 w-72 p-2 transition-transform duration-300 ease-in-out bg-gray-50 dark:bg-[#141516] lg:bg-transparent lg:dark:bg-transparent
                 ${open ? "translate-x-0" : "-translate-x-full"} 
-                md:static md:translate-x-0 md:min-h-screen
+                lg:static lg:translate-x-0 lg:min-h-screen
             `}>
-                <div className="bg-gray-50 rounded-xl h-full md:border md:border-gray-200 md:shadow-md flex flex-col justify-between dark:bg-[#141516] dark:border-[#FFFFFF1A] relative">
+                <div className="bg-gray-50 rounded-xl h-full lg:border lg:border-gray-200 lg:shadow-md flex flex-col justify-between dark:bg-[#141516] dark:border-[#FFFFFF1A] relative">
                     <ul className="space-y-2 mt-8 pb-8 px-2 ">
                         <p className="font-bold mb-4 mx-2">Heart failure predict</p>
 
