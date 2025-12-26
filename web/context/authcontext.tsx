@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { User } from "@/types/user";
 import { AuthContextType } from "@/types/authcontext";
 const AuthContext = createContext<AuthContextType | null>(null);
+import { api } from "@/lib/api";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -11,15 +12,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const res = await fetch("/api/user/me", {
-          credentials: "include"
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data);
+        const res = await api.get("/user/me");
+        const current_user: User = {
+          username: res.data.username,
+          email: res.data.email || null
+        };
+        if (current_user.username) {
+          setUser(current_user);
         }
-      } catch (err) {
-        console.error(err);
+      } catch (error: any) {
+        if (error.response?.status === 401) {
+          setUser(null);
+        } else {
+          console.error("Auth check failed:", error);
+        }
       } finally {
         setLoading(false);
       }

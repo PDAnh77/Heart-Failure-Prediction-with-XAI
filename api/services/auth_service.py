@@ -1,3 +1,4 @@
+from authlib.integrations.starlette_client import OAuth
 import jwt
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
@@ -7,8 +8,20 @@ from core.config import settings
 
 load_dotenv()
 algorithm = "HS256"
-secret = settings.SECRET_JWT_KEY
+secret = settings.SECRET_KEY
 password_hash = PasswordHash.recommended()
+
+oauth = OAuth()
+oauth.register(
+    name="auth_google",
+    client_id=settings.GOOGLE_CLIENT_ID,
+    client_secret=settings.GOOGLE_CLIENT_SECRET,
+    authorize_url="https://accounts.google.com/o/oauth2/auth",
+    authorize_params={"scope": "openid email profile"},
+    access_token_url="https://accounts.google.com/o/oauth2/token",
+    jwks_uri="https://www.googleapis.com/oauth2/v3/certs",
+    client_kwargs={"scope": "openid profile email"},
+)
 
 def verify_password(plain_password: str, hashed_password: str):
     return password_hash.verify(plain_password, hashed_password)
@@ -25,7 +38,7 @@ def generate_token(username: str):
     return encode_jwt
 
 def validate_token(request: Request):
-    token = request.cookies.get("session")
+    token = request.cookies.get("access_token")
     if not token:
         raise HTTPException(
             status_code=401,
@@ -40,5 +53,5 @@ def validate_token(request: Request):
     
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.JWTError:
+    except jwt.PyJWKError:
         raise HTTPException(status_code=401, detail="Invalid token")

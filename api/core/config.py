@@ -3,7 +3,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     DATABASE_URL: str
     DATABASE_KEY: str
-    SECRET_JWT_KEY: str
+    SECRET_KEY: str
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+    REDIRECT_URI:str
     RENDER_APP_URL: str
     NEXT_APP_URL: str
 

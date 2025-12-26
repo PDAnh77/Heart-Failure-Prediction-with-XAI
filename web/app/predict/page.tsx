@@ -3,8 +3,10 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState, useRef, useEffect } from "react";
 import { toast } from "react-toastify";
 import { PredictionResult } from "@/types/prediction";
+import { Patient } from "@/types/patient"
 import { useAuth } from "@/context/authcontext";
 import Image from "next/image";
+import { api } from "@/lib/api";
 
 export default function Predict() {
     const router = useRouter();
@@ -34,16 +36,8 @@ export default function Predict() {
                 autoFillBtnRef.current.disabled = true;
             }
 
-            const response = await fetch('/api/patients/rand');
-            if (response.status == 401) {
-                logout()
-                toast.warning("Session expired. Please sign in again.");
-                router.push("/login");
-                return
-            }
-
-            const result = await response.json();
-            const patient = result.data[0];
+            const res = await api.get("/patients/rand");
+            const patient: Patient = res.data.data[0];
 
             if (!patient) return;
 
@@ -58,9 +52,13 @@ export default function Predict() {
             (form.querySelector('#exercise-angina') as HTMLSelectElement).value = String(patient.exercise_angina);
             (form.querySelector('#oldpeak') as HTMLInputElement).value = String(patient.oldpeak);
             (form.querySelector('#st-slope') as HTMLSelectElement).value = String(patient.st_slope);
-
-            toast.info("Form auto-filled with sample data.");
         } catch (error: any) {
+            if (error.response?.status === 401) {
+                logout();
+                toast.warning("Session expired. Please sign in again.");
+                router.push("/login");
+                return;
+            }
             console.error(error.message);
             toast.error("Failed to auto-fill form.");
         } finally {
@@ -81,8 +79,6 @@ export default function Predict() {
             behavior: "smooth",
             block: "start",
         });
-
-        toast.info("Form cleared.");
     };
 
     useEffect(() => {
@@ -113,51 +109,33 @@ export default function Predict() {
         setResult(null);
 
         const formData = new FormData(e.currentTarget);
-
-        const rawFastingBS = parseInt(formData.get("fasting-bs") as string)
-        const fastingBS = rawFastingBS > 120 ? 1 : 0;
-
         const payload = {
             age: parseInt(formData.get("age") as string),
             sex: formData.get("gender"),
             chest_pain_type: formData.get("chest-pain-type"),
             resting_bp: parseInt(formData.get("resting-bp") as string),
             cholesterol: parseInt(formData.get("cholesterol") as string),
-            fasting_bs: fastingBS,
+            fasting_bs: parseInt(formData.get("fasting-bs") as string),
             resting_ecg: formData.get("resting-ecg"),
             max_hr: parseInt(formData.get("max-hr") as string),
             exercise_angina: formData.get("exercise-angina"),
             oldpeak: parseFloat(formData.get("oldpeak") as string),
             st_slope: formData.get("st-slope"),
         };
-
         console.log("Payload sending to API:", JSON.stringify(payload, null, 2));
 
         try {
-            const res = await fetch("/api/predict", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                credentials: "include",
-                body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) {
-                if (res.status === 401) {
-                    toast.error("Session expired. Please sign in again.");
-                    logout();
-                    router.push("/login");
-                    return;
-                }
-                throw new Error("API Error");
-            }
-
-            const data: PredictionResult = await res.json();
-            console.log("API result:", data);
+            const res = await api.post("/predict", payload);
+            const data: PredictionResult = res.data;
             setResult(data);
-            toast.success("Success!");
-        } catch (error) {
+            console.log("API result:", data);
+        } catch (error: any) {
+            if (error.response?.status === 401) {
+                toast.error("Session expired. Please sign in again.");
+                logout();
+                router.push("/login");
+                return;
+            }
             console.error(error);
             toast.error("An error occurred during prediction.");
         } finally {
@@ -201,25 +179,6 @@ export default function Predict() {
             </div>
             <form ref={formRef} onSubmit={handleSubmit} className="mt-12 border-b border-gray-900/10 pb-8 px-2 md:px-8 dark:border-white/10">
                 <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6">
-
-                    {/* --- First Name --- */}
-                    <div className="md:col-span-3">
-                        <label htmlFor="first-name" className="block text-base/6 font-medium text-gray-900 dark:text-white">First name</label>
-                        <div className="mt-2">
-                            <input id="first-name" type="text" name="first-name" autoComplete="given-name" placeholder="e.g. John"
-                                className="block w-full rounded-lg shadow-sm transition h-10 bg-white px-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 md:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
-                        </div>
-                    </div>
-
-                    {/* --- Last Name --- */}
-                    <div className="md:col-span-3">
-                        <label htmlFor="last-name" className="block text-base/6 font-medium text-gray-900 dark:text-white">Last name</label>
-                        <div className="mt-2">
-                            <input id="last-name" type="text" name="last-name" autoComplete="family-name" placeholder="e.g. Doe"
-                                className="block w-full rounded-lg shadow-sm transition h-10 bg-white px-3 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 md:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500" />
-                        </div>
-                    </div>
-
                     {/* --- Gender --- */}
                     <div className="md:col-span-3">
                         <label htmlFor="gender" className="block text-base/6 font-medium text-gray-900 dark:text-white">Gender <RequiredMark /></label>

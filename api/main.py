@@ -6,6 +6,7 @@ import httpx, asyncio
 from core.model_loader import load_model_startup
 from core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
 async def ping_self():
     url = settings.RENDER_APP_URL
@@ -35,22 +36,16 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Heart Disease Prediction API", openapi_url="/api/openapi.json", docs_url="/docs", lifespan=lifespan)
 
-origins = [
-    "http://localhost:3000",
-]
-
-if settings.NEXT_APP_URL:
-    origins.append(settings.NEXT_APP_URL)
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=settings.NEXT_APP_URL,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY, session_cookie="oauth_state_session")
 
-app.include_router(user_router.router, prefix="/api/user", tags=["User"])
+app.include_router(user_router.router, prefix="/api", tags=["User"])
 app.include_router(predict_router.router, prefix="/api/predict", tags=["Heart failure prediction"], dependencies=[Depends(validate_token)])
 app.include_router(patient_router.router, prefix="/api/patients", tags=["Patients"], dependencies=[Depends(validate_token)])
 

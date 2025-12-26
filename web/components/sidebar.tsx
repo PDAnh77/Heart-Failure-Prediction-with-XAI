@@ -1,18 +1,20 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from 'react-toastify';
 import LogoutModal from "@/components/modalLogout";
 import { useAuth } from "@/context/authcontext"
 import { TbLayoutSidebarFilled } from "react-icons/tb";
 import { FaMicroscope, FaGear, FaHouse, FaRightToBracket, FaRightFromBracket, FaRocket } from "react-icons/fa6";
+import { api } from "@/lib/api";
 
 export default function Sidebar() {
     const [open, setOpen] = useState(false);
     const pathname = usePathname();
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const { user, logout } = useAuth();
+    const router = useRouter();
 
     const handleLogoutClick = () => {
         setShowLogoutModal(true);
@@ -20,16 +22,13 @@ export default function Sidebar() {
 
     const handleLogout = async () => {
         try {
-            const res = await fetch("/api/user/logout", {
-                method: "POST",
-                credentials: "include"
-            });
-            if (!res.ok) throw new Error("Logout failed");
+            const res = api.post("auth/logout")
             logout();
             setShowLogoutModal(false);
             setOpen(false);
-            toast.success("Logout successful.");
-        } catch (err) {
+            router.push("/login")
+        } catch (error: any) {
+            console.log(error);
             toast.error("Logout failed.");
         }
     };
