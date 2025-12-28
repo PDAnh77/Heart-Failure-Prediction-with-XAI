@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-COPY ./api .
+COPY . .
 
 RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true
 

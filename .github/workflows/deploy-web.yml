@@ -1,0 +1,15 @@
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "web/**"
+
+jobs:
+  deploy_web:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel deploy (Web)
+        run: curl -X POST "$VERCEL_DEPLOY_HOOK"
+        env:
+          VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}

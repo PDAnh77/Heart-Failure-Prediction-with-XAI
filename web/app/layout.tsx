@@ -39,7 +39,7 @@ export default function RootLayout({
             <main className="flex-1 p-4 h-full overflow-y-auto">
               <Snow />
               {children}
-              <ToastContainer position="top-right" transition={Slide} autoClose={3000} hideProgressBar />
+              <ToastContainer position="top-right" transition={Slide} autoClose={3000} hideProgressBar closeOnClick/>
               <Analytics />
               <SpeedInsights />
             </main>

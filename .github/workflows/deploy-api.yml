@@ -1,9 +1,11 @@
-name: Docker Image CI
+name: API CI/CD (Build → Scan → Push → Deploy)
 
 on:
   push:
     branches:
       - "**"
+    paths:
+      - "api/**"
 
 env:
   IMAGE_NAME: heart-failure-api
@@ -17,13 +19,14 @@ permissions:
 
 jobs:
   build_image:
+    name: Build Docker Image
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -t $DOCKER_USERNAME/$IMAGE_NAME:$IMAGE_TAG .
+        run: docker build -t $DOCKER_USERNAME/$IMAGE_NAME:$IMAGE_TAG ./api
 
       - name: Save Docker image as artifact
         run: docker save $DOCKER_USERNAME/$IMAGE_NAME:$IMAGE_TAG | gzip > image.tar.gz
@@ -33,8 +36,10 @@ jobs:
         with:
           name: docker-image
           path: image.tar.gz
+          retention-days: 3
   
   scan_image:
+    name: Trivy Security Scan
     runs-on: ubuntu-latest
     needs: build_image
     steps:
@@ -70,6 +75,7 @@ jobs:
           sarif_file: trivy-results.sarif
 
   push_image:
+    name: Push Image & Deploy API
     runs-on: ubuntu-latest
     needs: scan_image
     if: github.ref == 'refs/heads/main'
@@ -87,3 +93,8 @@ jobs:
 
       - name: Push Docker image
         run: docker push $DOCKER_USERNAME/$IMAGE_NAME:$IMAGE_TAG
+
+      - name: Trigger Render deploy (API)
+        run: curl -X POST "$RENDER_DEPLOY_HOOK"
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}

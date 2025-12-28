@@ -1,12 +1,10 @@
 from authlib.integrations.starlette_client import OAuth
 import jwt
-from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from fastapi import HTTPException, Request
 from pwdlib import PasswordHash
 from core.config import settings
 
-load_dotenv()
 algorithm = "HS256"
 secret = settings.SECRET_KEY
 password_hash = PasswordHash.recommended()
