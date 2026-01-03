@@ -3,24 +3,32 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --sidebar-bg: #f9fafb; /* Xám cực nhẹ cho Light Mode */
+  --sidebar-border: #e5e7eb;
+}
+
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --sidebar-bg: #141516; /* Màu đen bạn đã chọn */
+  --sidebar-border: rgba(255, 255, 255, 0.1);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-sidebar: var(--sidebar-bg);
+  --color-sidebar-border: var(--sidebar-border);
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
+  color: var(--foreground); /* Màu chữ chính sẽ tự động đổi theo biến --foreground */
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease; /* Thêm hiệu ứng chuyển màu mượt mà */
+}
+
+h1, h2, h3, h4, h5, h6, p, span, label, div {
+  color: var(--foreground);
 }

@@ -1,13 +1,13 @@
+// app/setting/page.tsx
 "use client";
-import { useState } from 'react'
 import SettingRow from "@/components/settingRow"
+import { useSettings } from "@/context/settingscontext"; // Sử dụng context
 
 export default function Settings() {
-    const [darkMode, setDarkMode] = useState(false)
-    const [snowMode, setSnowMode] = useState(true)
+    const { darkMode, setDarkMode, snowMode, setSnowMode } = useSettings();
 
     return (
-        <div className="p-4">
+        <div className="p-4 relative z-10"> {/* z-10 để nội dung nằm trên lớp tuyết */}
             <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Customize Display</h1>
             <div className="max-w-xl divide-y divide-gray-200 dark:divide-gray-700">
                 <SettingRow 
