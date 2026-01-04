@@ -34,22 +34,18 @@ export default function Sidebar() {
     };
 
     const itemClass = (active: boolean) =>
-        `rounded-xl transition ${
-            active 
-                ? "bg-gray-100 font-bold dark:text-white dark:bg-white/10" 
-                : "hover:bg-gray-100 font-normal dark:hover:bg-white/10"
-            }`;
+        `rounded-xl transition ${active ? "bg-gray-100 font-semibold text-sm dark:text-white dark:bg-white/10" : "hover:bg-gray-100 text-sm dark:hover:bg-white/10"}`;
 
     return (
         <>
-            <div className="lg:hidden flex items-center p-2 bg-background border-b border-sidebar-border sticky top-0 z-40">
+            <div className="lg:hidden flex items-center p-2 bg-white dark:bg-[#141516] border-b border-gray-200 dark:border-[#FFFFFF1A] sticky top-0 z-40">
                 <button
                     className="p-2 rounded-xl cursor-pointer"
                     onClick={() => setOpen(true)}
                 >
-                    <TbLayoutSidebarFilled className="text-xl text-foreground" />
+                    <TbLayoutSidebarFilled className="text-xl" />
                 </button>
-                <span className="font-bold ml-2 text-foreground">Heart failure predict</span>
+                <span className="font-bold ml-2">Heart Failure Predict</span>
             </div>
 
             <div
@@ -65,31 +61,30 @@ export default function Sidebar() {
             />
 
             <aside className={`
-                fixed inset-y-0 left-0 z-50 lg:z-40 w-72 p-2 transition-transform duration-300 ease-in-out 
-                bg-background dark:bg-sidebar-bg 
+                fixed inset-y-0 left-0 z-50 lg:z-40 w-72 p-2 transition-transform duration-300 ease-in-out bg-gray-50 dark:bg-[#141516] lg:bg-transparent lg:dark:bg-transparent
                 ${open ? "translate-x-0" : "-translate-x-full"} 
                 lg:static lg:translate-x-0 lg:min-h-screen
             `}>
-                <div className="bg-sidebar rounded-xl h-full lg:border lg:border-sidebar-border lg:shadow-md flex flex-col justify-between relative">
-                    <ul className="space-y-2 mt-8 pb-8 px-2 "> 
-                        <p className="font-bold mb-4 mx-2 text-foreground">Heart failure predict</p>
+                <div className="bg-gray-50 rounded-xl h-full lg:border lg:border-gray-200 lg:shadow-md flex flex-col justify-between dark:bg-[#18181B] dark:border-[#FFFFFF1A] relative">
+                    <ul className="space-y-2 mt-8 pb-8 px-2">
+                        <p className="font-bold mb-8 mx-2 text-sm">Heart Failure Predict</p>
 
                         <li className={itemClass(pathname === "/")} onClick={() => setOpen(false)}>
-                            <Link href="/" className="flex items-center gap-2 p-2 text-foreground">
+                            <Link href="/" className="flex gap-2 p-2">
                                 <FaHouse className="text-lg" />
                                 <span>Home</span>
                             </Link>
                         </li>
 
                         <li className={itemClass(pathname === "/predict")} onClick={() => setOpen(false)}>
-                            <Link href="/predict" className="flex items-center gap-2 p-2 text-foreground">
+                            <Link href="/predict" className="flex gap-2 p-2">
                                 <FaMicroscope className="text-lg" />
                                 <span>Predict</span>
                             </Link>
                         </li>
 
                         <li className={itemClass(pathname === "/setting")} onClick={() => setOpen(false)}>
-                            <Link href="/setting" className="flex items-center gap-2 p-2 w-full text-foreground">
+                            <Link href="/setting" className="flex gap-2 p-2 w-full">
                                 <FaGear className="text-lg" />
                                 <span>Setting</span>
                             </Link>
@@ -97,14 +92,14 @@ export default function Sidebar() {
 
                         {user ? (
                             <li className={itemClass(false)} onClick={handleLogoutClick}>
-                                <div className="flex items-center gap-2 p-2 w-full hover:cursor-pointer">
+                                <div className="flex gap-2 p-2 w-full hover:cursor-pointer">
                                     <FaRightFromBracket className="text-lg" />
                                     <span>Logout</span>
                                 </div>
                             </li>
                         ) : (
                             <li className={itemClass(pathname === "/login")} onClick={() => setOpen(false)}>
-                                <Link href="/login" className="flex items-center gap-2 p-2 w-full text-foreground">
+                                <Link href="/login" className="flex gap-2 p-2 w-full">
                                     <FaRightToBracket className="text-lg" />
                                     <span>Sign in</span>
                                 </Link>

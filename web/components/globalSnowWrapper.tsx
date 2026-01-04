@@ -4,6 +4,6 @@ import Snow from "./snow";
 
 export default function GlobalSnowWrapper() {
     const { snowMode } = useSettings();
-    if (!snowMode) return null; // Nếu tắt snowMode thì không render canvas
+    if (!snowMode) return null;
     return <Snow />;
 }

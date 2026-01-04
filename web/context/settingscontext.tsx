@@ -1,44 +1,24 @@
-"use client";
-import React, { createContext, useContext, useEffect, useState } from 'react';
-
-interface SettingsContextType {
-    darkMode: boolean;
-    setDarkMode: (val: boolean) => void;
-    snowMode: boolean;
-    setSnowMode: (val: boolean) => void;
-}
+'use client';
+import { createContext, useContext, useEffect, useState } from 'react';
+import Cookies from 'js-cookie';
+import { SettingsContextType } from '@/types/settingscontext';
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-export function SettingsProvider({ children }: { children: React.ReactNode }) {
-    const [darkMode, setDarkMode] = useState(false);
+export const SettingsProvider = ({ children }: { children: React.ReactNode }) => {
     const [snowMode, setSnowMode] = useState(true);
+    const [isReady, setIsReady] = useState(false);
 
-    // Load cấu hình từ localStorage khi khởi chạy
     useEffect(() => {
-        const savedDark = localStorage.getItem('darkMode') === 'true';
-        const savedSnow = localStorage.getItem('snowMode') !== 'false'; // mặc định là true
-        setDarkMode(savedDark);
-        setSnowMode(savedSnow);
+        const snow = Cookies.get('snow_mode');
+        if (snow !== undefined) {
+            setSnowMode(snow === 'true');
+        }
+        setIsReady(true);
     }, []);
 
-    // Xử lý logic Dark Mode (Thêm class 'dark' vào thẻ html)
-    useEffect(() => {
-        if (darkMode) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-        localStorage.setItem('darkMode', darkMode.toString());
-    }, [darkMode]);
-
-    // Lưu trạng thái Snow Mode
-    useEffect(() => {
-        localStorage.setItem('snowMode', snowMode.toString());
-    }, [snowMode]);
-
     return (
-        <SettingsContext.Provider value={{ darkMode, setDarkMode, snowMode, setSnowMode }}>
+        <SettingsContext.Provider value={{ snowMode, setSnowMode, isReady }}>
             {children}
         </SettingsContext.Provider>
     );
@@ -46,6 +26,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
 export const useSettings = () => {
     const context = useContext(SettingsContext);
-    if (!context) throw new Error("useSettings must be used within SettingsProvider");
+    if (!context) {
+        throw new Error('useSettings must be used within a SettingsProvider');
+    }
     return context;
 };
