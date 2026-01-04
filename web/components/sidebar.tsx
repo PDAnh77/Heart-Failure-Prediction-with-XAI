@@ -34,7 +34,7 @@ export default function Sidebar() {
     };
 
     const itemClass = (active: boolean) =>
-        `rounded-xl transition ${active ? "bg-gray-100 font-bold dark:text-white dark:bg-white/10" : "hover:bg-gray-100 font-normal dark:hover:bg-white/10"}`;
+        `rounded-xl transition ${active ? "bg-gray-100 font-semibold text-sm dark:text-white dark:bg-white/10" : "hover:bg-gray-100 text-sm dark:hover:bg-white/10"}`;
 
     return (
         <>
@@ -45,7 +45,7 @@ export default function Sidebar() {
                 >
                     <TbLayoutSidebarFilled className="text-xl" />
                 </button>
-                <span className="font-bold ml-2">Heart failure predict</span>
+                <span className="font-bold ml-2">Heart Failure Predict</span>
             </div>
 
             <div
@@ -65,26 +65,26 @@ export default function Sidebar() {
                 ${open ? "translate-x-0" : "-translate-x-full"} 
                 lg:static lg:translate-x-0 lg:min-h-screen
             `}>
-                <div className="bg-gray-50 rounded-xl h-full lg:border lg:border-gray-200 lg:shadow-md flex flex-col justify-between dark:bg-[#141516] dark:border-[#FFFFFF1A] relative">
-                    <ul className="space-y-2 mt-8 pb-8 px-2 ">
-                        <p className="font-bold mb-4 mx-2">Heart failure predict</p>
+                <div className="bg-gray-50 rounded-xl h-full lg:border lg:border-gray-200 lg:shadow-md flex flex-col justify-between dark:bg-[#18181B] dark:border-[#FFFFFF1A] relative">
+                    <ul className="space-y-2 mt-8 pb-8 px-2">
+                        <p className="font-bold mb-8 mx-2 text-sm">Heart Failure Predict</p>
 
                         <li className={itemClass(pathname === "/")} onClick={() => setOpen(false)}>
-                            <Link href="/" className="flex items-center gap-2 p-2">
+                            <Link href="/" className="flex gap-2 p-2">
                                 <FaHouse className="text-lg" />
                                 <span>Home</span>
                             </Link>
                         </li>
 
                         <li className={itemClass(pathname === "/predict")} onClick={() => setOpen(false)}>
-                            <Link href="/predict" className="flex items-center gap-2 p-2">
+                            <Link href="/predict" className="flex gap-2 p-2">
                                 <FaMicroscope className="text-lg" />
                                 <span>Predict</span>
                             </Link>
                         </li>
 
                         <li className={itemClass(pathname === "/setting")} onClick={() => setOpen(false)}>
-                            <Link href="/setting" className="flex items-center gap-2 p-2 w-full">
+                            <Link href="/setting" className="flex gap-2 p-2 w-full">
                                 <FaGear className="text-lg" />
                                 <span>Setting</span>
                             </Link>
@@ -92,14 +92,14 @@ export default function Sidebar() {
 
                         {user ? (
                             <li className={itemClass(false)} onClick={handleLogoutClick}>
-                                <div className="flex items-center gap-2 p-2 w-full hover:cursor-pointer">
+                                <div className="flex gap-2 p-2 w-full hover:cursor-pointer">
                                     <FaRightFromBracket className="text-lg" />
                                     <span>Logout</span>
                                 </div>
                             </li>
                         ) : (
                             <li className={itemClass(pathname === "/login")} onClick={() => setOpen(false)}>
-                                <Link href="/login" className="flex items-center gap-2 p-2 w-full">
+                                <Link href="/login" className="flex gap-2 p-2 w-full">
                                     <FaRightToBracket className="text-lg" />
                                     <span>Sign in</span>
                                 </Link>
@@ -108,13 +108,13 @@ export default function Sidebar() {
                     </ul>
 
                     <div className="p-2 pb-4">
-                        <div className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-100 transition border border-transparent dark:hover:bg-white/10">
+                        <div className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition border border-transparent">
                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-xl bg-black flex items-center justify-center text-white">
+                                <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
                                     <FaRocket className="text-sm" />
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-sm font-bold text-gray-900 dark:text-white">
+                                    <span className="text-sm font-bold text-foreground">
                                         {user ? user.username : "Guest"}
                                     </span>
                                 </div>

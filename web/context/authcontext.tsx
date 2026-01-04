@@ -2,8 +2,9 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { User } from "@/types/user";
 import { AuthContextType } from "@/types/authcontext";
-const AuthContext = createContext<AuthContextType | null>(null);
 import { api } from "@/lib/api";
+
+const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
