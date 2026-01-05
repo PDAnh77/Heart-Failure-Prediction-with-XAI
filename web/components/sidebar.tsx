@@ -22,7 +22,7 @@ export default function Sidebar() {
 
     const handleLogout = async () => {
         try {
-            const res = api.post("auth/logout")
+            api.post("auth/logout")
             logout();
             setShowLogoutModal(false);
             setOpen(false);

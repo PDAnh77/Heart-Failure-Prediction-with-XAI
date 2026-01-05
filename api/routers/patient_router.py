@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
+from services.auth_service import validate_token
 from schemas.patient_schema import PatientGet, PatientCreate, PatientUpdate
 
 from services.patient_service import (
@@ -28,8 +29,8 @@ def get_patient(patient_id: str):
     return get_patient_service(patient_id)
 
 @router.post("/")
-def create_patient(new_patient: PatientCreate):
-    return create_patient_service(new_patient.model_dump())
+def create_patient(new_patient: PatientCreate, user_id: str = Depends(validate_token)):
+    return create_patient_service(new_patient.model_dump(), user_id)
 
 @router.put("/{patient_id}")
 def update_patient(patient_id: str, patient: PatientUpdate):

@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { User } from "@/types/user";
 import { AuthContextType } from "@/types/authcontext";
-import { api } from "@/lib/api";
+import { api, setAccessToken } from "@/lib/api";
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -14,16 +14,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const checkUser = async () => {
       try {
         const res = await api.get("/user/me");
-        const current_user: User = {
-          username: res.data.username,
-          email: res.data.email || null
-        };
-        if (current_user.username) {
-          setUser(current_user);
-        }
+        setUser(res.data);
       } catch (error: any) {
         if (error.response?.status === 401) {
           setUser(null);
+          setAccessToken(null);
         } else {
           console.error("Auth check failed:", error);
         }
@@ -35,11 +30,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const login = (userData: User) => {
+    setAccessToken(userData.access_token);
     setUser(userData);
   };
 
   const logout = () => {
     setUser(null);
+    setAccessToken(null);
   };
 
   return (

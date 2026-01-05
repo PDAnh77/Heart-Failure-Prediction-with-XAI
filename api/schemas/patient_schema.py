@@ -14,10 +14,8 @@ class PatientBase(BaseModel):
     st_slope: str = Field(..., pattern="^(Up|Flat|Down)$", description="The slope of the peak exercise ST segment [Up: upsloping, Flat: flat, Down: downsloping]")
 
 class PatientGet(PatientBase):
+    id: str
     heart_disease: int = Field(default=0, ge=0, le=1)
-    
-class PatientCreate(PatientGet):
-    pass
 
 class PatientUpdate(BaseModel):
     age: int | None = Field(None, ge=1, le=120)
@@ -32,3 +30,6 @@ class PatientUpdate(BaseModel):
     oldpeak: float | None = Field(None, ge=0.0)
     st_slope: str | None = Field(None, pattern="^(Up|Flat|Down)$")
     heart_disease: int | None = Field(None, ge=0, le=1)
+
+class PatientCreate(PatientUpdate):
+    pass

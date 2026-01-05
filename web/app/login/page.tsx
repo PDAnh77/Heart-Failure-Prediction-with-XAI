@@ -37,7 +37,8 @@ export default function Login() {
         try {
             const res = await api.post("/auth/login", payload)
             const current_user: User = res.data
-            login({ username: current_user.username, email: null })
+
+            login(current_user)
             router.push("/predict")
         } catch (error: any) {
             if (error.response?.status === 401) {
