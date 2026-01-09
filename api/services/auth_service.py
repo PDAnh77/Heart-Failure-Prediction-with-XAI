@@ -1,13 +1,17 @@
+import hashlib
+import secrets
 from authlib.integrations.starlette_client import OAuth
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 import jwt
-from datetime import datetime, timedelta
-from fastapi import HTTPException, Request
+from datetime import datetime, timedelta, timezone
+from fastapi import Depends, HTTPException
 from pwdlib import PasswordHash
 from core.config import settings
 
 algorithm = "HS256"
 secret = settings.SECRET_KEY
 password_hash = PasswordHash.recommended()
+security_scheme = HTTPBearer()
 
 oauth = OAuth()
 oauth.register(
@@ -27,29 +31,31 @@ def verify_password(plain_password: str, hashed_password: str):
 def get_password_hash(password: str):
     return password_hash.hash(password)
 
-def generate_token(username: str):
-    expire = datetime.now() + timedelta(hours=1)
-    to_encode = {
-        "exp": expire, "username": username
+def generate_access_token(user_id: str):
+    expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    payload = {
+        "sub": user_id,
+        "exp": expire,
+        "type": "access"
     }
-    encode_jwt = jwt.encode(to_encode, secret, algorithm=algorithm)
+    encode_jwt = jwt.encode(payload, secret, algorithm=algorithm)
     return encode_jwt
 
-def validate_token(request: Request):
-    token = request.cookies.get("access_token")
-    if not token:
-        raise HTTPException(
-            status_code=401,
-            detail="Not authenticated",
-        )
+def generate_refresh_token():
+    return secrets.token_urlsafe(64)
+
+def hash_token(token: str):
+    return hashlib.sha256(token.encode()).hexdigest()
+
+def validate_token(credentials: HTTPAuthorizationCredentials = Depends(security_scheme)):
+    token = credentials.credentials
     try:
-        payload = jwt.decode(token, secret, algorithms=algorithm)
-        username = payload.get("username")
-        if not username:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        return username
-    
+        payload = jwt.decode(token, secret, algorithms=[algorithm])
+        if payload.get("type") != "access":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+        return payload["sub"]
+
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.PyJWKError:
+    except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")

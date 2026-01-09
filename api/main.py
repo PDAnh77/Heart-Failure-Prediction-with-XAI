@@ -47,7 +47,7 @@ app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY, session_co
 
 app.include_router(user_router.router, prefix="/api", tags=["User"])
 app.include_router(predict_router.router, prefix="/api/predict", tags=["Heart failure prediction"], dependencies=[Depends(validate_token)])
-app.include_router(patient_router.router, prefix="/api/patients", tags=["Patients"], dependencies=[Depends(validate_token)])
+app.include_router(patient_router.router, prefix="/api/patients", tags=["Patient"], dependencies=[Depends(validate_token)])
 
 @app.get("/")
 def root():

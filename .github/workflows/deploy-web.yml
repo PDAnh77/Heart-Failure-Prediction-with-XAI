@@ -1,13 +1,52 @@
+name: Web Deploy
+
 on:
   push:
     branches:
-      - main
+      - "**"
     paths:
       - "web/**"
 
+permissions:
+  contents: read
+  security-events: write
+
 jobs:
-  deploy_web:
+  scan_fs:
+    name: Trivy Security Scan
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Trivy Scan (Security Gate)
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: fs
+          scan-ref: web
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: 1
+
+      - name: Trivy Scan (SARIF Report)
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          scan-type: fs
+          scan-ref: web
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+
+      - name: Upload Trivy SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-results.sarif
+
+  deploy_web:
+    name: Deploy Web
+    runs-on: ubuntu-latest
+    needs: scan_fs
+    if: github.ref == 'refs/heads/main'
     steps:
       - name: Trigger Vercel deploy (Web)
         run: curl -X POST "$VERCEL_DEPLOY_HOOK"
