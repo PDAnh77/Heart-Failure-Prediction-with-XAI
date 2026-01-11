@@ -174,7 +174,7 @@ export default function Sidebar() {
                             className="text-sm cursor-pointer flex items-center text-gray-500 dark:text-gray-300 mb-2"
                             onClick={() => setShowPredictions(!showPredictions)}
                         >
-                            <span className="ml-2 mr-1">Recent Analyses</span>
+                            <span className="ml-2 mr-1">Recent analyses</span>
                             {showPredictions ? <IoIosArrowDown /> : <IoIosArrowForward />}
                         </div>
 

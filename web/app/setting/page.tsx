@@ -15,13 +15,13 @@ export default function Settings() {
             <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Customize Display</h1>
             <div className="max-w-xl divide-y divide-gray-200 dark:divide-gray-700">
                 <SettingRow
-                    title="Dark Mode"
+                    title="Dark mode"
                     description="Switch between light and dark themes to reduce eye strain."
                     enabled={isDarkMode}
                     setEnabled={(value) => setTheme(value ? 'dark' : 'light')}
                 />
                 <SettingRow
-                    title="Snowfall Effect"
+                    title="Snowfall effect"
                     description="Enable winter animation with falling snow on the background."
                     enabled={snowMode}
                     setEnabled={setSnowMode}

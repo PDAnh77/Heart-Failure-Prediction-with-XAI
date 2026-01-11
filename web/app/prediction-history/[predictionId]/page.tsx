@@ -3,7 +3,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import Image from "next/image";
-import { FaUserCheck, FaNotesMedical } from "react-icons/fa6";
+import { FaUser, FaNotesMedical } from "react-icons/fa6";
 import { FaHeartbeat } from "react-icons/fa";
 import { PredictionHistoryDetail } from "@/types/prediction";
 
@@ -92,7 +92,7 @@ export default function PredictionDetailPage() {
                         {/* 1. Patient Data Card */}
                         <div className="bg-white dark:bg-[#18181B] p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-[#FFFFFF1A]">
                             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                                <FaUserCheck className="text-indigo-500" /> Patient Data
+                                <FaUser className="text-indigo-500" /> Patient Data
                             </h3>
                             <div className="grid grid-cols-2 gap-4 text-sm">
                                 <InfoItem label="Age" value={result.input_data.age} />
