@@ -1,7 +1,7 @@
 "use client"
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react"
-import { toast } from 'react-toastify';
+import { toast } from 'react-hot-toast';
 import { useAuth } from "@/context/authcontext";
 import { User } from "@/types/user";
 import { FcGoogle } from "react-icons/fc";
@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 export default function Login() {
     const [username, setUsername] = useState("")
     const [password, setPassword] = useState("")
+    const [errors, setErrors] = useState({ username: "", password: "" })
     const [loading, setLoading] = useState(false)
     const router = useRouter()
     const { login, user } = useAuth();
@@ -26,8 +27,25 @@ export default function Login() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setLoading(true)
+        setErrors({ username: "", password: "" })
         toast.dismiss();
+        let hasError = false;
+        const newErrors = { username: "", password: "" };
+
+        if (!username.trim()) {
+            newErrors.username = "Please enter your username.";
+            hasError = true;
+        }
+        if (!password) {
+            newErrors.password = "Please enter your password.";
+            hasError = true;
+        }
+
+        if (hasError) {
+            setErrors(newErrors);
+            return;
+        }
+        setLoading(true)
 
         const payload = {
             username: username,
@@ -60,7 +78,7 @@ export default function Login() {
             </div>
 
             <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-                <form onSubmit={handleSubmit} method="POST" className="space-y-6">
+                <form onSubmit={handleSubmit} method="POST" noValidate className="space-y-6">
                     <div>
                         <label htmlFor="username" className="block text-md/6 font-medium text-gray-900 dark:text-gray-100">
                             Username
@@ -71,12 +89,26 @@ export default function Login() {
                                 name="username"
                                 type="text"
                                 value={username || ""}
-                                onChange={(e) => setUsername(e.target.value)}
+                                onChange={(e) => {
+                                    setUsername(e.target.value);
+                                    if (errors.username) {
+                                        setErrors((prev) => ({ ...prev, username: "" }));
+                                    }
+                                }}
                                 required
                                 placeholder="Username"
                                 autoComplete="username"
-                                className="block w-full rounded-xl bg-white shadow-sm transition px-3 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500"
+                                className={`block w-full rounded-xl shadow-sm transition bg-white px-4 py-2 text-base text-gray-900 outline-1 -outline-offset-1 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 sm:text-base/6 dark:bg-white/5 dark:text-white dark:placeholder:text-gray-500
+                                    ${errors.username
+                                        ? "outline-red-500 focus:outline-red-500"
+                                        : "outline-gray-300 focus:outline-indigo-600 dark:outline-white/10 dark:focus:outline-indigo-500"
+                                    }`}
                             />
+                            {errors.username && (
+                                <p className="mt-1 text-sm text-red-500 animate-in fade-in duration-200">
+                                    {errors.username}
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -101,12 +133,26 @@ export default function Login() {
                                 name="password"
                                 type="password"
                                 value={password || ""}
-                                onChange={(e) => setPassword(e.target.value)}
+                                onChange={(e) => {
+                                    setPassword(e.target.value);
+                                    if (errors.password) {
+                                        setErrors((prev) => ({ ...prev, password: "" }));
+                                    }
+                                }}
                                 required
                                 placeholder="Password"
                                 autoComplete="current-password"
-                                className="block w-full rounded-xl shadow-sm transition bg-white px-4 py-2 text-base text-gray-900 outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-base/6 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500"
+                                className={`block w-full rounded-xl shadow-sm transition bg-white px-4 py-2 text-base text-gray-900 outline-1 -outline-offset-1 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 sm:text-base/6 dark:bg-white/5 dark:text-white dark:placeholder:text-gray-500
+                                    ${errors.password
+                                        ? "outline-red-500 focus:outline-red-500"
+                                        : "outline-gray-300 focus:outline-indigo-600 dark:outline-white/10 dark:focus:outline-indigo-500"
+                                    }`}
                             />
+                            {errors.password && (
+                                <p className="mt-1 text-sm text-red-500 animate-in fade-in duration-200">
+                                    {errors.password}
+                                </p>
+                            )}
                         </div>
                     </div>
 

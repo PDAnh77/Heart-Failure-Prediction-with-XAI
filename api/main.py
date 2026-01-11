@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends
-from routers import patient_router, predict_router, user_router
+from routers import patient_router, predict_router, user_router, prediction_history_router
 from services.auth_service import validate_token
 from contextlib import asynccontextmanager
 import httpx, asyncio
@@ -48,6 +48,7 @@ app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY, session_co
 app.include_router(user_router.router, prefix="/api", tags=["User"])
 app.include_router(predict_router.router, prefix="/api/predict", tags=["Heart failure prediction"], dependencies=[Depends(validate_token)])
 app.include_router(patient_router.router, prefix="/api/patients", tags=["Patient"], dependencies=[Depends(validate_token)])
+app.include_router(prediction_history_router.router, prefix="/api/prediction-history", tags=["Prediction history"], dependencies=[Depends(validate_token)])
 
 @app.get("/")
 def root():

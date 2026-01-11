@@ -114,8 +114,7 @@ def refresh_access_token(request: Request, response: Response):
     if db_token.get("revoked"):
         time_elapsed = datetime.now(timezone.utc) - datetime.fromisoformat(db_token.get("revoked_at"))
 
-        if time_elapsed > 20:
-            supabase.table(TABLE_NAME_TOKEN).update({"revoked": True}).eq("user_id", db_token["user_id"]).execute()
+        if time_elapsed > timedelta(seconds=20):
             raise HTTPException(status_code=401, detail="Token reuse detected. Please login again.")
         else:
             raise HTTPException(status_code=409, detail="Refresh in progress, please retry.")

@@ -2,7 +2,9 @@ import pandas as pd
 import numpy as np
 from core.model_loader import get_pipeline
 from services.xai_service import generate_patient_xai_images, generate_batch_xai_images
+from db.database import supabase
 
+TABLE_NAME_PREDICTION = "prediction_histories"
 RENAME_MAP = {
     "age": "Age",
     "sex": "Sex",
@@ -31,7 +33,7 @@ def preprocess(df_input, pipeline):
 
     return df_input
 
-def predict_result(patient_data):
+def predict_result(patient_data, user_id: str):
     pipeline = get_pipeline()
     model = pipeline['model']
     features = pipeline['features']
@@ -42,6 +44,7 @@ def predict_result(patient_data):
         raw_df = pd.DataFrame(patient_data)
         is_batch = True
     else:
+        save_prediction = patient_data.pop("save_prediction")
         raw_df = pd.DataFrame([patient_data])
         is_batch = False
 
@@ -88,8 +91,20 @@ def predict_result(patient_data):
             raw_row=raw_df[features]
         )
 
-        return {
+        results = {
             "prediction": int(pred),
             "probability": round(confidence, 4),
             **plots
         }
+
+        if save_prediction:
+            supabase.table(TABLE_NAME_PREDICTION).insert({
+                "user_id": user_id,
+                "input_data": patient_data,
+                "prediction_xai": plots,
+                "predicted_label": int(pred),
+                "predicted_probability": round(confidence, 4)
+            }).execute()
+
+        return results
+    

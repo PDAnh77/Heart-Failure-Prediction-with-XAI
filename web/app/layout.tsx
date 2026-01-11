@@ -6,11 +6,10 @@ import Sidebar from "@/components/sidebar";
 import { AuthProvider } from "@/context/authcontext";
 import { SettingsProvider } from "@/context/settingscontext"; // Import mới
 import GlobalSnowWrapper from "@/components/globalSnowWrapper"; // Component mới hỗ trợ logic ẩn/hiện
-import { Slide, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { ThemeProvider } from "next-themes";
+import AppToaster from "@/components/appToaster";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -47,7 +46,7 @@ export default function RootLayout({
                 <main className="flex-1 p-4 h-full overflow-y-auto">
                   <GlobalSnowWrapper />
                   {children}
-                  <ToastContainer position="top-right" transition={Slide} autoClose={3000} hideProgressBar />
+                  <AppToaster />
                   <Analytics />
                   <SpeedInsights />
                 </main>
