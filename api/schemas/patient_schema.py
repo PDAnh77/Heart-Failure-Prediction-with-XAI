@@ -33,3 +33,6 @@ class PatientUpdate(BaseModel):
 
 class PatientCreate(PatientUpdate):
     pass
+
+class PatientPredict(PatientBase):
+    save_prediction: bool = Field(default=True, description="Whether to save the prediction")

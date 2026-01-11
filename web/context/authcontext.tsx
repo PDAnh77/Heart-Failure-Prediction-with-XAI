@@ -9,6 +9,11 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshHistoryTicket, setRefreshHistoryTicket] = useState(0);
+
+  const triggerRefreshHistory = () => {
+      setRefreshHistoryTicket(prev => prev + 1);
+  };
 
   useEffect(() => {
     const checkUser = async () => {
@@ -40,7 +45,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshHistoryTicket, triggerRefreshHistory }}>
       {children}
     </AuthContext.Provider>
   );

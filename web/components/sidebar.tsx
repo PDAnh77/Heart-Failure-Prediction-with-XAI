@@ -1,36 +1,100 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
-import { toast } from 'react-toastify';
+import { useEffect, useState } from "react";
+import { toast } from 'react-hot-toast';
 import LogoutModal from "@/components/modalLogout";
+import DeleteModal from "@/components/deletePredictionModal";
 import { useAuth } from "@/context/authcontext"
 import { TbLayoutSidebarFilled } from "react-icons/tb";
-import { FaMicroscope, FaGear, FaHouse, FaRightToBracket, FaRightFromBracket, FaRocket } from "react-icons/fa6";
+import { FaMicroscope, FaGear, FaHouse, FaRightToBracket, FaRightFromBracket, FaRocket, FaRegClock, FaRegTrashCan } from "react-icons/fa6";
+import { IoIosArrowForward, IoIosArrowDown } from "react-icons/io";
 import { api } from "@/lib/api";
+import { PredictionHistoryBase } from "@/types/prediction";
 
 export default function Sidebar() {
     const [open, setOpen] = useState(false);
     const pathname = usePathname();
+    const [showPredictions, setShowPredictions] = useState(true);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const { user, logout } = useAuth();
+    const { user, logout, refreshHistoryTicket } = useAuth();
+    const [result, setResult] = useState<PredictionHistoryBase[] | null>(null);
     const router = useRouter();
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const handleLogoutClick = () => {
         setShowLogoutModal(true);
     };
 
+    useEffect(() => {
+        if (!user) {
+            setResult(null);
+            return;
+        }
+        const loadPredictionHistory = async () => {
+            try {
+                const res = await api.get("prediction-history");
+                setResult(res.data);
+            } catch (error: any) {
+                console.log(error);
+            }
+        }
+        loadPredictionHistory();
+    }, [user, refreshHistoryTicket]);
+
+    // useEffect(() => {
+    //     if (result !== null) {
+    //         console.log(result);
+    //     }
+    // }, [result]);
+
     const handleLogout = async () => {
         try {
-            api.post("auth/logout")
+            api.post("auth/logout");
             logout();
             setShowLogoutModal(false);
             setOpen(false);
-            router.push("/login")
+            router.push("/login");
         } catch (error: any) {
             console.log(error);
             toast.error("Logout failed.");
         }
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteId) return;
+        setIsDeleting(true);
+        try {
+            await api.delete(`/prediction-history/${deleteId}`);
+            setResult((prevResult: any) => prevResult.filter((item: any) => item.id !== deleteId));
+            setDeleteId(null);
+        } catch (error) {
+            console.log(error);
+            toast.error("Failed to delete history:");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const formatDateTime = (dateString: string) => {
+        const date = new Date(dateString);
+
+        const parts = new Intl.DateTimeFormat('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+        }).formatToParts(date);
+
+        const hour = parts.find(p => p.type === 'hour')?.value;
+        const minute = parts.find(p => p.type === 'minute')?.value;
+        const day = parts.find(p => p.type === 'day')?.value;
+        const month = parts.find(p => p.type === 'month')?.value;
+        const year = parts.find(p => p.type === 'year')?.value;
+
+        return `${hour}:${minute} - ${day}/${month}/${year}`;
     };
 
     const itemClass = (active: boolean) =>
@@ -65,65 +129,114 @@ export default function Sidebar() {
                 ${open ? "translate-x-0" : "-translate-x-full"} 
                 lg:static lg:translate-x-0 lg:min-h-screen
             `}>
-                <div className="bg-gray-50 rounded-xl h-full lg:border lg:border-gray-200 lg:shadow-md flex flex-col justify-between dark:bg-[#18181B] dark:border-[#FFFFFF1A] relative">
-                    <ul className="space-y-2 mt-8 pb-8 px-2">
-                        <p className="font-bold mb-8 mx-2 text-sm">Heart Failure Predict</p>
-
-                        <li className={itemClass(pathname === "/")} onClick={() => setOpen(false)}>
-                            <Link href="/" className="flex gap-2 p-2">
-                                <FaHouse className="text-lg" />
-                                <span>Home</span>
-                            </Link>
-                        </li>
-
-                        <li className={itemClass(pathname === "/predict")} onClick={() => setOpen(false)}>
-                            <Link href="/predict" className="flex gap-2 p-2">
-                                <FaMicroscope className="text-lg" />
-                                <span>Predict</span>
-                            </Link>
-                        </li>
-
-                        <li className={itemClass(pathname === "/setting")} onClick={() => setOpen(false)}>
-                            <Link href="/setting" className="flex gap-2 p-2 w-full">
-                                <FaGear className="text-lg" />
-                                <span>Setting</span>
-                            </Link>
-                        </li>
-
-                        {user ? (
-                            <li className={itemClass(false)} onClick={handleLogoutClick}>
-                                <div className="flex gap-2 p-2 w-full hover:cursor-pointer">
-                                    <FaRightFromBracket className="text-lg" />
-                                    <span>Logout</span>
-                                </div>
-                            </li>
-                        ) : (
-                            <li className={itemClass(pathname === "/login")} onClick={() => setOpen(false)}>
-                                <Link href="/login" className="flex gap-2 p-2 w-full">
-                                    <FaRightToBracket className="text-lg" />
-                                    <span>Sign in</span>
+                <div className="bg-gray-50 rounded-xl h-full lg:border lg:border-gray-200 lg:shadow-md dark:bg-[#18181B] dark:border-[#FFFFFF1A] flex flex-col">
+                    <div className="p-2 space-y-2">
+                        <p className="font-bold p-2 my-4 text-sm">Heart Failure Predict</p>
+                        <ul className="space-y-2">
+                            <li className={itemClass(pathname === "/")} onClick={() => setOpen(false)}>
+                                <Link href="/" className="flex gap-2 p-2">
+                                    <FaHouse className="text-lg" />
+                                    <span>Home</span>
                                 </Link>
                             </li>
-                        )}
-                    </ul>
+                            <li className={itemClass(pathname === "/predict")} onClick={() => setOpen(false)}>
+                                <Link href="/predict" className="flex gap-2 p-2">
+                                    <FaMicroscope className="text-lg" />
+                                    <span>Predict</span>
+                                </Link>
+                            </li>
+                            <li className={itemClass(pathname === "/setting")} onClick={() => setOpen(false)}>
+                                <Link href="/setting" className="flex gap-2 p-2">
+                                    <FaGear className="text-lg" />
+                                    <span>Setting</span>
+                                </Link>
+                            </li>
+                            {user ? (
+                                <li className={itemClass(false)} onClick={handleLogoutClick}>
+                                    <div className="flex gap-2 p-2 w-full cursor-pointer">
+                                        <FaRightFromBracket className="text-lg" />
+                                        <span>Logout</span>
+                                    </div>
+                                </li>
+                            ) : (
+                                <li className={itemClass(pathname === "/login")} onClick={() => setOpen(false)}>
+                                    <Link href="/login" className="flex gap-2 p-2 w-full">
+                                        <FaRightToBracket className="text-lg" />
+                                        <span>Sign in</span>
+                                    </Link>
+                                </li>
+                            )}
+                        </ul>
+                    </div>
 
-                    <div className="p-2 pb-4">
-                        <div className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition border border-transparent">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
-                                    <FaRocket className="text-sm" />
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-sm font-bold text-foreground">
-                                        {user ? user.username : "Guest"}
-                                    </span>
-                                </div>
+                    <div className="flex-1 overflow-y-auto p-2">
+                        <div
+                            className="text-sm cursor-pointer flex items-center text-gray-500 dark:text-gray-300 mb-2"
+                            onClick={() => setShowPredictions(!showPredictions)}
+                        >
+                            <span className="ml-2 mr-1">Recent Analyses</span>
+                            {showPredictions ? <IoIosArrowDown /> : <IoIosArrowForward />}
+                        </div>
+
+                        {showPredictions && (
+                            <ul className="space-y-1">
+                                {result && result.length > 0 ? (
+                                    [...result].reverse().map((item) => {
+                                        const isActive = pathname === `/prediction-history/${item.id}`;
+                                        return (
+                                            <li
+                                                key={item.id}
+                                                className={`${itemClass(isActive)} group relative flex items-center justify-between`}
+                                                onClick={() => setOpen(false)}
+                                            >
+                                                <Link
+                                                    href={`/prediction-history/${item.id}`}
+                                                    className="flex flex-col p-2 gap-1 grow min-w-0"
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <FaRegClock className="opacity-60" />
+                                                        <span>{formatDateTime(item.created_at.toString())}</span>
+                                                    </div>
+                                                </Link>
+
+                                                <div
+                                                    className=" p-2 rounded-full mr-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity hover:bg-red-100 dark:hover:bg-red-800/30 cursor-pointer"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setDeleteId(item.id);
+                                                    }}
+                                                >
+                                                    <FaRegTrashCan className="text-red-500" />
+                                                </div>
+                                            </li>
+                                        );
+                                    })
+                                ) : (
+                                    <li className="text-xs text-gray-400 mx-2">No records found</li>
+                                )}
+                            </ul>
+                        )}
+                    </div>
+
+                    <div className="p-2 border-t border-gray-200 dark:border-[#FFFFFF1A]">
+                        <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition">
+                            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
+                                <FaRocket className="text-sm" />
                             </div>
+                            <span className="text-sm font-bold">
+                                {user ? user.username : "Guest"}
+                            </span>
                         </div>
                     </div>
                 </div>
             </aside>
-
+            <DeleteModal
+                isOpen={!!deleteId}
+                onClose={() => setDeleteId(null)}
+                onConfirm={handleConfirmDelete}
+                isDeleting={isDeleting}
+            />
             <LogoutModal
                 isOpen={showLogoutModal}
                 onClose={() => setShowLogoutModal(false)}

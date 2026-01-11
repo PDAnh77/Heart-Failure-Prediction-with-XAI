@@ -26,7 +26,7 @@ async def auth_google_callback(request: Request):
     return await google_callback(request)
 
 @router.post("/auth/refresh")
-def refresh(request: Request, response: Response,):
+def refresh(request: Request, response: Response):
     return refresh_access_token(request, response)
 
 @router.get("/user/me")

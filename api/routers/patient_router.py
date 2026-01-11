@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, Query
 from services.auth_service import validate_token
-from schemas.patient_schema import PatientGet, PatientCreate, PatientUpdate
-
+from schemas.patient_schema import PatientCreate, PatientUpdate
 from services.patient_service import (
     get_patients_service,
     get_patient_service,
@@ -24,7 +23,7 @@ def get_patients(
 def get_random_patient():
     return get_random_patient_service()
 
-@router.get("/{patient_id}", response_model=PatientGet)
+@router.get("/{patient_id}")
 def get_patient(patient_id: str):
     return get_patient_service(patient_id)
 

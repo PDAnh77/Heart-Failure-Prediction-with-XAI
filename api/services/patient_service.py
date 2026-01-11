@@ -38,4 +38,4 @@ def delete_patient_service(patient_id: str):
     result = supabase.table(TABLE_NAME).delete().eq("id", patient_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Patient not found")
-    return "Success"
+    return {"detail": "Delete patient successfully"}

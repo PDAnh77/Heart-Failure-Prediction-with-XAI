@@ -1,12 +1,14 @@
 "use client"
 import { useRouter } from "next/navigation";
 import { FormEvent, useState, useRef, useEffect } from "react";
-import { toast } from "react-toastify";
 import { PredictionResult } from "@/types/prediction";
 import { Patient } from "@/types/patient"
+import { useSettings } from "@/context/settingscontext";
 import { useAuth } from "@/context/authcontext";
 import Image from "next/image";
 import { api } from "@/lib/api";
+import toast from "react-hot-toast";
+import { FaHeartbeat } from "react-icons/fa";
 
 export default function Predict() {
     const router = useRouter();
@@ -17,7 +19,8 @@ export default function Predict() {
     const autoFillBtnRef = useRef<HTMLButtonElement>(null);
     const topRef = useRef<HTMLDivElement>(null);
     const resultRef = useRef<HTMLDivElement>(null);
-    const { user, loading: authLoading, logout } = useAuth();
+    const { user, loading: authLoading, logout, triggerRefreshHistory } = useAuth();
+    const { savePrediction } = useSettings();
 
     const RequiredMark = () => <span className="text-red-500">*</span>;
 
@@ -77,7 +80,7 @@ export default function Predict() {
         toast.dismiss();
         setInvalidFields([]); // Reset lỗi khi auto fill
         if (!user) {
-            toast.warning("Please sign in to continue.");
+            toast.error("Please sign in to continue.");
             router.push("/login");
             return;
         }
@@ -115,7 +118,7 @@ export default function Predict() {
         } catch (error: any) {
             if (error.response?.status === 401) {
                 logout();
-                toast.warning("Session expired. Please sign in again.");
+                toast.error("Session expired. Please sign in again.");
                 router.push("/login");
                 return;
             }
@@ -156,12 +159,12 @@ export default function Predict() {
         toast.dismiss();
 
         if (authLoading) {
-            toast.info("Checking authentication, try again in a moment.");
+            toast.error("Checking authentication, try again in a moment.");
             return;
         }
 
         if (!user) {
-            toast.warning("Please sign in to continue.");
+            toast.error("Please sign in to continue.");
             router.push("/login");
             return;
         }
@@ -188,14 +191,16 @@ export default function Predict() {
             exercise_angina: formData.get("exercise-angina"),
             oldpeak: parseFloat(formData.get("oldpeak") as string),
             st_slope: formData.get("st-slope"),
+            save_prediction: savePrediction
         };
-        console.log("Payload sending to API:", JSON.stringify(payload, null, 2));
+        // console.log("Payload sending to API:", JSON.stringify(payload, null, 2));
 
         try {
             const res = await api.post("/predict", payload);
             const data: PredictionResult = res.data;
             setResult(data);
-            console.log("API result:", data);
+            // console.log("API result:", data);
+            triggerRefreshHistory();
         } catch (error: any) {
             if (error.response?.status === 401) {
                 toast.error("Session expired. Please sign in again.");
@@ -473,7 +478,9 @@ export default function Predict() {
                     <div className={`p-4 rounded-xl border-l-8 shadow-md mb-8 transition-all ${result.prediction === 1 ? 'bg-red-50 border-red-500 dark:bg-red-900/20' : 'bg-green-50 border-green-500 dark:bg-green-900/20'}`}>
                         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                             <div>
-                                <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">Diagnosis Prediction:</h3>
+                                <h3 className="text-lg font-semibold flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                                    <FaHeartbeat /> Diagnosis Prediction:
+                                </h3>
                                 <p className={`text-3xl font-bold mt-1 ${result.prediction === 1 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                     {result.prediction === 1 ? "RISK DETECTED" : "NORMAL"}
                                 </p>
@@ -491,8 +498,8 @@ export default function Predict() {
                         Detailed Explanation
                     </h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="md:col-span-2">
+                    <div className="grid grid-cols-1 gap-8">
+                        <div>
                             {renderChartImage(result.shap_waterfall, "Feature Impact Analysis (SHAP Waterfall)")}
                             <p className="text-sm text-gray-500 mt-2 text-center italic dark:text-gray-200">
                                 Visualizes how individual factors shift the prediction from the baseline.
@@ -500,13 +507,13 @@ export default function Predict() {
                                 while <span className="font-bold text-blue-500"> Blue bars</span> indicate factors decreasing the risk.
                             </p>
                         </div>
-                        <div className="md:col-span-2">
+                        <div>
                             {renderChartImage(result.shap_bar, "Global Feature Importance (SHAP Bar)")}
                             <p className="text-sm text-gray-500 mt-2 text-center italic dark:text-gray-200">
                                 Ranks the health indicators by their absolute impact on this prediction. Longer bars mean the AI considered these factors most critical for this patient.
                             </p>
                         </div>
-                        <div className="md:col-span-2">
+                        <div>
                             {renderChartImage(result.lime, "Local Interpretation (LIME)")}
                             <p className="text-sm text-gray-500 mt-2 text-center italic dark:text-gray-200">
                                 Independent verification: Analyzing which specific features support a "High Risk" diagnosis versus those supporting a "Normal" diagnosis.

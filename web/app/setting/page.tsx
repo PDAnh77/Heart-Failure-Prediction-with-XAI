@@ -2,8 +2,10 @@
 import SettingRow from "@/components/settingRow"
 import { useSettings } from "@/context/settingscontext";
 import { useTheme } from "next-themes";
+import { useState } from "react";
 
 export default function Settings() {
+    const { savePrediction, setSavePrediction } = useSettings();
     const { snowMode, setSnowMode } = useSettings();
     const { theme, setTheme } = useTheme();
     const isDarkMode = theme === 'dark';
@@ -23,6 +25,12 @@ export default function Settings() {
                     description="Enable winter animation with falling snow on the background."
                     enabled={snowMode}
                     setEnabled={setSnowMode}
+                />
+                <SettingRow
+                    title="Save prediction history"
+                    description="Store prediction results so you can review them later."
+                    enabled={savePrediction}
+                    setEnabled={setSavePrediction}
                 />
             </div>
         </div>
