@@ -33,4 +33,5 @@ export interface PredictionHistoryDetail {
     shap_bar: string;
     shap_waterfall: string;
   };
+  created_at: Date;
 }

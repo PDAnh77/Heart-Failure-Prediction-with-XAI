@@ -26,6 +26,19 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Heart Failue Predict",
   description: "An application that predicts heart failure risk based on clinical and health data",
+  keywords: [
+    "heart disease predict",
+    "heart disease prediction",
+    "heart disease risk calculator",
+    "heart failure predict",
+    "cardiovascular disease prediction",
+    "medical AI heart disease",
+    "heart health assessment",
+  ],
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({

@@ -7,8 +7,8 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
     REDIRECT_URI:str
-    RENDER_APP_URL: str
-    NEXT_APP_URL: str
+    API_URL: str
+    CLIENT_URL: str
 
     model_config = SettingsConfigDict(
         env_file=".env",

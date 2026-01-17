@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
                 disallow: ["/setting", "/prediction-history/"]
             }
         ],
-        sitemap: `${process.env.NEXT_APP_URL}/sitemap.xml`
+        sitemap: `${process.env.CLIENT_URL}/sitemap.xml`
     }
 }

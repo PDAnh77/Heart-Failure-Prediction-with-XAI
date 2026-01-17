@@ -193,7 +193,7 @@ ss = StandardScaler()
 df1[std_cols] = ss.fit_transform(df1[std_cols])
 
 target = df1["HeartDisease"]
-features = df1[df1.columns.drop(["HeartDisease"])]
+features = df1[df1.columns.drop(["HeartDisease", "RestingBP", "RestingECG"])]
 
 print("Heart Failure dataset:\n", features.shape[0], "Records\n", features.shape[1], "Features")
 
@@ -243,7 +243,8 @@ for name, model_obj in zip(classifiers, models):
             "Feature_Count": len(last_best_features),
         }
     )
-
+    
+pd.set_option('display.max_colwidth', None)
 # Convert results to DataFrame for easier comparison
 df_final_comparison = pd.DataFrame(final_results).sort_values(by="Best_GA_Accuracy", ascending=False)
 print("\n--- COMPARISON TABLE AFTER GA ---")

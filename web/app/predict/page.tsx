@@ -264,8 +264,8 @@ export default function Predict() {
                                 onChange={handleInputChange}
                                 className={getInputClass("gender")}
                             >
-                                <option className="dark:bg-gray-800 dark:text-white" value="M">Male</option>
-                                <option className="dark:bg-gray-800 dark:text-white" value="F">Female</option>
+                                <option value="M">Male</option>
+                                <option value="F">Female</option>
                             </select>
                         </div>
                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Patient's gender.</p>
@@ -298,11 +298,11 @@ export default function Predict() {
                                 onChange={handleInputChange}
                                 className={getInputClass("chest-pain-type")}
                             >
-                                <option className="dark:bg-gray-800 dark:text-white" value="" disabled>Select the type of chest pain...</option>
-                                <option className="dark:bg-gray-800 dark:text-white" value="TA">Typical Angina</option>
-                                <option className="dark:bg-gray-800 dark:text-white" value="ATA">Atypical Angina</option>
-                                <option className="dark:bg-gray-800 dark:text-white" value="NAP">Non-Anginal Pain</option>
-                                <option className="dark:bg-gray-800 dark:text-white" value="ASY">Asymptomatic</option>
+                                <option value="" disabled>Select the type of chest pain...</option>
+                                <option value="TA">Typical Angina</option>
+                                <option value="ATA">Atypical Angina</option>
+                                <option value="NAP">Non-Anginal Pain</option>
+                                <option value="ASY">Asymptomatic</option>
                             </select>
                         </div>
                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Subjective description of pain reported by patient.</p>
@@ -351,11 +351,11 @@ export default function Predict() {
                                 onChange={handleInputChange}
                                 className={getInputClass("fasting-bs")}
                             >
-                                <option className="dark:bg-gray-800 dark:text-white rounded-2xl" value="" disabled> Is fasting blood sugar {'>'} 120 mg/dl?
+                                <option value="" disabled> Is fasting blood sugar {'>'} 120 mg/dl?
                                 </option>
-                                <option className="dark:bg-gray-800 dark:text-white" value="1"> Yes ({'>'} 120 mg/dl)
+                                <option value="1"> Yes ({'>'} 120 mg/dl)
                                 </option>
-                                <option className="dark:bg-gray-800 dark:text-white" value="0"> No (≤ 120 mg/dl)
+                                <option value="0"> No (≤ 120 mg/dl)
                                 </option>
                             </select>
                         </div>
@@ -373,10 +373,10 @@ export default function Predict() {
                                 onChange={handleInputChange}
                                 className={getInputClass("resting-ecg")}
                             >
-                                <option className="dark:bg-gray-800 dark:text-white" value="" disabled>Select result...</option>
-                                <option className="dark:bg-gray-800 dark:text-white" value="Normal">Normal</option>
-                                <option className="dark:bg-gray-800 dark:text-white" value="ST">ST-T wave abnormality</option>
-                                <option className="dark:bg-gray-800 dark:text-white" value="LVH">Left ventricular hypertrophy</option>
+                                <option value="" disabled>Select result...</option>
+                                <option value="Normal">Normal</option>
+                                <option value="ST">ST-T wave abnormality</option>
+                                <option value="LVH">Left ventricular hypertrophy</option>
                             </select>
                         </div>
                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Result based on ST-T wave or Estes criteria.</p>
@@ -409,9 +409,9 @@ export default function Predict() {
                                 onChange={handleInputChange}
                                 className={getInputClass("exercise-angina")}
                             >
-                                <option className="dark:bg-gray-800 dark:text-white" value="" disabled>Did patient have angina?</option>
-                                <option className="dark:bg-gray-800 dark:text-white" value="Y">Yes</option>
-                                <option className="dark:bg-gray-800 dark:text-white" value="N">No</option>
+                                <option value="" disabled>Did patient have angina?</option>
+                                <option value="Y">Yes</option>
+                                <option value="N">No</option>
                             </select>
                         </div>
                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Pain specifically caused by exercise.</p>
@@ -445,10 +445,10 @@ export default function Predict() {
                                 onChange={handleInputChange}
                                 className={getInputClass("st-slope")}
                             >
-                                <option className="dark:bg-gray-800 dark:text-white" value="" disabled>Select the slope curve...</option>
-                                <option className="dark:bg-gray-800 dark:text-white" value="Up">Upsloping</option>
-                                <option className="dark:bg-gray-800 dark:text-white" value="Flat">Flat</option>
-                                <option className="dark:bg-gray-800 dark:text-white" value="Down">Downsloping</option>
+                                <option value="" disabled>Select the slope curve...</option>
+                                <option value="Up">Upsloping</option>
+                                <option value="Flat">Flat</option>
+                                <option value="Down">Downsloping</option>
                             </select>
                         </div>
                         <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Slope of the peak exercise ST segment.</p>
@@ -467,7 +467,7 @@ export default function Predict() {
                 </div>
             </form>
 
-            {/* --- HIỂN THỊ KẾT QUẢ (GIỮ NGUYÊN) --- */}
+            {/* --- HIỂN THỊ KẾT QUẢ --- */}
             {result && (
                 <div ref={resultRef} className="mt-12 mb-12 animate-fade-in px-2 md:px-8">
                     <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white pb-2 border-b border-gray-200 dark:border-gray-700">

@@ -12,3 +12,4 @@ class PredictionGet(BaseModel):
     predicted_label: int
     predicted_probability: float
     prediction_xai: Dict[str, Any]
+    created_at: datetime

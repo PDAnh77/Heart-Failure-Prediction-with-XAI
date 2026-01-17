@@ -1,5 +1,13 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Environment Variables
+Frontend environment variables should be set in the `web/` directory as .env.local file:
+
+```.env.local
+API_URL=http://localhost:8000
+CLIENT_URL=http://localhost:3000
+```
+
 ## Getting Started
 
 First, run the development server:

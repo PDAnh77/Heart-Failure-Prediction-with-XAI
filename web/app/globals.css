@@ -23,3 +23,80 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+select {
+  appearance: base-select;
+  align-items: center;
+}
+
+select:open {
+  outline: 2px solid var(--color-indigo-600) !important;
+  outline-offset: -2px;
+}
+
+select:has(+ p.text-red-500):open,
+select[class*="border-red-500"]:open { 
+  outline: 2px solid var(--color-red-600) !important;
+}
+
+.dark select:open {
+  outline: 2px solid var(--color-indigo-500) !important;
+}
+
+::picker(select) {
+  appearance: base-select;
+  bottom: 0;
+  margin: .4rem 0;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, .1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+  background-color: white;
+}
+
+.dark ::picker(select) {
+  border: 1px solid oklch(44.6% 0.03 256.802);
+}
+
+option {
+  padding: 8px;
+  color: oklch(37.3% 0.034 259.733);
+}
+
+.dark option {
+  background-color: oklch(27.8% 0.033 256.848);
+  color: oklch(87.2% 0.01 258.338);
+}
+
+option:hover {
+  cursor: pointer;
+  background-color: oklch(96.7% 0.003 264.542);
+  color: oklch(21% 0.034 264.665);
+}
+
+.dark option:hover {
+  background-color: oklch(37.3% 0.034 259.733);
+  color: white;
+}
+
+option:disabled {
+  color: oklch(70.7% 0.022 261.325);
+  cursor: auto;
+}
+
+.dark option:disabled {
+  color: oklch(55.1% 0.027 264.364);
+}
+
+option:disabled:hover,
+option:disabled:focus {
+  background-color: white;
+}
+
+.dark :disabled:hover,
+option:disabled:focus {
+  background-color: oklch(27.8% 0.033 256.848);
+}
+
+select option::checkmark {
+  display: none;
+}

@@ -9,12 +9,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 async def ping_self():
-    url = settings.RENDER_APP_URL
+    url = settings.API_URL
     if not url:
-        print("Skipping self-ping: RENDER_APP_URL not set")
+        print("Skipping self-ping")
         return
-    if "onrender.com" not in url:
-        print("Skipping self-ping: Not running on Render")
+    if "localhost" in url:
+        print("Skipping self-ping")
         return
     health_url = f"{url.rstrip('/')}/health"
 
@@ -38,7 +38,7 @@ app = FastAPI(title="Heart Disease Prediction API", openapi_url="/api/openapi.js
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.NEXT_APP_URL,
+    allow_origins=settings.CLIENT_URL,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
