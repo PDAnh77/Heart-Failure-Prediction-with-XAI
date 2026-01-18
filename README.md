@@ -1,19 +1,19 @@
-# Heart failued prediction
+# AI-Based Heart Failure Prediction System with Explainable AI (XAI)
 ## Overview
-End-to-end AI-powered heart disease prediction application that leverages machine learning models combined with Explainable AI (XAI) techniques to provide transparent and interpretable predictions based on patient clinical and health information.
+End-to-end AI-powered heart failure prediction application that leverages machine learning models combined with Explainable AI (XAI) techniques to provide transparent and interpretable predictions based on patient clinical and health information.
 
-* Data preparation and model training for heart disease prediction
+* Data preparation and model training for heart failure prediction
 
-* Explainable AI to interpret cardiovascular risk predictions.
+* Explainable AI to interpret cardiovascular risk predictions
 
-* Backend API for authentication, patient management, heart disease inference, XAI explanations and prediction history management
+* Backend API for authentication, patient management, heart failure inference, XAI explanations and prediction history management
 
 * Frontend web application for patient data input and result visualization
 
 * CI/CD pipelines for automated build and deployment
 
 ## Features
-* Disease risk prediction using trained AI models
+* Heart failure risk prediction based on patient clinical data using trained AI models
 
 * Explainable AI (XAI) to interpret model outputs (e.g. feature importance, SHAP values)
 
@@ -44,14 +44,15 @@ End-to-end AI-powered heart disease prediction application that leverages machin
 | Oldpeak | Float | ST depression induced by exercise relative to rest |
 | ST_Slope | String | Slope of the peak exercise ST segment:<br>- `Up`: Upsloping<br>- `Flat`: Flat<br>- `Down`: Downsloping |
 
-* Output: Probability of disease occurrence and XAI explanations
+* Output: Probability of heart failure along with corresponding XAI explanations
 
-* XAI Techniques:
+* XAI:
   - SHAP (SHapley Additive exPlanations)
+
   - LIME (Local Interpretable Model-agnostic Explanations)
 
 ## System Architecture
-The following diagram illustrates the overall system architecture of the heart disease prediction application:
+The following diagram illustrates the overall system architecture of the heart failure prediction application:
 
 ![System Architecture Diagram](docs/system_architecture.png)
 
@@ -88,10 +89,16 @@ The repository is organized as follows:
 │   └── next.config.ts      # Next.js configuration
 │
 ├── requirements-dev.txt    # Development dependencies
-└── README.md               
+└── README.md               # Project documentation
 ```
 
 ## Installation & Setup
+Clone the repository:
+```bash
+git clone https://github.com/PDAnh77/Heart-Failure-Prediction-with-XAI.git
+cd Heart-Failure-Prediction-with-XAI
+```
+
 ### Backend (API)
 1. Navigate to the api/ directory:
    ```bash
@@ -116,8 +123,8 @@ The repository is organized as follows:
 
 Or build and run the Docker container:
    ```bash
-   docker build -t heart-disease-api .
-   docker run -d -p 8000:8000 heart-disease-api
+   docker build -t heart-failure-api .
+   docker run -d -p 8000:8000 heart-failure-api
    ```
    
 ### Frontend (Web Application)
@@ -125,26 +132,29 @@ The frontend has its own installation guide. Please refer to the [web/README.md]
 
 ### Environment Variables
 * Backend requires certain environment variables to be set for proper operation. Create a `.env` file in the `api/` directory with the following variables:
+   ```
+   DATABASE_URL=your_database_url
+   DATABASE_KEY=your_database_key
+   SECRET_KEY=your_secret_key
+   API_URL=http://localhost:8000
+   CLIENT_URL=http://localhost:3000
+   ```
 
-```
-DATABASE_URL=your_database_url
-DATABASE_KEY=your_database_key
-SECRET_KEY=your_secret_key
-API_URL=http://localhost:8000
-CLIENT_URL=http://localhost:3000
-```
-If using Google OAuth:
-```
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-REDIRECT_URL=http://localhost:3000/auth/callback
-```
+* If using Google OAuth for authentication, add these variables as well to the `.env` file:
+   ```
+   GOOGLE_CLIENT_ID=your_google_client_id
+   GOOGLE_CLIENT_SECRET=your_google_client_secret
+   REDIRECT_URL=http://localhost:3000/auth/callback
+   ```
+
 * For frontend environment variables, please refer to the [web/README.md](web/README.md).
 
 ### CI/CD Pipeline
 CI/CD workflows are located in the `.github/workflows/` directory.
 * Building backend Docker images
+
 * Run Trivy security scans
+
 * Deploying backend and frontend applications to hosting platforms
 
 ## Usage
@@ -152,7 +162,7 @@ CI/CD workflows are located in the `.github/workflows/` directory.
 
 2. Input patient clinical and health information via the web interface
 
-3. Submit the data to receive heart disease risk predictions along with XAI explanations
+3. Submit the data to receive heart failure risk predictions along with XAI explanations
 
 4. View and manage prediction history through the user dashboard (if enabled)
 
