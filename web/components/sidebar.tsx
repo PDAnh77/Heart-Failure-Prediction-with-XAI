@@ -7,7 +7,7 @@ import LogoutModal from "@/components/modalLogout";
 import DeleteModal from "@/components/deletePredictionModal";
 import { useAuth } from "@/context/authcontext"
 import { TbLayoutSidebarFilled } from "react-icons/tb";
-import { FaMicroscope, FaGear, FaHouse, FaRightToBracket, FaRightFromBracket, FaRocket, FaRegClock, FaRegTrashCan } from "react-icons/fa6";
+import { FaMicroscope, FaGear, FaHouse, FaRightToBracket, FaRightFromBracket, FaRocket, FaRegTrashCan } from "react-icons/fa6";
 import { IoIosArrowForward, IoIosArrowDown } from "react-icons/io";
 import { api } from "@/lib/api";
 import { PredictionHistoryBase } from "@/types/prediction";
@@ -17,11 +17,14 @@ export default function Sidebar() {
     const pathname = usePathname();
     const [showPredictions, setShowPredictions] = useState(true);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
-    const { user, logout, refreshHistoryTicket } = useAuth();
+    const { user, logout, newHistoryItem } = useAuth();
     const [result, setResult] = useState<PredictionHistoryBase[] | null>(null);
     const router = useRouter();
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     const handleLogoutClick = () => {
         setShowLogoutModal(true);
@@ -34,14 +37,27 @@ export default function Sidebar() {
         }
         const loadPredictionHistory = async () => {
             try {
-                const res = await api.get("prediction-history");
+                const res = await api.get(`prediction-history?limit=12&offset=0`);
                 setResult(res.data);
+                setOffset(12);
+                setHasMore(res.data.length === 12);
             } catch (error: any) {
                 console.log(error);
             }
         }
         loadPredictionHistory();
-    }, [user, refreshHistoryTicket]);
+    }, [user]);
+
+    useEffect(() => {
+        if (!newHistoryItem) return;
+
+        setResult(prev => {
+            if (!prev) return [newHistoryItem];
+            if (prev.some(p => p.id === newHistoryItem.id)) return prev;
+
+            return [newHistoryItem, ...prev];
+        });
+    }, [newHistoryItem]);
 
     // useEffect(() => {
     //     if (result !== null) {
@@ -100,6 +116,43 @@ export default function Sidebar() {
     const itemClass = (active: boolean) =>
         `rounded-xl transition ${active ? "bg-gray-100 font-semibold text-sm dark:text-white dark:bg-white/10" : "hover:bg-gray-100 text-sm dark:hover:bg-white/10"}`;
 
+    const loadMoreItems = async () => {
+        if (!hasMore || loadingMore) return;
+
+        setLoadingMore(true);
+        try {
+            const res = await api.get(`prediction-history?limit=12&offset=${offset}`);
+            const newItems: PredictionHistoryBase[] = res.data;
+
+            setResult((prev) => {
+                const current = prev ?? [];
+                const filteredNewItems = newItems.filter(
+                    (newItem) => !current.some((oldItem) => oldItem.id === newItem.id)
+                );
+
+                return [...current, ...filteredNewItems];
+            });
+
+            setOffset(offset + 12);
+
+            if (newItems.length < 12) {
+                setHasMore(false);
+            }
+        } catch (error) {
+            console.log(error);
+        } finally {
+            setLoadingMore(false);
+        }
+    }
+
+    const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+
+        if (scrollHeight - scrollTop - clientHeight < 50) {
+            loadMoreItems();
+        }
+    };
+
     return (
         <>
             <div className="lg:hidden flex items-center p-2 bg-white dark:bg-[#141516] border-b border-gray-200 dark:border-[#FFFFFF1A] sticky top-0 z-40">
@@ -145,10 +198,10 @@ export default function Sidebar() {
                                     <span>Predict</span>
                                 </Link>
                             </li>
-                            <li className={itemClass(pathname === "/setting")} onClick={() => setOpen(false)}>
-                                <Link href="/setting" className="flex gap-2 p-2">
+                            <li className={itemClass(pathname === "/settings")} onClick={() => setOpen(false)}>
+                                <Link href="/settings" className="flex gap-2 p-2">
                                     <FaGear className="text-lg" />
-                                    <span>Setting</span>
+                                    <span>Settings</span>
                                 </Link>
                             </li>
                             {user ? (
@@ -169,7 +222,7 @@ export default function Sidebar() {
                         </ul>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-2">
+                    <div className="flex-1 overflow-y-auto p-2" onScroll={handleScroll}>
                         <div
                             className="text-sm cursor-pointer flex items-center text-gray-500 dark:text-gray-300 mb-2"
                             onClick={() => setShowPredictions(!showPredictions)}
@@ -181,7 +234,7 @@ export default function Sidebar() {
                         {showPredictions && (
                             <ul className="space-y-1">
                                 {result && result.length > 0 ? (
-                                    [...result].reverse().map((item) => {
+                                    [...result].map((item) => {
                                         const isActive = pathname === `/prediction-history/${item.id}`;
                                         return (
                                             <li
@@ -194,7 +247,6 @@ export default function Sidebar() {
                                                     className="flex flex-col p-2 gap-1 grow min-w-0"
                                                 >
                                                     <div className="flex items-center gap-2">
-                                                        <FaRegClock className="opacity-60" />
                                                         <span>{formatDateTime(item.created_at.toString())}</span>
                                                     </div>
                                                 </Link>
@@ -216,6 +268,10 @@ export default function Sidebar() {
                                     <li className="text-xs text-gray-400 mx-2">No records found</li>
                                 )}
                             </ul>
+                        )}
+
+                        {loadingMore && hasMore && (
+                            <li className="text-xs text-gray-400 mx-2">Loading more...</li>
                         )}
                     </div>
 

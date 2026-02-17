@@ -2,7 +2,6 @@
 import SettingRow from "@/components/settingRow"
 import { useSettings } from "@/context/settingscontext";
 import { useTheme } from "next-themes";
-import { useState } from "react";
 
 export default function Settings() {
     const { savePrediction, setSavePrediction } = useSettings();
@@ -12,7 +11,7 @@ export default function Settings() {
 
     return (
         <div className="p-4">
-            <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Customize Display</h1>
+            <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Settings</h1>
             <div className="max-w-xl divide-y divide-gray-200 dark:divide-gray-700">
                 <SettingRow
                     title="Dark mode"

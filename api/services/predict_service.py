@@ -98,7 +98,7 @@ def predict_result(patient_data, user_id: str):
         }
 
         if save_prediction:
-            supabase.table(TABLE_NAME_PREDICTION).insert({
+            insert_history = supabase.table(TABLE_NAME_PREDICTION).insert({
                 "user_id": user_id,
                 "input_data": patient_data,
                 "prediction_xai": plots,
@@ -106,5 +106,9 @@ def predict_result(patient_data, user_id: str):
                 "predicted_probability": round(confidence, 4)
             }).execute()
 
+        new_history_record = insert_history.data[0]
+        results["prediction_history"] = {
+            "id": new_history_record.get("id"),
+            "created_at": new_history_record.get("created_at")
+        }
         return results
-    

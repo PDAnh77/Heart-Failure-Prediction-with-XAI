@@ -15,8 +15,7 @@ router = APIRouter()
 @router.get("/")
 def get_patients(
     limit: int = Query(10, ge=1, le=100, description="Number of patient records per page"),
-    offset: int = Query(0, ge=0, description="Starting index"),
-):
+    offset: int = Query(0, ge=0, description="Starting index")):
     return get_patients_service(limit, offset)
 
 @router.get("/rand")

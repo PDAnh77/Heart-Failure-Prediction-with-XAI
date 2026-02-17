@@ -4,11 +4,9 @@ from schemas.prediction_schema import PredictionBase, PredictionGet
 
 TABLE_NAME_PREDICTION = "prediction_histories"
 
-def get_user_predictions_service(user_id: str):
+def get_user_predictions_service(user_id: str, limit: int, offset: int):
     columns = ','.join(PredictionBase.model_fields.keys())
-    result = supabase.table(TABLE_NAME_PREDICTION).select(columns).eq("user_id", user_id).execute()
-    if not result.data:
-        raise HTTPException(status_code=404, detail="User not found")
+    result = supabase.table(TABLE_NAME_PREDICTION).select(columns).eq("user_id", user_id).range(offset, offset + limit - 1).order("created_at", desc=True).execute()
     return result.data
 
 def get_info_prediction_service(prediction_id: str):
@@ -26,6 +24,4 @@ def delete_prediction_service(prediction_id: str):
 
 def delete_user_predictions_service(user_id: str):
     result = supabase.table(TABLE_NAME_PREDICTION).delete().eq("user_id", user_id).execute()
-    if not result.data:
-        raise HTTPException(status_code=404, detail="User not found")
     return result.data

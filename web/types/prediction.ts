@@ -4,11 +4,11 @@ export interface PredictionResult {
   shap_waterfall: string;
   shap_bar: string;
   lime: string;
+  prediction_history: PredictionHistoryBase;
 }
 
 export interface PredictionHistoryBase {
   id: string;
-  user_id: string;
   created_at: Date;
 }
 

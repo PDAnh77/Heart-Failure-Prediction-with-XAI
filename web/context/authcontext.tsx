@@ -3,16 +3,17 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { User } from "@/types/user";
 import { AuthContextType } from "@/types/authcontext";
 import { api, setAccessToken } from "@/lib/api";
+import { PredictionHistoryBase } from "@/types/prediction";
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshHistoryTicket, setRefreshHistoryTicket] = useState(0);
+  const [newHistoryItem, setNewHistoryItem] = useState<PredictionHistoryBase | null>(null);
 
-  const triggerRefreshHistory = () => {
-      setRefreshHistoryTicket(prev => prev + 1);
+  const pushNewHistoryItem = (item: PredictionHistoryBase) => {
+    setNewHistoryItem(item);
   };
 
   useEffect(() => {
@@ -45,7 +46,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, refreshHistoryTicket, triggerRefreshHistory }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, newHistoryItem, pushNewHistoryItem }}>
       {children}
     </AuthContext.Provider>
   );

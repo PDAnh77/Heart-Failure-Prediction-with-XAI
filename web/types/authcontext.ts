@@ -1,10 +1,11 @@
 import { User } from "@/types/user";
+import { PredictionHistoryBase } from "./prediction";
 
 export interface AuthContextType {
   user: User | null;
   loading: boolean;
-  refreshHistoryTicket: number | null;
+  newHistoryItem: PredictionHistoryBase | null;
   login: (userData: User) => void;
-  triggerRefreshHistory: () => void;
+  pushNewHistoryItem: (item: PredictionHistoryBase) => void;
   logout: () => void;
 }

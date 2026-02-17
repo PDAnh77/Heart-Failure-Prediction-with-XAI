@@ -19,7 +19,7 @@ export default function Predict() {
     const autoFillBtnRef = useRef<HTMLButtonElement>(null);
     const topRef = useRef<HTMLDivElement>(null);
     const resultRef = useRef<HTMLDivElement>(null);
-    const { user, loading: authLoading, logout, triggerRefreshHistory } = useAuth();
+    const { user, loading: authLoading, logout, pushNewHistoryItem } = useAuth();
     const { savePrediction } = useSettings();
 
     const RequiredMark = () => <span className="text-red-500">*</span>;
@@ -200,7 +200,7 @@ export default function Predict() {
             const data: PredictionResult = res.data;
             setResult(data);
             // console.log("API result:", data);
-            triggerRefreshHistory();
+            pushNewHistoryItem(data.prediction_history);
         } catch (error: any) {
             if (error.response?.status === 401) {
                 toast.error("Session expired. Please sign in again.");
