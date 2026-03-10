@@ -4,6 +4,7 @@ import { User } from "@/types/user";
 import { AuthContextType } from "@/types/authcontext";
 import { api, setAccessToken } from "@/lib/api";
 import { PredictionHistoryBase } from "@/types/prediction";
+import axios from "axios";
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -17,22 +18,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    const checkUser = async () => {
+    const initializeAuth = async () => {
       try {
-        const res = await api.get("/user/me");
-        setUser(res.data);
-      } catch (error: any) {
-        if (error.response?.status === 401) {
-          setUser(null);
-          setAccessToken(null);
-        } else {
-          console.error("Auth check failed:", error);
-        }
+        // Gọi refresh để lấy access token mới từ cookie
+        const resRefresh = await axios.post("/api/auth/refresh", {}, { withCredentials: true });
+        const newAccessToken = resRefresh.data.access_token;
+
+        setAccessToken(newAccessToken);
+
+        const resUser = await api.get("/users/me");
+        setUser(resUser.data);
+      } catch (error) {
+        // Nếu refresh lỗi (hết hạn hoàn toàn), coi như user chưa log in
+        setUser(null);
+        setAccessToken(null);
       } finally {
         setLoading(false);
       }
     };
-    checkUser();
+
+    initializeAuth();
   }, []);
 
   const login = (userData: User) => {

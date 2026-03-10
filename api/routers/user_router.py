@@ -1,42 +1,22 @@
-from fastapi import APIRouter, Depends, Request, Response
-from schemas.user_schema import UserBase
-from services.user_service import (
-    login_user,
-    google_login,
-    google_callback,
-    refresh_access_token,
-    get_current_user,
-    signup_user,
-    logout_user,
-)
-from services.auth_service import validate_token
+from fastapi import APIRouter, Depends
+from schemas.user_schema import UserUpdate
+from services.user_service import (get_user_by_id, update_user_by_id, delete_user_by_id)
+from services.auth_service import require_roles
 
 router = APIRouter()
 
-@router.post("/auth/login")
-def login(request: Request, response: Response, data: UserBase):
-    return login_user(request, response, data)
+@router.get("/me")
+def get_me(user = Depends(require_roles(["admin", "viewer"]))):
+    return get_user_by_id(user["user_id"])
 
-@router.get("/auth/google")
-async def auth_google(request: Request):
-    return await google_login(request)
+@router.get("/{user_id}", dependencies=[Depends(require_roles(["admin"]))])
+def get_user(user_id: str):
+    return get_user_by_id(user_id)
 
-@router.get("/auth/google/callback")
-async def auth_google_callback(request: Request):
-    return await google_callback(request)
+@router.put("/{user_id}", dependencies=[Depends(require_roles(["admin"]))])
+def update_user(user_id: str, user_update: UserUpdate):
+    return update_user_by_id(user_id, user_update)
 
-@router.post("/auth/refresh")
-def refresh(request: Request, response: Response):
-    return refresh_access_token(request, response)
-
-@router.get("/user/me")
-def me(user_id: str = Depends(validate_token)):
-    return get_current_user(user_id)
-
-@router.post("/user/signup", dependencies=[Depends(validate_token)])
-def signup(new_user: UserBase):
-    return signup_user(new_user)
-
-@router.post("/auth/logout")
-def logout(request: Request, response: Response):
-    return logout_user(request, response)
+@router.delete("/{user_id}", dependencies=[Depends(require_roles(["admin"]))])
+def delete_user(user_id: str):
+    return delete_user_by_id(user_id)

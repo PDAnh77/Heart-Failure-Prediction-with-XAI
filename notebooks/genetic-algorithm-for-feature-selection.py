@@ -193,7 +193,7 @@ ss = StandardScaler()
 df1[std_cols] = ss.fit_transform(df1[std_cols])
 
 target = df1["HeartDisease"]
-features = df1[df1.columns.drop(["HeartDisease", "RestingBP", "RestingECG"])]
+features = df1[df1.columns.drop(["HeartDisease"])]
 
 print("Heart Failure dataset:\n", features.shape[0], "Records\n", features.shape[1], "Features")
 

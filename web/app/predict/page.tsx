@@ -94,7 +94,7 @@ export default function Predict() {
             }
 
             const res = await api.get("/patients/rand");
-            const patient: Patient = res.data.data[0];
+            const patient: Patient = res.data;
 
             if (!patient) return;
 

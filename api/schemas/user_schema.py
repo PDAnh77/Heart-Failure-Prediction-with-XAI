@@ -3,12 +3,16 @@ from pydantic import BaseModel, Field
 class UserBase(BaseModel):
     username: str
     email: str | None = Field(None)
-    password: str
 
 class UserLogin(UserBase):
-    id: str
+    password: str
+
+class UserSignup(UserBase):
+    password: str
     
-class UserGet(BaseModel):
+class UserInfo(UserBase):
     id: str
-    username: str
-    email: str
+    role: str
+
+class UserUpdate(UserBase):
+    role: str

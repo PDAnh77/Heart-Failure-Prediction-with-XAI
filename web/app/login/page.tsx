@@ -12,14 +12,15 @@ export default function Login() {
     const [password, setPassword] = useState("")
     const [errors, setErrors] = useState({ username: "", password: "" })
     const [loading, setLoading] = useState(false)
+    const [submitted, setSubmitted] = useState(false)
     const router = useRouter()
     const { login, user } = useAuth();
 
     useEffect(() => {
-        if (user) {
+        if (user && submitted) {
             router.push("/predict")
         }
-    }, [user])
+    }, [user, submitted, router])
 
     const handleGoogleLogin = () => {
         window.location.href = "/api/auth/google";
@@ -27,6 +28,7 @@ export default function Login() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        setSubmitted(true)
         setErrors({ username: "", password: "" })
         toast.dismiss();
         let hasError = false;
@@ -55,9 +57,7 @@ export default function Login() {
         try {
             const res = await api.post("/auth/login", payload)
             const current_user: User = res.data
-
             login(current_user)
-            router.push("/predict")
         } catch (error: any) {
             if (error.response?.status === 401) {
                 toast.error("Invalid username or password.");

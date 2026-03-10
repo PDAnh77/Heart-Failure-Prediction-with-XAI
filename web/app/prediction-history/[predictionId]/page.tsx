@@ -6,12 +6,15 @@ import Image from "next/image";
 import { FaUser, FaNotesMedical } from "react-icons/fa6";
 import { FaHeartbeat } from "react-icons/fa";
 import { PredictionHistoryDetail } from "@/types/prediction";
+import { useAuth } from "@/context/authcontext";
+import toast from "react-hot-toast";
 
 export default function PredictionDetailPage() {
     const params = useParams();
     const predictionId = params.predictionId;
     const [result, setResult] = useState<PredictionHistoryDetail | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [loadingPrediction, setLoadingPrediction] = useState(true);
+    const { loading, user } = useAuth();
 
     const GLOSSARY_DATA = [
         { term: "Age", definition: "Patient's age." },
@@ -28,21 +31,22 @@ export default function PredictionDetailPage() {
     ];
 
     useEffect(() => {
-        const fetchDetail = async () => {
-            try {
-                const res = await api.get(`/prediction-history/${predictionId}`);
-                if (Array.isArray(res.data) && res.data.length > 0) {
-                    setResult(res.data[0]);
+        if (!loading && user) {
+            const fetchDetail = async () => {
+                try {
+                    const res = await api.get(`/prediction-history/${predictionId}`);
+                    setResult(res.data);
+                } catch (error) {
+                    toast.error("Prediction data not found");
+                } finally {
+                    setLoadingPrediction(false);
                 }
-            } catch (error) {
-                console.error("Prediction data not found", error);
-            } finally {
-                setLoading(false);
+            };
+            if (predictionId) {
+                fetchDetail();
             }
-        };
-
-        if (predictionId) fetchDetail();
-    }, [predictionId]);
+        }
+    }, [predictionId, loading, user]);
 
     const formatDateTime = (dateString: string) => {
         const date = new Date(dateString);
@@ -84,7 +88,7 @@ export default function PredictionDetailPage() {
         );
     };
 
-    if (loading) return (
+    if (loadingPrediction) return (
         <div className="flex h-screen items-center justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
         </div>
