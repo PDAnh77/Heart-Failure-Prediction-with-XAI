@@ -34,7 +34,7 @@ export default function PredictionDetailPage() {
         if (!loading && user) {
             const fetchDetail = async () => {
                 try {
-                    const res = await api.get(`/prediction-history/${predictionId}`);
+                    const res = await api.get(`/predictions/${predictionId}`);
                     setResult(res.data);
                 } catch (error) {
                     toast.error("Prediction data not found");
@@ -70,6 +70,7 @@ export default function PredictionDetailPage() {
 
     // Truyền URL img Supabase vào src
     const renderChartImage = (imageUrl: string, title: string) => {
+        if (!imageUrl) return null
         return (
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                 <h4 className="text-center font-semibold mb-3 text-gray-700 dark:text-gray-300">{title}</h4>
@@ -90,7 +91,7 @@ export default function PredictionDetailPage() {
 
     if (loadingPrediction) return (
         <div className="flex h-screen items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-white"></div>
         </div>
     );
 

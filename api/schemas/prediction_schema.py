@@ -1,11 +1,14 @@
 from datetime import datetime
-from typing import Any, Dict 
+from typing import Any, Dict
+from uuid import UUID
 from pydantic import BaseModel
 
+
 class PredictionBase(BaseModel):
-    id: str
-    user_id: str
+    id: UUID
+    user_id: UUID
     created_at: datetime
+
 
 class PredictionGet(BaseModel):
     input_data: Dict[str, Any]

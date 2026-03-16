@@ -196,7 +196,7 @@ export default function Predict() {
         // console.log("Payload sending to API:", JSON.stringify(payload, null, 2));
 
         try {
-            const res = await api.post("/predict", payload);
+            const res = await api.post("/predictions", payload);
             const data: PredictionResult = res.data;
             setResult(data);
             // console.log("API result:", data);
@@ -217,6 +217,7 @@ export default function Predict() {
 
     // Truyền URL img Supabase vào src
     const renderChartImage = (imageUrl: string, title: string) => {
+        if (!imageUrl) return null
         return (
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                 <h4 className="text-center font-semibold mb-3 text-gray-700 dark:text-gray-300">{title}</h4>

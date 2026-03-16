@@ -6,7 +6,7 @@ import io
 import uuid
 from datetime import datetime
 from lime.lime_tabular import LimeTabularExplainer
-from db.database import supabase
+from core.supabase_client import supabase
 
 IMAGE_BUCKET = "heart-prediction-xai-reports" 
 

@@ -37,7 +37,7 @@ export default function Sidebar() {
         }
         const loadPredictionHistory = async () => {
             try {
-                const res = await api.get(`prediction-history/me?limit=12&offset=0`);
+                const res = await api.get(`predictions/me?limit=12&offset=0`);
                 setResult(res.data);
                 setOffset(12);
                 setHasMore(res.data.length === 12);
@@ -82,7 +82,7 @@ export default function Sidebar() {
         if (!deleteId) return;
         setIsDeleting(true);
         try {
-            await api.delete(`/prediction-history/${deleteId}`);
+            await api.delete(`/predictions/${deleteId}`);
             setResult((prevResult: any) => prevResult.filter((item: any) => item.id !== deleteId));
             setDeleteId(null);
         } catch (error) {
@@ -121,7 +121,7 @@ export default function Sidebar() {
 
         setLoadingMore(true);
         try {
-            const res = await api.get(`prediction-history/me?limit=12&offset=${offset}`);
+            const res = await api.get(`predictions/me?limit=12&offset=${offset}`);
             const newItems: PredictionHistoryBase[] = res.data;
 
             setResult((prev) => {
