@@ -65,10 +65,12 @@ The repository is organized as follows:
 │
 ├── api/                    # Backend API (FastAPI)
 │   ├── core/               # Core configuration, security, settings
-│   ├── db/                 # Database connection and models
+│   ├── db/                 # Database configuration and session management
+│   ├── models/             # SQLAlchemy ORM models
 │   ├── routers/            # API route definitions endpoints
 │   ├── schemas/            # Pydantic request/response schemas
 │   ├── services/           # Business logic (prediction, XAI, auth)
+│   ├── dependencies.py     # Shared FastAPI dependencies (database session)
 │   ├── main.py             # FastAPI application entry point
 │   ├── Dockerfile          # Docker image build configuration
 │   └── requirements.txt    # Backend dependencies

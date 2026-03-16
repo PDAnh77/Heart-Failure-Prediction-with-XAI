@@ -2,11 +2,13 @@ import random, string
 from uuid import UUID
 from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Request, Response, status
+from sqlalchemy import select, insert, update, delete
 from starlette.responses import RedirectResponse
-from db.database import supabase
+from models.refresh_token_model import RefreshToken
+from models.user_model import User
+from sqlalchemy.orm import Session
 from core.config import settings
-from schemas.user_schema import UserBase, UserInfo, UserLogin, UserSignup, UserUpdate
-from schemas.refresh_token_schema import RefreshTokenBase
+from schemas.user_schema import UserLogin, UserSignup, UserUpdate
 from services.auth_service import (
     generate_access_token,
     verify_password,
@@ -16,9 +18,8 @@ from services.auth_service import (
     oauth,
 )
 
-TABLE_USER = "users"
-TABLE_TOKEN = "refresh_tokens"
 REFRESH_TOKEN_TTL_DAYS = 7
+
 
 def check_uuid(id: str):
     try:
@@ -27,18 +28,23 @@ def check_uuid(id: str):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid UUID format")
     return validated_uuid
 
-def store_refresh_token(request: Request, user_id: str, refresh_token: str):
+
+def store_refresh_token(db: Session, request: Request, user_id: str, refresh_token: str):
     user_agent = request.headers.get("user-agent", "unknown")
     forwarded = request.headers.get("x-forwarded-for")
     ip_address = forwarded.split(",")[0] if forwarded else request.client.host
 
-    supabase.table(TABLE_TOKEN).insert({
-        "user_id": user_id,
-        "token_hash": hash_token(refresh_token),
-        "expires_at": (datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_TTL_DAYS)).isoformat(),
-        "ip_address": ip_address,
-        "user_agent": user_agent
-    }).execute()
+    db.execute(
+        insert(RefreshToken).values(
+            user_id=user_id,
+            token_hash=hash_token(refresh_token),
+            expires_at=(datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_TTL_DAYS)).isoformat(),
+            ip_address=ip_address,
+            user_agent=user_agent,
+        )
+    )
+    db.commit()
+
 
 def set_refresh_token_cookie(response: Response, refresh_token: str):
     response.set_cookie(
@@ -48,159 +54,160 @@ def set_refresh_token_cookie(response: Response, refresh_token: str):
         httponly=True,
         samesite="lax",
         max_age=60 * 60 * 24 * 7,
-        path="/api/auth"
+        path="/api/auth",
     )
 
-def login_user(request: Request, response: Response, user_login: UserLogin):
-    existing_user = supabase.table(TABLE_USER).select("*").eq("username", user_login.username).execute()
 
-    if not existing_user.data:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
-    current_user = existing_user.data[0]
+def login_user(db: Session, request: Request, response: Response, user_login: UserLogin):
+    current_user = db.execute(select(User).where(User.username == user_login.username)).scalar_one_or_none()
 
-    if not verify_password(user_login.password, current_user["password"]):
+    if not current_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
 
-    access_token = generate_access_token(current_user["id"], current_user["role"])
+    if not verify_password(user_login.password, current_user.password):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
+
+    access_token = generate_access_token(current_user.id, current_user.role)
     refresh_token = generate_refresh_token()
-    store_refresh_token(request, current_user["id"], refresh_token)
+    store_refresh_token(db, request, current_user.id, refresh_token)
     set_refresh_token_cookie(response, refresh_token)
 
-    return {
-        "username": current_user["username"],
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    return {"username": current_user.username, "access_token": access_token, "token_type": "bearer"}
+
 
 async def google_login(request: Request):
-    return await oauth.auth_google.authorize_redirect(
-        request,
-        settings.REDIRECT_URI,
-        prompt="select_account"
-    )
+    return await oauth.auth_google.authorize_redirect(request, settings.REDIRECT_URI, prompt="select_account")
 
-async def google_callback(request: Request):
+
+async def google_callback(db: Session, request: Request):
     token = await oauth.auth_google.authorize_access_token(request)
     userinfo = token.get("userinfo")
     email = userinfo.get("email")
 
-    columns = ",".join(UserInfo.model_fields.keys())
-    existing_user = supabase.table(TABLE_USER).select(columns).eq("email", email).execute()
+    existing_user = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
 
-    if not existing_user.data:
+    if not existing_user:
         prefix = email.split("@")[0].rstrip("0123456789")
         random_digits = "".join(random.choices(string.digits, k=5))
         username = f"{prefix}{random_digits}"
-        new_user = supabase.table(TABLE_USER).insert({
-            "username": username,
-            "email": email
-        }).execute()
-        user_id = new_user.data[0]["id"]
-    else:
-        user_id = existing_user.data[0]["id"]
 
+        result = db.execute(insert(User).values(username=username, email=email).returning(User.id))
+        db.commit()
+
+        user_id = result.scalar_one()
+    else:
+        user_id = existing_user.id
     refresh_token = generate_refresh_token()
-    store_refresh_token(request, user_id, refresh_token)
+    store_refresh_token(db, request, user_id, refresh_token)
     response = RedirectResponse(url=f"{settings.CLIENT_URL}/predict")
     set_refresh_token_cookie(response, refresh_token)
     return response
 
-def refresh_access_token(request: Request, response: Response):
+
+def refresh_access_token(db: Session, request: Request, response: Response):
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token missing")
 
     token_hash = hash_token(refresh_token)
-    columns = ",".join(RefreshTokenBase.model_fields.keys())
-    select_query = f"{columns}, users(role)"
-    result = supabase.table(TABLE_TOKEN).select(select_query).eq("token_hash", token_hash).execute()
-    db_token = result.data[0] if result.data else None
 
-    if not db_token:
+    result = db.execute(
+        select(RefreshToken, User.role)
+        .join(User, RefreshToken.user_id == User.id)
+        .where(RefreshToken.token_hash == token_hash)
+    ).one_or_none()
+
+    if not result:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
-        
-    if db_token.get("revoked"):
-        time_elapsed = datetime.now(timezone.utc) - datetime.fromisoformat(db_token.get("revoked_at"))
+
+    db_token = result.RefreshToken
+    user_role = result.role
+
+    if db_token.revoked:
+        time_elapsed = datetime.now(timezone.utc) - db_token.revoked_at
 
         if time_elapsed > timedelta(seconds=20):
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token reuse detected. Please login again.")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Token reuse detected. Please login again."
+            )
         else:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Refresh in progress, please retry.")
-        
-    if datetime.fromisoformat(db_token["expires_at"]) < datetime.now(timezone.utc):
-        supabase.table(TABLE_TOKEN).update({
-            "revoked": True,
-            "revoked_at": datetime.now(timezone.utc).isoformat()
-        }).eq("token_hash", token_hash).execute()
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Expired refresh token")
-    
-    supabase.table(TABLE_TOKEN).update({
-        "revoked": True,
-        "revoked_at": datetime.now(timezone.utc).isoformat()
-        }).eq("token_hash", token_hash).execute()
 
-    user_role = db_token.get("users", {}).get("role")
-    if not user_role:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User associated with this token no longer exists")
-    
-    new_access_token = generate_access_token(db_token["user_id"], user_role)
+    if db_token.expires_at < datetime.now(timezone.utc):
+        db.execute(
+            update(RefreshToken)
+            .where(RefreshToken.token_hash == token_hash)
+            .values(revoked=True, revoked_at=datetime.now(timezone.utc).isoformat())
+        )
+        db.commit()
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Expired refresh token")
+
+    db.execute(
+        update(RefreshToken)
+        .where(RefreshToken.token_hash == token_hash)
+        .values(revoked=True, revoked_at=datetime.now(timezone.utc).isoformat())
+    )
+
+    new_access_token = generate_access_token(db_token.user_id, user_role)
     new_refresh_token = generate_refresh_token()
-    store_refresh_token(request, db_token["user_id"], new_refresh_token)
+    store_refresh_token(db, request, db_token.user_id, new_refresh_token)
     set_refresh_token_cookie(response, new_refresh_token)
 
-    return {
-        "access_token": new_access_token,
-        "token_type": "bearer"
-    }
+    return {"access_token": new_access_token, "token_type": "bearer"}
 
-def get_user_by_id(user_id: str):
+
+def get_user_by_id(db: Session, user_id: str):
     user_uuid = check_uuid(user_id)
 
-    columns = ",".join(UserInfo.model_fields.keys())
-    res = supabase.table(TABLE_USER).select(columns).eq("id", user_uuid).execute()
-    if not res.data:
+    result = db.execute(select(User).where(User.id == user_uuid)).scalar_one_or_none()
+    if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return res.data[0]
+    return result
 
-def create_user(new_user: UserSignup):
-    columns = ",".join(UserBase.model_fields.keys())
-    user = supabase.table(TABLE_USER).select(columns).eq("username", new_user.username).execute()
-    if user.data:
+
+def create_user(db: Session, new_user: UserSignup):
+    user = db.execute(select(User.id).where(User.username == new_user.username)).scalar_one_or_none()
+    if user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User already existed")
     new_user.password = get_password_hash(new_user.password)
-    res = supabase.table(TABLE_USER).insert(new_user.model_dump()).execute()
-    return res.data[0]
+    db.execute(insert(User).values(new_user.model_dump()))
+    db.commit()
+    return {"detail": "Create user successfully"}
 
-def logout_user(request: Request, response: Response):
+
+def logout_user(db: Session, request: Request, response: Response):
     refresh_token = request.cookies.get("refresh_token")
     if refresh_token:
         token_hash = hash_token(refresh_token)
-        supabase.table(TABLE_TOKEN).update({
-            "revoked": True,
-            "revoked_at": datetime.now(timezone.utc).isoformat()
-            }).eq("token_hash", token_hash).execute()
+        db.execute(
+            update(RefreshToken)
+            .where(RefreshToken.token_hash == token_hash)
+            .values(revoked=True, revoked_at=datetime.now(timezone.utc).isoformat())
+        )
+        db.commit()
     response.delete_cookie(key="refresh_token", path="/api/auth")
     return {"detail": "Logged out successfully"}
 
-def update_user_by_id(user_id: str, user_update: UserUpdate):
-    user_uuid = check_uuid(user_id)
 
-    columns = ",".join(UserBase.model_fields.keys())
-    user = supabase.table(TABLE_USER).select(columns).eq("id", user_uuid).execute()
-    if not user.data:
+def update_user_by_id(db: Session, user_id: str, user_update: UserUpdate):
+    user_uuid = check_uuid(user_id)
+    user = db.execute(select(User.id).where(User.id == user_uuid)).scalar_one_or_none()
+    if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    
+
     update_data = user_update.model_dump(exclude_unset=True)
-    res = supabase.table(TABLE_USER).update(update_data).eq("id", user_uuid).execute()
-    return res.data[0]
+    result = db.execute(update(User).where(User.id == user_uuid).values(update_data).returning(User))
+    db.commit()
+    return result.scalar_one()
 
-def delete_user_by_id(user_id: str):
+
+def delete_user_by_id(db: Session, user_id: str):
     user_uuid = check_uuid(user_id)
-    
-    columns = ",".join(UserBase.model_fields.keys())
-    user = supabase.table(TABLE_USER).select(columns).eq("id", user_uuid).execute()
-    if not user.data:
+
+    user = db.execute(select(User.id).where(User.id == user_uuid)).scalar_one_or_none()
+    if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    
-    supabase.table(TABLE_USER).delete().eq("id", user_uuid).execute()
+
+    db.execute(delete(User).where(User.id == user_uuid))
+    db.commit()
     return {"detail": "Delete user successfully"}

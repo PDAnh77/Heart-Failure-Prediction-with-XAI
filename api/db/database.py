@@ -1,7 +1,7 @@
-from supabase import create_client, Client
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 from core.config import settings
 
-url = settings.DATABASE_URL
-key = settings.DATABASE_KEY
-
-supabase: Client = create_client(url, key)
+engine = create_engine(settings.DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()

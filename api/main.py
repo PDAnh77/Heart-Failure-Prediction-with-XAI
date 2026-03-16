@@ -1,11 +1,12 @@
 from fastapi import FastAPI
-from routers import auth_router, patient_router, predict_router, user_router, prediction_history_router
+from routers import auth_router, user_router, prediction_router, patient_router
 from contextlib import asynccontextmanager
 import httpx, asyncio
 from core.model_loader import load_model_startup
 from core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+
 
 async def ping_self():
     url = settings.API_URL
@@ -26,14 +27,18 @@ async def ping_self():
             print(f"Error pinging self: {e}")
         await asyncio.sleep(10 * 60)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     load_model_startup()
     task = asyncio.create_task(ping_self())
     yield
-    task.cancel() # Hủy task khi API tắt
+    task.cancel()  # Hủy task khi API tắt
 
-app = FastAPI(title="Heart Disease Prediction API", openapi_url="/api/openapi.json", docs_url="/docs", lifespan=lifespan)
+
+app = FastAPI(
+    title="Heart Disease Prediction API", openapi_url="/api/openapi.json", docs_url="/docs", lifespan=lifespan
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -46,13 +51,14 @@ app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY, session_co
 
 app.include_router(auth_router.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(user_router.router, prefix="/api/users", tags=["User"])
-app.include_router(predict_router.router, prefix="/api/predict", tags=["Heart failure prediction"])
+app.include_router(prediction_router.router, prefix="/api/predictions", tags=["Heart failure prediction"])
 app.include_router(patient_router.router, prefix="/api/patients", tags=["Patient"])
-app.include_router(prediction_history_router.router, prefix="/api/prediction-history", tags=["Prediction history"])
+
 
 @app.get("/")
 def root():
     return {"message": "API is running"}
+
 
 @app.get("/health")
 def health_check():

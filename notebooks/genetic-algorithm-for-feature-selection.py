@@ -220,7 +220,7 @@ for name, model_obj in zip(classifiers, models):
         n_feat=features.shape[1],
         n_parents=64,
         mutation_rate=0.20,
-        n_gen=5,
+        n_gen=10,
         X_train=X_train,
         X_test=X_test,
         Y_train=Y_train,
