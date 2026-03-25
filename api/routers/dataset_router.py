@@ -1,0 +1,56 @@
+from fastapi import APIRouter, Depends, Query, UploadFile
+from services.auth_service import require_roles
+from services import dataset_service
+
+router = APIRouter()
+
+
+@router.post("/upload")
+def upload_dataset(file: UploadFile, user=Depends(require_roles(["admin", "user"]))):
+    return dataset_service.upload_dataset(file, user["user_id"])
+
+
+@router.get("/{dataset_id}/summary")
+def get_dataset_summary(
+    dataset_id: str,
+    target_column: str = Query(None),
+    owner_id: str = Query(None),
+    user=Depends(require_roles(["admin", "user"])),
+):
+    return dataset_service.get_summary(dataset_id, owner_id, user, target_column)
+
+
+@router.get("/{dataset_id}/rows")
+def get_dataset_rows(
+    dataset_id: str,
+    limit: int = Query(10, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    owner_id: str = Query(None),
+    user=Depends(require_roles(["admin", "user"])),
+):
+    return dataset_service.get_rows(dataset_id, owner_id, user, limit, offset)
+
+
+@router.post("/{dataset_id}/preprocess")
+def preprocess_dataset(
+    dataset_id: str,
+    target_column: str,
+    owner_id: str = Query(None),
+    user=Depends(require_roles(["admin", "user"])),
+):
+    return dataset_service.preprocess(dataset_id, owner_id, user, target_column)
+
+
+@router.get("/{dataset_id}/download")
+def download_dataset(dataset_id: str, owner_id: str = Query(None), user=Depends(require_roles(["admin", "user"]))):
+    return dataset_service.download(dataset_id, owner_id, user)
+
+
+@router.get("/{dataset_id}/eda", dependencies=[Depends(require_roles(["admin", "user"]))])
+def get_dataset_eda(
+    dataset_id: str,
+    target_column: str,
+    owner_id: str = Query(None),
+    user=Depends(require_roles(["admin", "user"])),
+):
+    return dataset_service.get_eda(dataset_id, target_column, owner_id, user)
