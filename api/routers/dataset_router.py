@@ -54,3 +54,20 @@ def get_dataset_eda(
     user=Depends(require_roles(["admin", "user"])),
 ):
     return dataset_service.get_eda(dataset_id, target_column, owner_id, user)
+
+
+@router.get("{dataset_id}/feature-selection")
+def dataset_feature_selection(
+    dataset_id: str,
+    target_column: str,
+    size: int = Query(80, ge=10, le=200),
+    n_gen: int = Query(10, ge=1, le=50),
+    mutation_rate: float = Query(0.2, ge=0.01, le=0.5),
+    n_parents: int = Query(None),
+    owner_id: str = Query(None),
+    user=Depends(require_roles(["admin", "user"])),
+):
+
+    return dataset_service.genetic_selection(
+        dataset_id, target_column, owner_id, user, size, n_gen, mutation_rate, n_parents
+    )
