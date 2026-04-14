@@ -19,6 +19,17 @@ DATASET_BUCKET = "heart-failure-datasets"
 EDA_BUCKET = "eda-artifacts"
 
 
+def _sanitize(obj):
+    """Recursively replace nan/inf float values with None for JSON safety."""
+    if isinstance(obj, float) and (obj != obj or obj == float("inf") or obj == float("-inf")):
+        return None
+    if isinstance(obj, dict):
+        return {k: _sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize(v) for v in obj]
+    return obj
+
+
 def load_dataset(dataset_id: str, user_id: str) -> pd.DataFrame:
 
     if "processed" in dataset_id:
@@ -147,7 +158,7 @@ def get_summary(dataset_id: str, owner_id: str, user: dict, target_column: str =
     # ===== GIÁ TRỊ THIẾU =====
     missing_values = df.isnull().sum().to_dict()
 
-    return {
+    return _sanitize({
         "rows": rows,
         "columns": cols,
         "target_column": target_column,
@@ -155,7 +166,7 @@ def get_summary(dataset_id: str, owner_id: str, user: dict, target_column: str =
         "numerical_features": numerical_features,
         "column_types": column_types,
         "missing_values": missing_values,
-    }
+    })
 
 
 def get_rows(dataset_id: str, owner_id: str, user: dict, limit: int, offset: int):
@@ -172,9 +183,8 @@ def get_rows(dataset_id: str, owner_id: str, user: dict, limit: int, offset: int
     # Công thức: [vị trí bắt đầu : vị trí kết thúc]
     df_slice = df.iloc[offset : offset + limit]
 
-    # 3. Xử lý giá trị NaN (Not a Number)
-    # Trong JSON, NaN không hợp lệ, nên ta chuyển thành None (null trong JSON)
-    df_slice = df_slice.replace({pd.NA: None}).where(pd.notnull(df_slice), None)
+    # 3. Xử lý giá trị NaN
+    df_slice = df_slice.astype(object).where(pd.notnull(df_slice), None)
 
     # 4. Chuyển đổi sang list các dictionary
     data = df_slice.to_dict(orient="records")
@@ -201,7 +211,9 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column):
         df = df.dropna(subset=[target_column])
 
     # 2. Xử lý giá trị trùng lặp (Duplicates)
+    rows_before = len(df)
     df = df.drop_duplicates()
+    duplicates_removed = rows_before - len(df)
 
     features_to_process = [col for col in df.columns if col != target_column]
 
@@ -255,6 +267,7 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column):
         "processed_dataset_id": processed_dataset_id,
         "rows": df.shape[0],
         "columns": df.shape[1],
+        "duplicates_removed": duplicates_removed,
     }
 
 
@@ -316,7 +329,7 @@ def get_eda(dataset_id: str, target_column: str, owner_id: str, user: dict):
             wedgeprops={"edgecolor": "black"},
         )
         ax[0].set_title(f"{target_column} %")
-        sns.barplot(x=counts.index, y=counts.values, ax=ax[1], palette=palette, edgecolor="black")
+        sns.barplot(x=counts.index, y=counts.values, hue=counts.index, ax=ax[1], palette=palette, edgecolor="black", legend=False)
         ax[1].set_title(f"Cases of {target_column}")
         ax[1].set_xlabel(target_column)
         ax[1].set_ylabel("count")
@@ -355,10 +368,10 @@ def get_eda(dataset_id: str, target_column: str, owner_id: str, user: dict):
             plt.title("Numerical Importance (ANOVA)")
             charts["anova_score"] = upload_plot(plt, f"{target_user_id}/{dataset_id}/anova.png")
 
-    return {"statistics": stats, "charts": charts}
+    return _sanitize({"statistics": stats, "charts": charts})
 
 
-def initilization_of_population(size, n_feat):
+def initialization_of_population(size, n_feat):
     population = []
     for i in range(size):
         chromosome = np.ones(n_feat, dtype=bool)
@@ -410,7 +423,7 @@ def mutation(pop_after_cross, mutation_rate, n_feat):
 def generations(model, size, n_feat, n_parents, mutation_rate, n_gen, X_train, X_test, Y_train, Y_test):
     best_chromo = []
     best_score = []
-    population_nextgen = initilization_of_population(size, n_feat)
+    population_nextgen = initialization_of_population(size, n_feat)
 
     for i in range(n_gen):
         scores, pop_after_fit = fitness_score(population_nextgen, model, X_train, X_test, Y_train, Y_test)

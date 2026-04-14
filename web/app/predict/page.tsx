@@ -60,7 +60,7 @@ export default function Predict() {
         checkRequired("resting-ecg");
         checkRange("max-hr", 60, 220);
         checkRequired("exercise-angina");
-        checkRange("oldpeak", 0, 6.2);
+        checkRange("oldpeak", -5, 10);
         checkRequired("st-slope");
 
         setInvalidFields(errors);
@@ -427,12 +427,14 @@ export default function Predict() {
                                 type="number"
                                 name="oldpeak"
                                 step="0.1"
-                                placeholder="e.g. 1.5"
+                                min="-5"
+                                max="10"
+                                placeholder="e.g. 1.5 or -0.5"
                                 onChange={handleInputChange}
                                 className={getInputClass("oldpeak")}
                             />
                         </div>
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">ST depression induced by exercise (Range: 0 - 6.2).</p>
+                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">ST deviation induced by exercise (typically -5 to 10; negative values indicate ST elevation).</p>
                     </div>
 
                     {/* --- ST Slope --- */}
@@ -470,7 +472,7 @@ export default function Predict() {
 
             {/* --- HIỂN THỊ KẾT QUẢ --- */}
             {result && (
-                <div ref={resultRef} className="mt-12 mb-12 animate-fade-in px-2 md:px-8">
+                <div ref={resultRef} className="mt-12 animate-fade-in px-2 md:px-8">
                     <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white pb-2 border-b border-gray-200 dark:border-gray-700">
                         Analysis Results
                     </h2>

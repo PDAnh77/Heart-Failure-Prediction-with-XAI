@@ -37,7 +37,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Heart Disease Prediction API", openapi_url="/api/openapi.json", docs_url="/docs", lifespan=lifespan
+    title="Heart Analytics API", openapi_url="/api/openapi.json", docs_url="/docs", lifespan=lifespan
 )
 
 app.add_middleware(
