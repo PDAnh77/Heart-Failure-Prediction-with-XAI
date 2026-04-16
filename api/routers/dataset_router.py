@@ -56,7 +56,7 @@ def get_dataset_eda(
     return dataset_service.get_eda(dataset_id, target_column, owner_id, user)
 
 
-@router.get("{dataset_id}/feature-selection")
+@router.get("/{dataset_id}/feature-selection")
 def dataset_feature_selection(
     dataset_id: str,
     target_column: str,

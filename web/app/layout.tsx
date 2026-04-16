@@ -25,8 +25,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Heart Failure Predict",
-    template: "Heart Failure Predict - %s",
+    default: "Heart Analytics",
+    template: "Heart Analytics - %s",
   },
   description: "An application that predicts heart failure risk based on clinical and health data",
   keywords: [

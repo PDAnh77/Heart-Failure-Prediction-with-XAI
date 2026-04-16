@@ -1,40 +1,29 @@
 "use client";
 import { useEffect, useState, useRef, UIEvent } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { useAuth } from "@/context/authcontext"
 import { FiLoader, FiPieChart, FiAlertCircle, FiCheck, FiDatabase } from "react-icons/fi";
 import { HiOutlineDatabase } from "react-icons/hi";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
 import ImageModal from "@/components/imageModal";
+import { DatasetSummary } from "@/types/dataset_summary";
 
-interface DatasetSummary {
-    rows: number;
-    columns: number;
-    target_column: string;
-    categorical_features: string[];
-    numerical_features: string[];
-    column_types: Record<string, string>;
-    missing_values: Record<string, number>;
+interface EdaTabProps {
+    datasetId: string;
+    targetColumn: string;
+    onProcessed: (processedId: string) => void;
 }
 
-export default function EDA() {
-    const searchParams = useSearchParams();
-    const router = useRouter();
-
-    const datasetId = searchParams.get("id");
-    const targetColumn = searchParams.get("target");
-
+export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [summary, setSummary] = useState<DatasetSummary | null>(null);
     const [charts, setCharts] = useState<Record<string, string>>({});
     const [loadingStep, setLoadingStep] = useState("");
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [duplicatesRemoved, setDuplicatesRemoved] = useState<number>(0);
-    const { user, loading } = useAuth();
-    const fetchedDatasetId = useRef<string | null>(null);
     const [processedRowCount, setProcessedRowCount] = useState<number | null>(null);
+
+    const fetchedDatasetId = useRef<string | null>(null);
 
     // --- STATES CHO DATA PREVIEW ---
     const [processedId, setProcessedId] = useState<string | null>(null);
@@ -47,44 +36,17 @@ export default function EDA() {
     const [loadingMoreOrg, setLoadingMoreOrg] = useState(false);
     const [loadingMoreProc, setLoadingMoreProc] = useState(false);
 
-    // ref theo dõi lần đầu tiên vào trang
-    const isFirstMount = useRef(true);
-
     const extractRows = (data: any) => {
         if (Array.isArray(data)) return data;
         return data?.data || data?.rows || data?.items || [];
     };
 
     useEffect(() => {
-        if (loading) return; 
-        
-        if (!user) {
-            // Chỉ hiện thông báo lỗi nếu đây là lúc vừa mới load vào trang
-            if (isFirstMount.current) {
-                toast.error("Please login first.");
-                isFirstMount.current = false;
-            }
-            
-            router.push("/login");
-            return;
-        }
+        // Chỉ chạy khi đã có đủ thông tin
+        if (!datasetId || !targetColumn) return;
 
-        // Nếu code chạy được đến đây (tức là có user), tắt cờ first mount
-        isFirstMount.current = false;
-    }, [user, loading, router]);
-
-    useEffect(() => {
-        if (loading || !user) return;
-
-        if (!datasetId || !targetColumn) {
-            toast.error("Missing analysis information.");
-            router.push("/");
-            return;
-        }
-
-        if (fetchedDatasetId.current === datasetId) {
-            return;
-        }
+        // Tránh gọi API 2 lần
+        if (fetchedDatasetId.current === datasetId) return;
 
         const fetchData = async () => {
             fetchedDatasetId.current = datasetId;
@@ -105,6 +67,10 @@ export default function EDA() {
 
                 const procId = preprocessRes.data.processed_dataset_id;
                 setProcessedId(procId);
+
+                // Truyền ID dataset đã xử lý lên trang cha
+                onProcessed(procId);
+
                 setDuplicatesRemoved(preprocessRes.data.duplicates_removed || 0);
                 setProcessedRowCount(preprocessRes.data.rows || null);
 
@@ -130,7 +96,7 @@ export default function EDA() {
         };
 
         fetchData();
-    }, [user, loading, datasetId, targetColumn]);
+    }, [datasetId, targetColumn, onProcessed]);
 
     const loadMoreRows = async (type: 'original' | 'processed') => {
         if (type === 'original') {
@@ -172,7 +138,6 @@ export default function EDA() {
         }
     };
 
-    // --- HÀM BẮT SỰ KIỆN CUỘN BẢNG ---
     const handleTableScroll = (e: UIEvent<HTMLDivElement>, type: 'original' | 'processed') => {
         const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
 
@@ -246,7 +211,6 @@ export default function EDA() {
         );
     };
 
-    // Hàm render bảng dữ liệu chung
     const renderDataTable = (data: any[], type: 'original' | 'processed', isLoadingMore: boolean, hasMore: boolean) => {
         if (data.length === 0) return <div className="p-4 text-center text-gray-500">No data available</div>;
         const columns = Object.keys(data[0]);
@@ -266,15 +230,43 @@ export default function EDA() {
                     </thead>
                     <tbody>
                         {data.map((row, index) => (
-                            <tr key={index} className="bg-white border-b border-gray-400/50 dark:bg-gray-800 dark:border-gray-700">
-                                {columns.map(col => (
-                                    <td key={col} className="px-4 py-2 border-r border-gray-400/50 dark:border-gray-700">
-                                        {/* Format lại số thập phân cho gọn nếu quá dài */}
-                                        {typeof row[col] === 'number' && !Number.isInteger(row[col])
-                                            ? Number(row[col]).toFixed(4)
-                                            : String(row[col])}
-                                    </td>
-                                ))}
+                            <tr
+                                key={index}
+                                className="bg-white border-b border-gray-400/50 dark:bg-gray-800 dark:border-gray-700"
+                            >
+                                {columns.map((col) => {
+                                    const rawValue = row[col];
+                                    const fullValue = String(rawValue ?? "");
+
+                                    const displayValue =
+                                        typeof rawValue === "number" &&
+                                            !Number.isInteger(rawValue) &&
+                                            type === "processed"
+                                            ? Number(rawValue)
+                                            : fullValue;
+
+                                    return (
+                                        <td
+                                            key={col}
+                                            className="px-4 py-2 border-r border-gray-400/50 dark:border-gray-700"
+                                        >
+                                            <div className="relative group max-w-[100px]">
+                                                <div className="truncate">
+                                                    {displayValue}
+                                                </div>
+
+                                                {/* tooltip khi hover */}
+                                                {fullValue.length > 6 && (
+                                                    <div
+                                                        className="absolute left-0 bottom-full mb-1 hidden group-hover:block bg-black text-white text-xs px-2 py-1 rounded whitespace-pre-wrap z-20 max-w-xs wrap-break-word shadow-lg"
+                                                    >
+                                                        {fullValue}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                    );
+                                })}
                             </tr>
                         ))}
                     </tbody>
@@ -296,14 +288,7 @@ export default function EDA() {
 
     return (
         <>
-            <div className="p-4 flex flex-col h-full relative">
-                <div className="flex items-center gap-4 mb-8">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Detailed Dataset Analysis</h1>
-                        <p className="text-gray-500 dark:text-gray-400 mt-1">Target Feature: <span className="font-bold text-[#4361EE] uppercase bg-[#4361EE]/10 px-2 py-0.5 rounded ml-1">{targetColumn}</span></p>
-                    </div>
-                </div>
-
+            <div className="mt-6">
                 {isLoading ? (
                     <div className="flex-1 flex flex-col items-center justify-center min-h-[400px]">
                         <FiLoader className="w-10 h-10 animate-spin text-[#4361EE] mb-4" />
@@ -386,7 +371,7 @@ export default function EDA() {
                                                         {Object.entries(summary.missing_values)
                                                             .filter(([_, v]) => v > 0)
                                                             .map(([key, val]) => (
-                                                                <div key={key} className="flex items-center justify-between py-3 px-5 bg-red-50/50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-800/30">
+                                                                <div key={key} className="flex flex-wrap items-center justify-between py-3 px-5 bg-red-50/50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-800/30">
                                                                     <div className="flex items-center gap-2.5 text-gray-800 dark:text-gray-200">
                                                                         <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
                                                                         <span>{key}:</span>
@@ -468,21 +453,52 @@ export default function EDA() {
                         )}
 
                         {/* --- DATA PREVIEW (TRƯỚC & SAU) --- */}
-                        <div>
-                            <div className="flex gap-3 mb-4">
+                        <div className="mb-8">
+                            <div className="flex gap-3 mb-6">
                                 <FiDatabase className="w-7 h-7 text-[#2EC4B6]" />
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dataset Comparation</h2>
+                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dataset Comparison</h2>
                             </div>
 
-                            <div className="px-6">
+                            <div className="px-0 md:px-6 space-y-10">
+
                                 {/* Bảng Dữ Liệu Gốc */}
-                                <div className="space-y-4 mb-4">
+                                <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                                             <span className="w-3 h-3 rounded-full bg-gray-400"></span> Original Data
                                         </h3>
                                     </div>
-                                    {renderDataTable(originalRows, 'original', loadingMoreOrg, hasMoreOriginal)}
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        {/* Vùng Bảng (Chiếm 2/3) */}
+                                        <div className="lg:col-span-2">
+                                            {renderDataTable(originalRows, 'original', loadingMoreOrg, hasMoreOriginal)}
+                                        </div>
+
+                                        {/* Vùng Thông tin (Chiếm 1/3) */}
+                                        <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-xl border border-gray-200 dark:border-gray-700 h-fit">
+                                            <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3 text-base border-b border-gray-200 dark:border-gray-700 pb-2">
+                                                About Original Data
+                                            </h4>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+                                                This is your raw, untouched dataset exactly as it was uploaded. It serves as the baseline to verify the integrity of the automated preprocessing steps.
+                                            </p>
+                                            <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                                                <li className="flex items-start gap-2">
+                                                    <span className="text-gray-400 mt-0.5">•</span>
+                                                    <span><strong>Raw Format:</strong> Features retain their original scales, string text, and categorical labels.</span>
+                                                </li>
+                                                <li className="flex items-start gap-2">
+                                                    <span className="text-gray-400 mt-0.5">•</span>
+                                                    <span><strong>Potential Issues:</strong> May contain duplicate rows, missing values (NaN/Null), or unencoded variables.</span>
+                                                </li>
+                                                <li className="flex items-start gap-2">
+                                                    <span className="text-gray-400 mt-0.5">•</span>
+                                                    <span><strong>Algorithm Readiness:</strong> Not yet optimized for training machine learning models.</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {/* Bảng Dữ Liệu Đã Xử Lý */}
@@ -492,7 +508,41 @@ export default function EDA() {
                                             <span className="w-3 h-3 rounded-full bg-[#2EC4B6]"></span> Preprocessed Data
                                         </h3>
                                     </div>
-                                    {renderDataTable(processedRows, 'processed', loadingMoreProc, hasMoreProcessed)}
+
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        {/* Vùng Bảng (Chiếm 2/3) */}
+                                        <div className="lg:col-span-2">
+                                            {renderDataTable(processedRows, 'processed', loadingMoreProc, hasMoreProcessed)}
+                                        </div>
+
+                                        {/* Vùng Thông tin (Chiếm 1/3) */}
+                                        <div className="bg-[#2EC4B6]/5 dark:bg-[#2EC4B6]/10 p-5 rounded-xl border border-[#2EC4B6]/20 dark:border-[#2EC4B6]/30 h-fit">
+                                            <h4 className="font-semibold text-[#1f8c82] dark:text-[#2EC4B6] mb-3 text-base border-b border-[#2EC4B6]/20 pb-2">
+                                                Applied Transformations
+                                            </h4>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+                                                The dataset has been automatically cleaned and standardized through our pipeline to ensure optimal model performance:
+                                            </p>
+                                            <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                                                <li className="flex items-start gap-2">
+                                                    <span className="text-[#2EC4B6] mt-0.5 font-bold">✓</span>
+                                                    <span><strong>Data Cleaning:</strong> Dropped rows with missing target values and removed exact duplicates to prevent bias.</span>
+                                                </li>
+                                                <li className="flex items-start gap-2">
+                                                    <span className="text-[#2EC4B6] mt-0.5 font-bold">✓</span>
+                                                    <span><strong>Imputation:</strong> Handled missing data by filling numerical gaps with the <em>Median</em>, and categorical gaps with the <em>Mode</em>.</span>
+                                                </li>
+                                                <li className="flex items-start gap-2">
+                                                    <span className="text-[#2EC4B6] mt-0.5 font-bold">✓</span>
+                                                    <span><strong>Encoding:</strong> Applied <em>Label Encoding</em> to convert categorical strings into machine-readable numbers.</span>
+                                                </li>
+                                                <li className="flex items-start gap-2">
+                                                    <span className="text-[#2EC4B6] mt-0.5 font-bold">✓</span>
+                                                    <span><strong>Scaling:</strong> Used <em>Standard Scaler</em> on numerical features to ensure equal contribution across variables (Mean=0, Variance=1).</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

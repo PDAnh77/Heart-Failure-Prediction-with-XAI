@@ -102,7 +102,7 @@ export default function Upload() {
         }
         
         toast.success(`Selected column: ${selectedTarget}. Proceeding...`);
-        router.push(`/analyze/eda?id=${datasetId}&target=${encodeURIComponent(selectedTarget)}`);
+        router.push(`/analyze/dashboard?id=${datasetId}&target=${encodeURIComponent(selectedTarget)}`);
     };
 
     return (

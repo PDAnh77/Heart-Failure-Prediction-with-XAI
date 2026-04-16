@@ -13,6 +13,7 @@ import { IoIosArrowForward, IoIosArrowDown, IoMdSettings } from "react-icons/io"
 import { api } from "@/lib/api";
 import { PredictionHistoryBase } from "@/types/prediction";
 import { IoStatsChartSharp } from "react-icons/io5";
+import { PiHeartbeatFill } from "react-icons/pi";
 
 export default function Sidebar() {
     const [open, setOpen] = useState(false);
@@ -171,6 +172,7 @@ export default function Sidebar() {
 
     return (
         <>
+            {/* MOBILE HEADER */}
             <div className="lg:hidden flex items-center p-2 bg-white dark:bg-[#141516] border-b border-gray-200 dark:border-[#FFFFFF1A] sticky top-0 z-40">
                 <button
                     className="p-2 rounded-xl cursor-pointer"
@@ -205,7 +207,10 @@ export default function Sidebar() {
 
                     {/* MENU TRÊN */}
                     <div className="p-2 space-y-2 sticky top-0 z-10 bg-gray-50 dark:bg-[#18181B]">
-                        <p className="font-bold p-2 my-4 text-sm">Heart Analytics</p>
+                        <div className="flex gap-1 p-2 my-4">
+                            <PiHeartbeatFill className="text-xl text-red-500" />
+                            <p className="font-bold text-sm">Heart Analytics</p>
+                        </div>
                         <ul className="space-y-2">
                             <li className={itemClass(pathname === "/")} onClick={() => setOpen(false)}>
                                 <Link href="/" className="flex gap-2 p-2">

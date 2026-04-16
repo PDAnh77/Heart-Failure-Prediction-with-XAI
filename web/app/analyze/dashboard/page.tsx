@@ -1,0 +1,118 @@
+"use client";
+import { useState, Suspense, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { FiBarChart2, FiCpu, FiLoader } from "react-icons/fi";
+import EDATab from "@/components/edaTab";
+import FeatureSelectionTab from "@/components/featureSelectionTab";
+import { useAuth } from "@/context/authcontext";
+
+function DashboardContent() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const datasetId = searchParams.get("id");
+    const targetColumn = searchParams.get("target");
+
+    const [activeTab, setActiveTab] = useState<"eda" | "fs">("eda");
+    const [processedId, setProcessedId] = useState<string | null>(null);
+    const { user, loading } = useAuth();
+
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push("/login"); // Thay đổi đường dẫn này theo route login thực tế của bạn
+        }
+    }, [user, loading, router]);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-full min-h-[50vh]">
+                <FiLoader className="w-8 h-8 animate-spin text-[#4361EE]" />
+                <span className="ml-3 text-gray-500 font-medium">Verifying access...</span>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return null; 
+    }
+
+    if (!datasetId || !targetColumn) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full min-h-[50vh]">
+                <p className="text-gray-500">Missing dataset information. Please upload a dataset first.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-col h-full">
+            <div className="=z-40 pt-4 pb-0">
+                {/* Phần Tiêu đề */}
+                <div className="flex items-center gap-4 mb-4 px-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Detailed Dataset Analysis</h1>
+                        <p className="text-gray-500 dark:text-gray-400 mt-1">
+                            Target Feature: <span className="font-bold text-[#4361EE] uppercase bg-[#4361EE]/10 px-2 py-0.5 rounded ml-1">{targetColumn}</span>
+                        </p>
+                    </div>
+                </div>
+
+                {/* Phần Tab Điều hướng */}
+                <div className="flex border-b border-gray-200 dark:border-gray-700 px-4">
+                    <button
+                        onClick={() => setActiveTab("eda")}
+                        className={`flex items-center cursor-pointer p-2 gap-2 mr-2 font-medium transition-all border-b-2 ${activeTab === "eda"
+                                ? "border-[#4361EE] text-[#4361EE]"
+                                : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                            }`}
+                    >
+                        <FiBarChart2 className="text-lg" />
+                        EDA
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("fs")}
+                        disabled={!processedId}
+                        className={`flex items-center cursor-pointer px-2 gap-2 font-medium transition-all border-b-2 ${!processedId ? "opacity-50 cursor-not-allowed text-gray-400" :
+                                activeTab === "fs"
+                                    ? "border-[#4361EE] text-[#4361EE]"
+                                    : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                            }`}
+                    >
+                        <FiCpu className="text-lg" />
+                        Feature Selection
+                    </button>
+                </div>
+            </div>
+
+            {/* VÙNG CHỨA NỘI DUNG CỦA TAB */}
+            <div className="px-4 relative">
+                <div className={`${activeTab === "eda" ? "block" : "hidden"}`}>
+                    <EDATab
+                        datasetId={datasetId}
+                        targetColumn={targetColumn}
+                        onProcessed={(id) => setProcessedId(id)}
+                    />
+                </div>
+
+                <div className={`${activeTab === "fs" ? "block" : "hidden"}`}>
+                    <FeatureSelectionTab
+                        targetColumn={targetColumn}
+                        processedId={processedId}
+                    />
+                </div>
+
+            </div>
+        </div>
+    );
+}
+
+export default function AnalysisDashboard() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center h-full min-h-[50vh]">
+                <FiLoader className="w-8 h-8 animate-spin text-[#4361EE]" />
+            </div>
+        }>
+            <DashboardContent />
+        </Suspense>
+    );
+}

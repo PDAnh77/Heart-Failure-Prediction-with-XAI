@@ -1,7 +1,7 @@
 'use client';
 import { createContext, useContext, useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
-import { SettingsContextType } from '@/types/settingscontext';
+import { SettingsContextType } from '@/types/settings_context';
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 

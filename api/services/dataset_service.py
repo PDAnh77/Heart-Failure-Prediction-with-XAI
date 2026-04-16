@@ -475,6 +475,13 @@ def genetic_selection(
         eval_metric="logloss",
     )
 
+    # --- ĐÁNH GIÁ MÔ HÌNH BAN ĐẦU (BASELINE) ---
+    model.fit(X_train, Y_train)
+    baseline_predictions = model.predict(X_test)
+    baseline_accuracy = accuracy_score(Y_test, baseline_predictions)
+    original_feature_count = features.shape[1]
+    # ------------------------------------------
+
     # Genetic Algorithm
     best_chromo_list, best_score_list = generations(
         model=model,
@@ -500,6 +507,8 @@ def genetic_selection(
     selected_features = features.columns[absolute_best_chromo].tolist()
 
     return {
+        "baseline_accuracy": round(baseline_accuracy, 4),
+        "original_feature_count": original_feature_count,
         "best_ga_accuracy": round(absolute_best_score, 4),
         "selected_features": selected_features,
         "feature_count": len(selected_features),
