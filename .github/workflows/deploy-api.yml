@@ -52,7 +52,7 @@ jobs:
         run: gunzip -c image.tar.gz | docker load
 
       - name: Trivy Scan (Security Gate)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           format: table
@@ -63,13 +63,15 @@ jobs:
           vuln-type: os,library
 
       - name: Trivy Scan (SARIF Report)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           format: sarif
           output: trivy-results.sarif
           severity: CRITICAL,HIGH
           version: v0.69.2
+          ignore-unfixed: true
+          vuln-type: os,library
 
       - name: Upload Trivy SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v4

@@ -8,7 +8,7 @@ from models.refresh_token_model import RefreshToken
 from models.user_model import User
 from sqlalchemy.orm import Session
 from core.config import settings
-from schemas.user_schema import UserLogin, UserSignup, UserUpdate
+from schemas.user_schema import UserLogin, UserSignup, UserInfoUpdate
 from services.auth_service import (
     generate_access_token,
     verify_password,
@@ -189,7 +189,7 @@ def logout_user(db: Session, request: Request, response: Response):
     return {"detail": "Logged out successfully"}
 
 
-def update_user_by_id(db: Session, user_id: str, user_update: UserUpdate):
+def update_user_by_id(db: Session, user_id: str, user_update: UserInfoUpdate):
     user_uuid = check_uuid(user_id)
     user = db.execute(select(User.id).where(User.id == user_uuid)).scalar_one_or_none()
     if not user:
@@ -197,6 +197,20 @@ def update_user_by_id(db: Session, user_id: str, user_update: UserUpdate):
 
     update_data = user_update.model_dump(exclude_unset=True)
     result = db.execute(update(User).where(User.id == user_uuid).values(update_data).returning(User))
+    db.commit()
+    return result.scalar_one()
+
+
+def update_user_password(db: Session, user_id: str, new_password: str):
+    user_uuid = check_uuid(user_id)
+    user = db.execute(select(User.id).where(User.id == user_uuid)).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    hashed_password = get_password_hash(new_password)
+    result = db.execute(
+        update(User).where(User.id == user_uuid).values(password=hashed_password).returning(User)
+    )
     db.commit()
     return result.scalar_one()
 

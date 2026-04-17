@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split
 
 
 def split(features, target):
-    X_train, X_test, Y_train, Y_test = train_test_split(features, target, test_size=0.25, random_state=42)
+    X_train, X_test, Y_train, Y_test = train_test_split(features, target, test_size=0.25, random_state=2)
     return X_train, X_test, Y_train, Y_test
 
 

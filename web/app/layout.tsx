@@ -25,18 +25,23 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Heart Failure Predict",
-    template: "Heart Failure Predict - %s",
+    default: "Heart Failure Analytics",
+    template: "Heart Failure Analytics - %s",
   },
   description: "An application that predicts heart failure risk based on clinical and health data",
   keywords: [
-    "heart disease predict",
-    "heart disease prediction",
+    "heart failure analytics",
+    "heart failure prediction",
+    "heart disease risk prediction",
+    "cardiovascular risk assessment",
+    "clinical data analytics",
+    "medical machine learning",
+    "healthcare AI prediction",
     "heart disease risk calculator",
-    "heart failure predict",
-    "cardiovascular disease prediction",
-    "medical AI heart disease",
-    "heart health assessment",
+    "EDA medical dataset",
+    "feature selection healthcare",
+    "predictive analytics healthcare",
+    "heart health prediction model",
   ],
   icons: {
     icon: "/logo.png",

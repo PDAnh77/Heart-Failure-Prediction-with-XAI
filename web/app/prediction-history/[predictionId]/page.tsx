@@ -90,13 +90,13 @@ export default function PredictionDetailPage() {
     };
 
     if (loadingPrediction) return (
-        <div className="flex h-screen items-center justify-center">
+        <div className="fixed inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-white"></div>
         </div>
     );
 
     if (!result) return (
-        <div className="flex flex-col h-screen items-center justify-center text-gray-500">
+        <div className="fixed inset-0 flex flex-col items-center justify-center text-gray-500 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
             <p>Patient data not found.</p>
         </div>
     );

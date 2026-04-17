@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from dependencies import get_db
-from schemas.user_schema import UserInfo, UserUpdate
-from services.user_service import get_user_by_id, update_user_by_id, delete_user_by_id
+from schemas.user_schema import UserInfo, UserInfoUpdate, UserPasswordUpdate
+from services.user_service import get_user_by_id, update_user_by_id, delete_user_by_id, update_user_password
 from services.auth_service import require_roles
 from sqlalchemy.orm import Session
 
@@ -18,8 +18,17 @@ def get_user(user_id: str, db: Session = Depends(get_db)):
     return get_user_by_id(db, user_id)
 
 
+@router.put("/me/password")
+def update_password(
+    password_update: UserPasswordUpdate,
+    user=Depends(require_roles(["admin", "user"])),
+    db: Session = Depends(get_db),
+):
+    return update_user_password(db, user["user_id"], password_update.password)
+
+
 @router.put("/{user_id}", dependencies=[Depends(require_roles(["admin"]))])
-def update_user(user_id: str, user_update: UserUpdate, db: Session = Depends(get_db)):
+def update_user(user_id: str, user_update: UserInfoUpdate, db: Session = Depends(get_db)):
     return update_user_by_id(db, user_id, user_update)
 
 

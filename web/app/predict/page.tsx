@@ -8,7 +8,7 @@ import { useAuth } from "@/context/authcontext";
 import Image from "next/image";
 import { api } from "@/lib/api";
 import toast from "react-hot-toast";
-import { FaHeartbeat } from "react-icons/fa";
+import { FaHeartbeat, FaUserAlt, FaNotesMedical } from "react-icons/fa";
 
 export default function Predict() {
     const router = useRouter();
@@ -22,7 +22,7 @@ export default function Predict() {
     const { user, loading: authLoading, logout, pushNewHistoryItem } = useAuth();
     const { savePrediction } = useSettings();
 
-    const RequiredMark = () => <span className="text-red-500">*</span>;
+    const RequiredMark = () => <span className="text-red-500 font-bold ml-1">*</span>;
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const fieldName = e.target.name;
@@ -45,7 +45,6 @@ export default function Predict() {
             }
         };
 
-        // Check required (select/text)
         const checkRequired = (name: string) => {
             const value = formData.get(name);
             if (!value || value === "") errors.push(name);
@@ -60,25 +59,25 @@ export default function Predict() {
         checkRequired("resting-ecg");
         checkRange("max-hr", 60, 220);
         checkRequired("exercise-angina");
-        checkRange("oldpeak", 0, 6.2);
+        checkRange("oldpeak", -5, 10);
         checkRequired("st-slope");
 
         setInvalidFields(errors);
         return errors.length === 0;
     };
 
-    // Nếu có tên trong danh sách lỗi -> trả về class error
-    const getInputClass = (fieldName: string) => {
-        const baseStructure = "block w-full rounded-lg shadow-sm transition h-10 px-3 text-base outline-1 -outline-offset-1 md:text-base/6 focus:outline-2 focus:-outline-offset-2";
+    // Style ô input bo tròn, nền xám như ảnh minh họa
+    const getInputClass = (fieldName: string, hasSuffix: boolean = false) => {
+        const baseStructure = `block w-full rounded-xl transition h-12 px-4 text-base outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-gray-900 ${hasSuffix ? 'pr-16' : ''}`;
         if (invalidFields.includes(fieldName)) {
-            return `${baseStructure} bg-red-50 text-red-800 placeholder:text-red-800/50 border-red-500 outline-red-500 focus:outline-red-600 dark:bg-red-200/10 dark:text-red-100 dark:placeholder:text-red-100/50 dark:border-red-500/50 dark:outline-red-500/50 dark:focus:outline-red-500/50`;
+            return `${baseStructure} bg-red-50 text-red-800 placeholder:text-red-300 border border-red-500 dark:bg-red-900/20 dark:text-red-200`;
         }
-        return `${baseStructure} bg-white text-gray-900 outline-gray-300 placeholder:text-gray-400 focus:outline-indigo-600 dark:bg-white/5 dark:text-white dark:outline-white/10 dark:placeholder:text-gray-500 dark:focus:outline-indigo-500`;
+        return `${baseStructure} bg-gray-100 text-gray-900 border border-transparent placeholder:text-gray-400 dark:bg-gray-800 dark:text-white`;
     };
 
     const handleAutoFillForm = async () => {
         toast.dismiss();
-        setInvalidFields([]); // Reset lỗi khi auto fill
+        setInvalidFields([]);
         if (!user) {
             toast.error("Please sign in to continue.");
             router.push("/login");
@@ -98,22 +97,28 @@ export default function Predict() {
 
             if (!patient) return;
 
-            const setValue = (selector: string, value: any) => {
-                const element = form.querySelector(selector) as HTMLInputElement | HTMLSelectElement;
+            // Hàm set value được nâng cấp để hỗ trợ radio buttons
+            const setValue = (name: string, value: any) => {
+                if (name === "exercise-angina") {
+                    const radio = form.querySelector(`input[name="exercise-angina"][value="${value}"]`) as HTMLInputElement;
+                    if (radio) radio.checked = true;
+                    return;
+                }
+                const element = form.querySelector(`[name="${name}"]`) as HTMLInputElement | HTMLSelectElement;
                 if (element) element.value = String(value);
             }
 
-            setValue('#age', patient.age);
-            setValue('#gender', patient.sex);
-            setValue('#chest-pain-type', patient.chest_pain_type);
-            setValue('#resting-bp', patient.resting_bp);
-            setValue('#cholesterol', patient.cholesterol);
-            setValue('#fasting-bs', patient.fasting_bs);
-            setValue('#resting-ecg', patient.resting_ecg);
-            setValue('#max-hr', patient.max_hr);
-            setValue('#exercise-angina', patient.exercise_angina);
-            setValue('#oldpeak', patient.oldpeak);
-            setValue('#st-slope', patient.st_slope);
+            setValue('age', patient.age);
+            setValue('gender', patient.sex);
+            setValue('chest-pain-type', patient.chest_pain_type);
+            setValue('resting-bp', patient.resting_bp);
+            setValue('cholesterol', patient.cholesterol);
+            setValue('fasting-bs', patient.fasting_bs);
+            setValue('resting-ecg', patient.resting_ecg);
+            setValue('max-hr', patient.max_hr);
+            setValue('exercise-angina', patient.exercise_angina);
+            setValue('oldpeak', patient.oldpeak);
+            setValue('st-slope', patient.st_slope);
 
         } catch (error: any) {
             if (error.response?.status === 401) {
@@ -193,13 +198,11 @@ export default function Predict() {
             st_slope: formData.get("st-slope"),
             save_prediction: savePrediction
         };
-        // console.log("Payload sending to API:", JSON.stringify(payload, null, 2));
 
         try {
             const res = await api.post("/predictions", payload);
             const data: PredictionResult = res.data;
             setResult(data);
-            // console.log("API result:", data);
             pushNewHistoryItem(data.prediction_history);
         } catch (error: any) {
             if (error.response?.status === 401) {
@@ -215,7 +218,6 @@ export default function Predict() {
         }
     };
 
-    // Truyền URL img Supabase vào src
     const renderChartImage = (imageUrl: string, title: string) => {
         if (!imageUrl) return null
         return (
@@ -237,232 +239,172 @@ export default function Predict() {
     };
 
     return (
-        <div className="p-4">
-            <h1 ref={topRef} className="text-2xl font-bold">Patient Information</h1>
-            <p className="mt-1 text-base/6 text-gray-600 dark:text-gray-400">Please provide accurate patient information for better prediction results.</p>
-            <div className="mt-4">
+        <div className="p-4 mx-auto">
+            <h1 ref={topRef} className="text-2xl font-bold text-gray-900 dark:text-white">Patient Information</h1>
+            <p className="mt-1 text-gray-600 dark:text-gray-400">Please provide accurate patient information for better prediction results</p>
+            <div className="mt-5">
                 <button
                     type="button"
                     onClick={handleAutoFillForm}
                     ref={autoFillBtnRef}
-                    className="rounded-md px-4 py-2 bg-gray-200 text-sm font-medium dark:text-black hover:bg-gray-300 cursor-pointer"
+                    className="rounded-lg px-5 py-2.5 bg-gray-100 border border-gray-200 text-base font-semibold text-gray-700 hover:bg-gray-200 cursor-pointer transition-colors dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
                     Auto-fill sample
                 </button>
             </div>
 
-            {/* Thêm noValidate */}
-            <form ref={formRef} onSubmit={handleSubmit} noValidate className="mt-12 border-b border-gray-900/10 pb-8 px-2 md:px-8 dark:border-white/10">
-                <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-6">
-                    {/* --- Gender --- */}
-                    <div className="md:col-span-3">
-                        <label htmlFor="gender" className="block text-base/6 font-medium text-gray-900 dark:text-white">Gender <RequiredMark /></label>
-                        <div className="mt-2">
-                            <select
-                                id="gender"
-                                name="gender"
-                                defaultValue="M"
-                                onChange={handleInputChange}
-                                className={getInputClass("gender")}
-                            >
+            <form ref={formRef} onSubmit={handleSubmit} noValidate className="mt-10">
+                {/* CARD 1: Demographic Data */}
+                <div className="bg-white dark:bg-gray-800/60 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                        <FaUserAlt className="text-indigo-600 dark:text-indigo-400" /> Demographic Data
+                    </h3>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        {/* Gender */}
+                        <div>
+                            <label htmlFor="gender" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Gender <RequiredMark /></label>
+                            <select id="gender" name="gender" defaultValue="M" onChange={handleInputChange} className={getInputClass("gender")}>
                                 <option value="M">Male</option>
                                 <option value="F">Female</option>
                             </select>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Patient's gender.</p>
                         </div>
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Patient's gender.</p>
-                    </div>
-
-                    {/* --- Age --- */}
-                    <div className="md:col-span-3">
-                        <label htmlFor="age" className="block text-base/6 font-medium text-gray-900 dark:text-white">Age <RequiredMark /></label>
-                        <div className="mt-2">
-                            <input
-                                id="age"
-                                type="number"
-                                name="age"
-                                placeholder="e.g. 45"
-                                onChange={handleInputChange}
-                                className={getInputClass("age")}
-                            />
+                        {/* Age */}
+                        <div>
+                            <label htmlFor="age" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Age <RequiredMark /></label>
+                            <input id="age" type="number" name="age" placeholder="e.g. 45" onChange={handleInputChange} className={getInputClass("age")} />
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Allowed range: <strong>1 - 120</strong> years.</p>
                         </div>
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Allowed range: <strong>1 - 120</strong> years.</p>
                     </div>
+                </div>
 
-                    {/* --- Chest Pain Type --- */}
-                    <div className="md:col-span-3">
-                        <label htmlFor="chest-pain-type" className="block text-base/6 font-medium text-gray-900 dark:text-white">Chest pain type <RequiredMark /></label>
-                        <div className="mt-2">
-                            <select
-                                id="chest-pain-type"
-                                defaultValue=""
-                                name="chest-pain-type"
-                                onChange={handleInputChange}
-                                className={getInputClass("chest-pain-type")}
-                            >
+                {/* CARD 2: Cardiovascular Metrics */}
+                <div className="bg-white dark:bg-gray-800/60 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                        <FaHeartbeat className="text-indigo-600 dark:text-indigo-400" /> Cardiovascular Metrics
+                    </h3>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        {/* Resting BP */}
+                        <div>
+                            <label htmlFor="resting-bp" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Resting Blood Pressure <RequiredMark /></label>
+                            <div className="relative">
+                                <input id="resting-bp" type="number" name="resting-bp" placeholder="e.g. 120" onChange={handleInputChange} className={getInputClass("resting-bp", true)} />
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">MMHG</span>
+                                </div>
+                            </div>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Systolic BP in <strong>mmHg</strong> (Range: 50 - 250).</p>
+                        </div>
+                        {/* Cholesterol */}
+                        <div>
+                            <label htmlFor="cholesterol" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Serum Cholesterol <RequiredMark /></label>
+                            <div className="relative">
+                                <input id="cholesterol" type="number" name="cholesterol" placeholder="e.g. 210" onChange={handleInputChange} className={getInputClass("cholesterol", true)} />
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">MG/DL</span>
+                                </div>
+                            </div>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Serum cholesterol in <strong>mg/dl</strong> (Range: 0 - 600).</p>
+                        </div>
+                        {/* Max HR */}
+                        <div>
+                            <label htmlFor="max-hr" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Max Heart Rate Achieved <RequiredMark /></label>
+                            <div className="relative">
+                                <input id="max-hr" type="number" name="max-hr" placeholder="e.g. 150" onChange={handleInputChange} className={getInputClass("max-hr", true)} />
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">BPM</span>
+                                </div>
+                            </div>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Max HR achieved in <strong>bpm</strong> (Range: 60 - 220).</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* CARD 3: Symptoms & Clinical History */}
+                <div className="bg-white dark:bg-gray-800/60 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                        <FaNotesMedical className="text-indigo-600 dark:text-indigo-400" /> Symptoms & Clinical History
+                    </h3>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        {/* Chest Pain Type */}
+                        <div>
+                            <label htmlFor="chest-pain-type" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Chest Pain Type <RequiredMark /></label>
+                            <select id="chest-pain-type" defaultValue="" name="chest-pain-type" onChange={handleInputChange} className={getInputClass("chest-pain-type")}>
                                 <option value="" disabled>Select the type of chest pain...</option>
                                 <option value="TA">Typical Angina</option>
                                 <option value="ATA">Atypical Angina</option>
                                 <option value="NAP">Non-Anginal Pain</option>
                                 <option value="ASY">Asymptomatic</option>
                             </select>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Subjective description of pain reported by patient.</p>
                         </div>
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Subjective description of pain reported by patient.</p>
-                    </div>
-
-                    {/* --- Resting BP --- */}
-                    <div className="md:col-span-3">
-                        <label htmlFor="resting-bp" className="block text-base/6 font-medium text-gray-900 dark:text-white">Resting blood pressure <RequiredMark /></label>
-                        <div className="mt-2">
-                            <input
-                                id="resting-bp"
-                                type="number"
-                                name="resting-bp"
-                                placeholder="e.g. 120"
-                                onChange={handleInputChange}
-                                className={getInputClass("resting-bp")}
-                            />
-                        </div>
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Systolic BP in <strong>mmHg</strong> (Range: 50 - 250).</p>
-                    </div>
-
-                    {/* --- Cholesterol --- */}
-                    <div className="md:col-span-3">
-                        <label htmlFor="cholesterol" className="block text-base/6 font-medium text-gray-900 dark:text-white">Cholesterol <RequiredMark /></label>
-                        <div className="mt-2">
-                            <input
-                                id="cholesterol"
-                                type="number"
-                                name="cholesterol"
-                                placeholder="e.g. 210"
-                                onChange={handleInputChange}
-                                className={getInputClass("cholesterol")}
-                            />
-                        </div>
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Serum cholesterol in <strong>mg/dl</strong> (Range: 0 - 600).</p>
-                    </div>
-
-                    {/* --- Fasting BS --- */}
-                    <div className="md:col-span-3">
-                        <label htmlFor="fasting-bs" className="block text-base/6 font-medium text-gray-900 dark:text-white">Fasting blood sugar <RequiredMark /></label>
-                        <div className="mt-2">
-                            <select
-                                id="fasting-bs"
-                                name="fasting-bs"
-                                defaultValue=""
-                                onChange={handleInputChange}
-                                className={getInputClass("fasting-bs")}
-                            >
-                                <option value="" disabled> Is fasting blood sugar {'>'} 120 mg/dl?
-                                </option>
-                                <option value="1"> Yes ({'>'} 120 mg/dl)
-                                </option>
-                                <option value="0"> No (≤ 120 mg/dl)
-                                </option>
+                        {/* Fasting BS */}
+                        <div>
+                            <label htmlFor="fasting-bs" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Fasting Blood Sugar <RequiredMark /></label>
+                            <select id="fasting-bs" name="fasting-bs" defaultValue="" onChange={handleInputChange} className={getInputClass("fasting-bs")}>
+                                <option value="" disabled>Is fasting blood sugar &gt; 120 mg/dl?</option>
+                                <option value="1">Yes (&gt; 120 mg/dl)</option>
+                                <option value="0">No (≤ 120 mg/dl)</option>
                             </select>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Measured in <strong>mg/dl</strong> after fasting.</p>
                         </div>
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Measured in <strong>mg/dl</strong> after fasting.</p>
-                    </div>
-
-                    {/* --- Resting ECG --- */}
-                    <div className="md:col-span-3">
-                        <label htmlFor="resting-ecg" className="block text-base/6 font-medium text-gray-900 dark:text-white">Resting ECG <RequiredMark /></label>
-                        <div className="mt-2">
-                            <select
-                                id="resting-ecg"
-                                defaultValue=""
-                                name="resting-ecg"
-                                onChange={handleInputChange}
-                                className={getInputClass("resting-ecg")}
-                            >
+                        {/* Resting ECG */}
+                        <div>
+                            <label htmlFor="resting-ecg" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Resting ECG <RequiredMark /></label>
+                            <select id="resting-ecg" defaultValue="" name="resting-ecg" onChange={handleInputChange} className={getInputClass("resting-ecg")}>
                                 <option value="" disabled>Select result...</option>
                                 <option value="Normal">Normal</option>
                                 <option value="ST">ST-T wave abnormality</option>
                                 <option value="LVH">Left ventricular hypertrophy</option>
                             </select>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Result based on ST-T wave or Estes criteria.</p>
                         </div>
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Result based on ST-T wave or Estes criteria.</p>
-                    </div>
-
-                    {/* --- Max Heart Rate --- */}
-                    <div className="md:col-span-3">
-                        <label htmlFor="max-hr" className="block text-base/6 font-medium text-gray-900 dark:text-white">Max heart rate <RequiredMark /></label>
-                        <div className="mt-2">
-                            <input
-                                id="max-hr"
-                                type="number"
-                                name="max-hr"
-                                placeholder="e.g. 150"
-                                onChange={handleInputChange}
-                                className={getInputClass("max-hr")}
-                            />
+                        {/* Exercise Angina */}
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">Exercise Induced Angina <RequiredMark /></label>
+                            <div className="flex items-center gap-8 h-10">
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <input type="radio" name="exercise-angina" value="Y" className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 focus:ring-indigo-500 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" onChange={handleInputChange} />
+                                    <span className="text-base font-medium text-gray-700 group-hover:text-indigo-600 dark:text-gray-300">Yes</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <input type="radio" name="exercise-angina" value="N" className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 focus:ring-indigo-500 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" onChange={handleInputChange} />
+                                    <span className="text-base font-medium text-gray-700 group-hover:text-indigo-600 dark:text-gray-300">No</span>
+                                </label>
+                            </div>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Pain specifically caused by exercise.</p>
+                            {invalidFields.includes("exercise-angina") && (
+                                <p className="mt-1 text-sm text-red-500">Please select an option.</p>
+                            )}
                         </div>
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Max HR achieved in <strong>bpm</strong> (Range: 60 - 220).</p>
-                    </div>
-
-                    {/* --- Exercise Angina --- */}
-                    <div className="md:col-span-3">
-                        <label htmlFor="exercise-angina" className="block text-base/6 font-medium text-gray-900 dark:text-white">Exercise-induced angina <RequiredMark /></label>
-                        <div className="mt-2">
-                            <select
-                                id="exercise-angina"
-                                defaultValue=""
-                                name="exercise-angina"
-                                onChange={handleInputChange}
-                                className={getInputClass("exercise-angina")}
-                            >
-                                <option value="" disabled>Did patient have angina?</option>
-                                <option value="Y">Yes</option>
-                                <option value="N">No</option>
-                            </select>
+                        {/* Oldpeak */}
+                        <div>
+                            <label htmlFor="oldpeak" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Oldpeak <RequiredMark /></label>
+                            <input id="oldpeak" type="number" name="oldpeak" step="0.1" min="-5" max="10" placeholder="e.g. 1.5 or -0.5" onChange={handleInputChange} className={getInputClass("oldpeak")} />
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">ST deviation induced by exercise (typically -5 to 10; negative values indicate ST elevation).</p>
                         </div>
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Pain specifically caused by exercise.</p>
-                    </div>
-
-                    {/* --- Oldpeak --- */}
-                    <div className="md:col-span-3">
-                        <label htmlFor="oldpeak" className="block text-base/6 font-medium text-gray-900 dark:text-white">Oldpeak <RequiredMark /></label>
-                        <div className="mt-2">
-                            <input
-                                id="oldpeak"
-                                type="number"
-                                name="oldpeak"
-                                step="0.1"
-                                placeholder="e.g. 1.5"
-                                onChange={handleInputChange}
-                                className={getInputClass("oldpeak")}
-                            />
-                        </div>
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">ST depression induced by exercise (Range: 0 - 6.2).</p>
-                    </div>
-
-                    {/* --- ST Slope --- */}
-                    <div className="md:col-span-3">
-                        <label htmlFor="st-slope" className="block text-base/6 font-medium text-gray-900 dark:text-white">ST Slope <RequiredMark /></label>
-                        <div className="mt-2">
-                            <select
-                                id="st-slope"
-                                defaultValue=""
-                                name="st-slope"
-                                onChange={handleInputChange}
-                                className={getInputClass("st-slope")}
-                            >
+                        {/* ST Slope */}
+                        <div>
+                            <label htmlFor="st-slope" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">ST Slope <RequiredMark /></label>
+                            <select id="st-slope" defaultValue="" name="st-slope" onChange={handleInputChange} className={getInputClass("st-slope")}>
                                 <option value="" disabled>Select the slope curve...</option>
                                 <option value="Up">Upsloping</option>
                                 <option value="Flat">Flat</option>
                                 <option value="Down">Downsloping</option>
                             </select>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Slope of the peak exercise ST segment.</p>
                         </div>
-                        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Slope of the peak exercise ST segment.</p>
                     </div>
                 </div>
 
-                <div className="mt-6 flex items-center justify-end gap-x-2">
+                {/* Các Nút Hành Động */}
+                <div className="mt-8 flex items-center justify-end gap-x-4 border-t border-gray-100 dark:border-gray-800 pt-6">
                     <button type="button" onClick={handleReset}
-                        className="rounded-md px-8 py-2 text-sm font-semibold text-gray-900 cursor-pointer hover:bg-gray-100 hover:text-indigo-600 dark:text-white dark:hover:bg-white/10 dark:hover:text-indigo-400 transition-colors">
-                        Reset
+                        className="rounded-xl px-8 py-3 text-base font-semibold text-gray-700 bg-white border border-gray-200 cursor-pointer hover:bg-gray-50 hover:text-indigo-600 transition-colors shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-700">
+                        Reset Form
                     </button>
                     <button type="submit" disabled={submitting}
-                        className="rounded-md bg-indigo-600 px-8 py-2 text-sm font-semibold text-white shadow-sm cursor-pointer hover:bg-indigo-500 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                        className="rounded-xl bg-indigo-600 px-8 py-3 text-base font-semibold text-white shadow-sm cursor-pointer hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/30 transition-all">
                         {submitting ? "Analyzing..." : "Predict"}
                     </button>
                 </div>
@@ -470,39 +412,37 @@ export default function Predict() {
 
             {/* --- HIỂN THỊ KẾT QUẢ --- */}
             {result && (
-                <div ref={resultRef} className="mt-12 mb-12 animate-fade-in px-2 md:px-8">
+                <div ref={resultRef} className="mt-8 animate-fade-in">
                     <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white pb-2 border-b border-gray-200 dark:border-gray-700">
                         Analysis Results
                     </h2>
 
-                    {/* 1. Kết quả chẩn đoán */}
-                    <div className={`p-4 rounded-xl border-l-8 shadow-md mb-8 transition-all ${result.prediction === 1 ? 'bg-red-50 border-red-500 dark:bg-red-900/20' : 'bg-green-50 border-green-500 dark:bg-green-900/20'}`}>
+                    <div className={`p-5 rounded-2xl border border-l-8 shadow-sm mb-8 transition-all ${result.prediction === 1 ? 'bg-red-50 border-red-500 dark:bg-red-900/20' : 'bg-green-50 border-green-500 dark:bg-green-900/20'}`}>
                         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                             <div>
-                                <h3 className="text-lg font-semibold flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                                <h3 className="text-lg font-bold flex items-center gap-2 text-gray-800 dark:text-gray-200">
                                     <FaHeartbeat /> Diagnosis Prediction:
                                 </h3>
-                                <p className={`text-3xl font-bold mt-1 ${result.prediction === 1 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                                <p className={`text-3xl font-black mt-2 ${result.prediction === 1 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                     {result.prediction === 1 ? "RISK DETECTED" : "NORMAL"}
                                 </p>
                             </div>
-                            <div className="text-center bg-white/60 dark:bg-black/20 p-4 rounded-lg">
-                                <span className="block text-sm text-gray-500 dark:text-gray-400">Confidence Score</span>
-                                <span className="text-3xl font-bold text-gray-800 dark:text-white">{(result.probability * 100).toFixed(1)}%</span>
+                            <div className="text-center bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                                <span className="block text-xs uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1">Confidence Score</span>
+                                <span className="text-3xl font-black text-gray-800 dark:text-white">{(result.probability * 100).toFixed(1)}%</span>
                             </div>
                         </div>
                     </div>
 
-                    {/* 2. Biểu đồ phân tích */}
-                    <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white flex items-center gap-2">
-                        <span className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded dark:bg-indigo-900 dark:text-indigo-300">AI Logic</span>
+                    <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white flex items-center gap-3">
+                        <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full dark:bg-indigo-900 dark:text-indigo-300">AI Logic</span>
                         Detailed Explanation
                     </h3>
 
                     <div className="grid grid-cols-1 gap-8">
                         <div>
                             {renderChartImage(result.shap_waterfall, "Feature Impact Analysis (SHAP Waterfall)")}
-                            <p className="text-sm text-gray-500 mt-2 text-center italic dark:text-gray-200">
+                            <p className="text-sm text-gray-500 mt-3 text-center italic dark:text-gray-400 max-w-3xl mx-auto">
                                 Visualizes how individual factors shift the prediction from the baseline.
                                 <span className="font-bold text-red-500"> Red bars</span> indicate factors increasing heart failure risk,
                                 while <span className="font-bold text-blue-500"> Blue bars</span> indicate factors decreasing the risk.
@@ -510,13 +450,13 @@ export default function Predict() {
                         </div>
                         <div>
                             {renderChartImage(result.shap_bar, "Global Feature Importance (SHAP Bar)")}
-                            <p className="text-sm text-gray-500 mt-2 text-center italic dark:text-gray-200">
+                            <p className="text-sm text-gray-500 mt-3 text-center italic dark:text-gray-400 max-w-3xl mx-auto">
                                 Ranks the health indicators by their absolute impact on this prediction. Longer bars mean the AI considered these factors most critical for this patient.
                             </p>
                         </div>
                         <div>
                             {renderChartImage(result.lime, "Local Interpretation (LIME)")}
-                            <p className="text-sm text-gray-500 mt-2 text-center italic dark:text-gray-200">
+                            <p className="text-sm text-gray-500 mt-3 text-center italic dark:text-gray-400 max-w-3xl mx-auto">
                                 Independent verification: Analyzing which specific features support a "High Risk" diagnosis versus those supporting a "Normal" diagnosis.
                             </p>
                         </div>

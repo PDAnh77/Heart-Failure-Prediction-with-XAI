@@ -22,7 +22,7 @@ class PatientBase(BaseModel):
     )
     max_hr: int = Field(..., gt=0, description="Maximum heart rate")
     exercise_angina: str = Field(..., pattern="^(Y|N)$", description="Exercise-induced angina [Y: Yes, N: No]")
-    oldpeak: float = Field(..., ge=0.0, description="= ST [Numeric value measured in depression]")
+    oldpeak: float = Field(..., description="= ST [Numeric value measured in depression]")
     st_slope: str = Field(
         ...,
         pattern="^(Up|Flat|Down)$",

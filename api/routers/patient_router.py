@@ -75,6 +75,6 @@ def delete_patient(
     return patient_service.delete_patient(db, patient_id, user)
 
 
-@router.delete("/users/{user_id}", dependencies=[Depends(require_roles(["admin"]))])
+@router.delete("/{user_id}", dependencies=[Depends(require_roles(["admin"]))])
 def delete_user_patients(user_id: str, db: Session = Depends(get_db)):
     return patient_service.delete_patients_by_user(db, user_id)

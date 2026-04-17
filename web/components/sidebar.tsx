@@ -1,22 +1,32 @@
 "use client";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from 'react-hot-toast';
-import LogoutModal from "@/components/modalLogout";
+import LogoutModal from "@/components/logoutModal";
 import DeleteModal from "@/components/deletePredictionModal";
+import SettingsModal from "@/components/settingsModal";
+import ProfileModal from "@/components/profileModal";
 import { useAuth } from "@/context/authcontext"
 import { TbLayoutSidebarFilled } from "react-icons/tb";
-import { FaMicroscope, FaGear, FaHouse, FaRightToBracket, FaRightFromBracket, FaRocket, FaRegTrashCan } from "react-icons/fa6";
-import { IoIosArrowForward, IoIosArrowDown } from "react-icons/io";
+import { FaMicroscope, FaHouse, FaRightToBracket, FaRightFromBracket, FaRocket, FaRegTrashCan, FaUser } from "react-icons/fa6";
+import { IoIosArrowForward, IoIosArrowDown, IoMdSettings } from "react-icons/io";
 import { api } from "@/lib/api";
 import { PredictionHistoryBase } from "@/types/prediction";
+import { IoStatsChartSharp } from "react-icons/io5";
+import { PiHeartbeatFill } from "react-icons/pi";
 
 export default function Sidebar() {
     const [open, setOpen] = useState(false);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
     const pathname = usePathname();
     const [showPredictions, setShowPredictions] = useState(true);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [showSettingModal, setShowSettingModal] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
+
     const { user, logout, newHistoryItem } = useAuth();
     const [result, setResult] = useState<PredictionHistoryBase[] | null>(null);
     const router = useRouter();
@@ -59,11 +69,15 @@ export default function Sidebar() {
         });
     }, [newHistoryItem]);
 
-    // useEffect(() => {
-    //     if (result !== null) {
-    //         console.log(result);
-    //     }
-    // }, [result]);
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setUserMenuOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const handleLogout = async () => {
         try {
@@ -122,7 +136,7 @@ export default function Sidebar() {
         setLoadingMore(true);
         try {
             const res = await api.get(`predictions/me?limit=12&offset=${offset}`);
-            const newItems: PredictionHistoryBase[] = res.data;
+            const newItems: PredictionHistoryBase[] = res.data || [];
 
             setResult((prev) => {
                 const current = prev ?? [];
@@ -133,19 +147,25 @@ export default function Sidebar() {
                 return [...current, ...filteredNewItems];
             });
 
-            setOffset(offset + 12);
+            setOffset((prevOffset) => prevOffset + 12);
 
             if (newItems.length < 12) {
                 setHasMore(false);
             }
         } catch (error) {
-            console.log(error);
+            console.log("Error loading more items:", error);
+            // Dừng việc gọi API liên tục nếu server báo lỗi khi hết page
+            setHasMore(false);
         } finally {
             setLoadingMore(false);
         }
     }
 
     const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        if (!hasMore || loadingMore) {
+            return;
+        }
+
         const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
 
         if (scrollHeight - scrollTop - clientHeight < 50) {
@@ -155,6 +175,7 @@ export default function Sidebar() {
 
     return (
         <>
+            {/* MOBILE HEADER */}
             <div className="lg:hidden flex items-center p-2 bg-white dark:bg-[#141516] border-b border-gray-200 dark:border-[#FFFFFF1A] sticky top-0 z-40">
                 <button
                     className="p-2 rounded-xl cursor-pointer"
@@ -162,7 +183,7 @@ export default function Sidebar() {
                 >
                     <TbLayoutSidebarFilled className="text-xl" />
                 </button>
-                <span className="font-bold ml-2">Heart Failure Predict</span>
+                <span className="font-bold ml-2">Heart Failure Analytics</span>
             </div>
 
             <div
@@ -182,9 +203,17 @@ export default function Sidebar() {
                 ${open ? "translate-x-0" : "-translate-x-full"} 
                 lg:static lg:translate-x-0 lg:min-h-screen
             `}>
-                <div className="bg-gray-50 rounded-xl h-full lg:border lg:border-gray-200 lg:shadow-md dark:bg-[#18181B] dark:border-[#FFFFFF1A] flex flex-col">
-                    <div className="p-2 space-y-2">
-                        <p className="font-bold p-2 my-4 text-sm">Heart Failure Predict</p>
+                <div
+                    className="bg-gray-50 rounded-xl h-full lg:border lg:border-gray-200 lg:shadow-md dark:bg-[#18181B] dark:border-[#FFFFFF1A] flex flex-col overflow-y-auto relative overscroll-none"
+                    onScroll={handleScroll}
+                >
+
+                    {/* MENU TRÊN */}
+                    <div className="p-2 space-y-2 sticky top-0 z-10 bg-gray-50 dark:bg-[#18181B]">
+                        <div className="flex gap-1 p-2 my-4">
+                            <PiHeartbeatFill className="text-xl text-red-500" />
+                            <p className="font-bold text-sm">Heart Failure Analytics</p>
+                        </div>
                         <ul className="space-y-2">
                             <li className={itemClass(pathname === "/")} onClick={() => setOpen(false)}>
                                 <Link href="/" className="flex gap-2 p-2">
@@ -198,36 +227,22 @@ export default function Sidebar() {
                                     <span>Predict</span>
                                 </Link>
                             </li>
-                            <li className={itemClass(pathname === "/settings")} onClick={() => setOpen(false)}>
-                                <Link href="/settings" className="flex gap-2 p-2">
-                                    <FaGear className="text-lg" />
-                                    <span>Settings</span>
+                            <li className={itemClass(pathname.startsWith("/analyze"))} onClick={() => setOpen(false)}>
+                                <Link href="/analyze/upload" className="flex gap-2 p-2">
+                                    <IoStatsChartSharp className="text-lg" />
+                                    <span>Analyze</span>
                                 </Link>
                             </li>
-                            {user ? (
-                                <li className={itemClass(false)} onClick={handleLogoutClick}>
-                                    <div className="flex gap-2 p-2 w-full cursor-pointer">
-                                        <FaRightFromBracket className="text-lg" />
-                                        <span>Logout</span>
-                                    </div>
-                                </li>
-                            ) : (
-                                <li className={itemClass(pathname === "/login")} onClick={() => setOpen(false)}>
-                                    <Link href="/login" className="flex gap-2 p-2 w-full">
-                                        <FaRightToBracket className="text-lg" />
-                                        <span>Sign in</span>
-                                    </Link>
-                                </li>
-                            )}
                         </ul>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-2" onScroll={handleScroll}>
+                    {/* RECENT ANALYSES */}
+                    <div className="flex-1 p-2">
                         <div
                             className="text-sm cursor-pointer flex items-center text-gray-500 dark:text-gray-300 mb-2"
                             onClick={() => setShowPredictions(!showPredictions)}
                         >
-                            <span className="ml-2 mr-1">Recent analyses</span>
+                            <span className="ml-2 mr-1">Recent predictions</span>
                             {showPredictions ? <IoIosArrowDown /> : <IoIosArrowForward />}
                         </div>
 
@@ -252,7 +267,7 @@ export default function Sidebar() {
                                                 </Link>
 
                                                 <div
-                                                    className=" p-2 rounded-full mr-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity hover:bg-red-100 dark:hover:bg-red-800/30 cursor-pointer"
+                                                    className="p-2 rounded-full mr-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity hover:bg-red-100 dark:hover:bg-red-800/30 cursor-pointer"
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
@@ -275,14 +290,73 @@ export default function Sidebar() {
                         )}
                     </div>
 
-                    <div className="p-2 border-t border-gray-200 dark:border-[#FFFFFF1A]">
-                        <div className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition">
-                            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white">
-                                <FaRocket className="text-sm" />
+                    {/* USER MENU */}
+                    <div className="p-2 border-t border-gray-200 dark:border-[#FFFFFF1A] sticky bottom-0 z-20 bg-gray-50 dark:bg-[#18181B]" ref={dropdownRef}>
+
+                        {/* THE DROPDOWN MENU */}
+                        {userMenuOpen && (
+                            <div className="absolute bottom-full left-2 right-2 mb-2 bg-white dark:bg-[#1A1A1B] border border-gray-200 dark:border-[#FFFFFF1A] rounded-2xl shadow-2xl overflow-hidden z-60 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                                <ul className="p-1">
+                                    <li>
+                                        <button
+                                            className="flex items-center transition w-full cursor-pointer gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-sm"
+                                            onClick={() => {
+                                                setUserMenuOpen(false);
+                                                setShowProfileModal(true);
+                                            }}
+                                        >
+                                            <FaUser className="text-lg" />
+                                            <span>Profile</span>
+                                        </button>
+                                    </li>
+
+                                    <div className="h-px bg-gray-100 dark:bg-white/5 my-1" />
+
+                                    <li>
+                                        <button
+                                            className="flex items-center transition w-full cursor-pointer gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-sm"
+                                            onClick={() => { setUserMenuOpen(false); setShowSettingModal(true); }}>
+                                            <IoMdSettings className="text-lg" />
+                                            <span>Settings</span>
+                                        </button>
+                                    </li>
+
+                                    <div className="h-px bg-gray-100 dark:bg-white/5 my-1" />
+
+                                    {user ? (
+                                        <li onClick={handleLogoutClick}>
+                                            <div className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition text-sm cursor-pointer">
+                                                <FaRightFromBracket className="text-lg" />
+                                                <span>Logout</span>
+                                            </div>
+                                        </li>
+                                    ) : (
+                                        <li>
+                                            <Link href="/login"
+                                                className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition text-sm"
+                                                onClick={() => { setUserMenuOpen(false); setOpen(false); }}>
+                                                <FaRightToBracket className="text-lg" />
+                                                <span>Sign in</span>
+                                            </Link>
+                                        </li>
+                                    )}
+                                </ul>
                             </div>
-                            <span className="text-sm font-bold">
-                                {user ? user.username : "Guest"}
-                            </span>
+                        )}
+
+                        {/* TRIGGER BUTTON */}
+                        <div
+                            className={`flex items-center gap-3 p-2 rounded-xl transition cursor-pointer ${userMenuOpen ? 'bg-gray-100 dark:bg-white/10' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                            onClick={() => setUserMenuOpen(!userMenuOpen)}
+                        >
+                            <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shrink-0 shadow-lg shadow-indigo-500/20">
+                                <FaRocket className="text-xs" />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-sm font-bold truncate dark:text-white">
+                                    {user ? user.username : "Guest"}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -297,6 +371,14 @@ export default function Sidebar() {
                 isOpen={showLogoutModal}
                 onClose={() => setShowLogoutModal(false)}
                 onConfirm={handleLogout}
+            />
+            <SettingsModal
+                isOpen={showSettingModal}
+                onClose={() => setShowSettingModal(false)}
+            />
+            <ProfileModal
+                isOpen={showProfileModal}
+                onClose={() => setShowProfileModal(false)}
             />
         </>
     );
