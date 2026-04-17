@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Trivy Scan (Security Gate)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: fs
           scan-ref: web
@@ -30,7 +30,7 @@ jobs:
           exit-code: 1
 
       - name: Trivy Scan (SARIF Report)
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: fs
           scan-ref: web
@@ -38,6 +38,7 @@ jobs:
           output: trivy-results.sarif
           severity: CRITICAL,HIGH
           version: v0.69.2
+          ignore-unfixed: true
 
       - name: Upload Trivy SARIF to GitHub Security
         uses: github/codeql-action/upload-sarif@v4

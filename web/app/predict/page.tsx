@@ -256,7 +256,7 @@ export default function Predict() {
             <form ref={formRef} onSubmit={handleSubmit} noValidate className="mt-10">
                 {/* CARD 1: Demographic Data */}
                 <div className="bg-white dark:bg-gray-800/60 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
-                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-6 pb-4 border-b border-gray-50 dark:border-gray-700">
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
                         <FaUserAlt className="text-indigo-600 dark:text-indigo-400" /> Demographic Data
                     </h3>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -280,7 +280,7 @@ export default function Predict() {
 
                 {/* CARD 2: Cardiovascular Metrics */}
                 <div className="bg-white dark:bg-gray-800/60 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
-                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-6 pb-4 border-b border-gray-50 dark:border-gray-700">
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
                         <FaHeartbeat className="text-indigo-600 dark:text-indigo-400" /> Cardiovascular Metrics
                     </h3>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -322,7 +322,7 @@ export default function Predict() {
 
                 {/* CARD 3: Symptoms & Clinical History */}
                 <div className="bg-white dark:bg-gray-800/60 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
-                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-6 pb-4 border-b border-gray-50 dark:border-gray-700">
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
                         <FaNotesMedical className="text-indigo-600 dark:text-indigo-400" /> Symptoms & Clinical History
                     </h3>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">

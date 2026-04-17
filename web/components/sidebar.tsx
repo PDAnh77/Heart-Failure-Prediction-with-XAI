@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import LogoutModal from "@/components/logoutModal";
 import DeleteModal from "@/components/deletePredictionModal";
 import SettingsModal from "@/components/settingsModal";
+import ProfileModal from "@/components/profileModal";
 import { useAuth } from "@/context/authcontext"
 import { TbLayoutSidebarFilled } from "react-icons/tb";
 import { FaMicroscope, FaHouse, FaRightToBracket, FaRightFromBracket, FaRocket, FaRegTrashCan, FaUser } from "react-icons/fa6";
@@ -24,6 +25,8 @@ export default function Sidebar() {
     const [showPredictions, setShowPredictions] = useState(true);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [showSettingModal, setShowSettingModal] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
+
     const { user, logout, newHistoryItem } = useAuth();
     const [result, setResult] = useState<PredictionHistoryBase[] | null>(null);
     const router = useRouter();
@@ -180,7 +183,7 @@ export default function Sidebar() {
                 >
                     <TbLayoutSidebarFilled className="text-xl" />
                 </button>
-                <span className="font-bold ml-2">Heart Analytics</span>
+                <span className="font-bold ml-2">Heart Failure Analytics</span>
             </div>
 
             <div
@@ -209,7 +212,7 @@ export default function Sidebar() {
                     <div className="p-2 space-y-2 sticky top-0 z-10 bg-gray-50 dark:bg-[#18181B]">
                         <div className="flex gap-1 p-2 my-4">
                             <PiHeartbeatFill className="text-xl text-red-500" />
-                            <p className="font-bold text-sm">Heart Analytics</p>
+                            <p className="font-bold text-sm">Heart Failure Analytics</p>
                         </div>
                         <ul className="space-y-2">
                             <li className={itemClass(pathname === "/")} onClick={() => setOpen(false)}>
@@ -297,8 +300,12 @@ export default function Sidebar() {
                                     <li>
                                         <button
                                             className="flex items-center transition w-full cursor-pointer gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-sm"
-                                            >
-                                            <FaUser className="text-md" />
+                                            onClick={() => {
+                                                setUserMenuOpen(false);
+                                                setShowProfileModal(true);
+                                            }}
+                                        >
+                                            <FaUser className="text-lg" />
                                             <span>Profile</span>
                                         </button>
                                     </li>
@@ -368,6 +375,10 @@ export default function Sidebar() {
             <SettingsModal
                 isOpen={showSettingModal}
                 onClose={() => setShowSettingModal(false)}
+            />
+            <ProfileModal
+                isOpen={showProfileModal}
+                onClose={() => setShowProfileModal(false)}
             />
         </>
     );

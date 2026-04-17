@@ -20,5 +20,13 @@ class UserInfo(UserBase):
     role: str
 
 
-class UserUpdate(UserBase):
+class UserInfoUpdate(UserBase):
     role: str
+
+
+class UserPasswordUpdate(BaseModel):
+    password: str
+
+
+class UserAvatarUpdate(BaseModel):
+    avatar: str

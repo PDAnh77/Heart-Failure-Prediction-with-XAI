@@ -17,7 +17,23 @@ End-to-end AI-powered heart failure prediction application that leverages machin
 
 * Explainable AI (XAI) to interpret model outputs (e.g. feature importance, SHAP values)
 
-* RESTful backend API for prediction and user history
+* Dataset management with CSV upload, preprocessing, and storage
+
+* Exploratory Data Analysis (EDA) with statistical visualizations:
+  - Correlation heatmaps and feature importance analysis
+  - Target distribution analysis (pie charts and bar plots)
+  - Chi-square scores for categorical features
+  - ANOVA scores for numerical features
+
+* Automated data preprocessing:
+  - Duplicate removal
+  - Missing value imputation
+  - Label encoding for categorical variables
+  - Feature scaling
+
+* Feature selection for optimal model performance
+
+* Store user prediction history with timestamps and input data for future reference
 
 * Web-based frontend for data input and result visualization
 
@@ -69,7 +85,7 @@ The repository is organized as follows:
 │   ├── models/             # SQLAlchemy ORM models
 │   ├── routers/            # API route definitions endpoints
 │   ├── schemas/            # Pydantic request/response schemas
-│   ├── services/           # Business logic (prediction, XAI, auth)
+│   ├── services/           # Business logic (prediction, XAI, auth, dataset analysis)
 │   ├── dependencies.py     # Shared FastAPI dependencies (database session)
 │   ├── main.py             # FastAPI application entry point
 │   ├── Dockerfile          # Docker image build configuration
@@ -136,10 +152,11 @@ The frontend has its own installation guide. Please refer to the [web/README.md]
 * Backend requires certain environment variables to be set for proper operation. Create a `.env` file in the `api/` directory with the following variables:
    ```
    DATABASE_URL=your_database_url
-   DATABASE_KEY=your_database_key
    SECRET_KEY=your_secret_key
    API_URL=http://localhost:8000
    CLIENT_URL=http://localhost:3000
+   SUPABASE_URL=your_supabase_project_url
+   SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
    ```
 
 * If using Google OAuth for authentication, add these variables as well to the `.env` file:
