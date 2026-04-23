@@ -5,17 +5,20 @@ WORKDIR /app
 # Copy the requirements file
 COPY ./requirements.txt .
 
+RUN apt-get update && \
+  apt-get install -y libgomp1 curl && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/*
+
 # Install Python deps
 RUN pip install --no-cache-dir -r requirements.txt
-
-RUN apt-get update && apt-get upgrade -y && apt-get install -y curl && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY . .
 
 RUN find / -perm /6000 -type f -exec chmod a-s {} \; || true
 
 RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
+  chown -R appuser:appuser /app
 
 USER appuser
 
