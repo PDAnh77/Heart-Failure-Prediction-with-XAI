@@ -6,7 +6,7 @@ A comprehensive AI-powered platform for heart failure analysis and risk predicti
 
 * Explainable AI to interpret cardiovascular risk predictions
 
-* Backend API for authentication, patient management, heart failure inference, XAI explanations and prediction history management
+* Backend API for authentication, patient management, heart failure inference, XAI explanations, prediction history management and dataset analysis
 
 * Frontend web application for patient data input and result visualization
 

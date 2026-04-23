@@ -25,6 +25,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
 
 from sklearn.metrics import accuracy_score
 
@@ -35,6 +36,7 @@ classifiers = [
     "DecisionTree",
     "KNeighbors",
     "XGBoost",
+    "LightGBM",
 ]
 
 models = [
@@ -51,6 +53,19 @@ models = [
         subsample=0.8,
         colsample_bytree=0.9,
         eval_metric="logloss",
+    ),
+    LGBMClassifier(
+        objective='binary',
+        random_state=0,
+        n_estimators=100,        # Số lượng cây (tương đương XGBoost của bạn)
+        max_depth=4,             # Giới hạn độ sâu của cây để tránh Overfitting trên dataset nhỏ
+        num_leaves=15,           # Số lá tối đa (Nên nhỏ hơn 2^max_depth, ở đây 2^4 = 16)
+        min_child_samples=20,    # Hạ số lượng mẫu tối thiểu cần có trong 1 lá (mặc định là 20)
+        learning_rate=0.05,      # Tốc độ học
+        subsample=0.8,           # Lấy mẫu ngẫu nhiên 80% dữ liệu để xây cây
+        subsample_freq=1,        # Tần suất thực hiện bagging (Bắt buộc = 1 nếu dùng subsample)
+        colsample_bytree=0.8,    # Lấy mẫu ngẫu nhiên 90% features
+        verbose=-1
     ),
 ]
 

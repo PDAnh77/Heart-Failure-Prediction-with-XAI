@@ -19,3 +19,4 @@ itsdangerous==2.2.0
 sqlalchemy
 psycopg2-binary
 seaborn==0.13.2
+lightgbm==4.6.0
