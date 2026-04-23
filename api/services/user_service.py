@@ -1,7 +1,8 @@
 import random, string
 from uuid import UUID
+import uuid
 from datetime import datetime, timedelta, timezone
-from fastapi import HTTPException, Request, Response, status
+from fastapi import HTTPException, Request, Response, status, UploadFile
 from sqlalchemy import select, insert, update, delete
 from starlette.responses import RedirectResponse
 from models.refresh_token_model import RefreshToken
@@ -17,8 +18,10 @@ from services.auth_service import (
     hash_token,
     oauth,
 )
+from core.supabase_client import supabase
 
 REFRESH_TOKEN_TTL_DAYS = 7
+IMAGE_BUCKET = "user-avatars"
 
 
 def check_uuid(id: str):
@@ -208,11 +211,9 @@ def update_user_password(db: Session, user_id: str, new_password: str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     hashed_password = get_password_hash(new_password)
-    result = db.execute(
-        update(User).where(User.id == user_uuid).values(password=hashed_password).returning(User)
-    )
+    db.execute(update(User).where(User.id == user_uuid).values(password=hashed_password))
     db.commit()
-    return result.scalar_one()
+    return {"detail": "Update password successfully"}
 
 
 def delete_user_by_id(db: Session, user_id: str):
@@ -225,3 +226,53 @@ def delete_user_by_id(db: Session, user_id: str):
     db.execute(delete(User).where(User.id == user_uuid))
     db.commit()
     return {"detail": "Delete user successfully"}
+
+
+def update_user_avatar(db: Session, user_id: str, file: UploadFile):
+    user_uuid = check_uuid(user_id)
+    user = db.execute(select(User).where(User.id == user_uuid)).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    # Validate file extension
+    allowed_extensions = {".jpg", ".jpeg", ".png"}
+    file_ext = None
+    if file.filename:
+        file_ext = "." + file.filename.rsplit(".", 1)[-1].lower()
+
+    if file_ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Only .jpg, .jpeg, and .png files are allowed"
+        )
+
+    # Read file content
+    try:
+        file_content = file.file.read()
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to read file")
+
+    # Generate unique filename
+    filename = f"{uuid.uuid4()}{file_ext}"
+    storage_path = f"{user_uuid}/{filename}"
+
+    # Upload to Supabase
+    try:
+        supabase.storage.from_(IMAGE_BUCKET).upload(
+            path=storage_path, file=file_content, file_options={"content-type": file.content_type, "upsert": "true"}
+        )
+        avatar_url = supabase.storage.from_(IMAGE_BUCKET).get_public_url(storage_path)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to upload avatar: {str(e)}"
+        )
+
+    # Update user's avatar_url in database
+    try:
+        db.execute(update(User).where(User.id == user_uuid).values(avatar_url=avatar_url))
+        db.commit()
+        updated_user = db.execute(select(User).where(User.id == user_uuid)).scalar_one()
+        return updated_user
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to update avatar: {str(e)}"
+        )

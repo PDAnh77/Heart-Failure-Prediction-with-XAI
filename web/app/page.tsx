@@ -6,13 +6,13 @@ export default function Home() {
     <div className="flex h-full items-center px-8 md:px-20">
       <div>
         <h1 className="text-6xl font-bold dark:text-white">
-          Heart Failure Predict
+          Heart Failure Analytics
         </h1>
         <p className="text-xl mt-4 text-gray-500 max-w-3xl">
-          Your go-to platform for AI-powered heart disease prediction, combining
-          Artificial Intelligence with Explainable AI to deliver accurate risk
-          assessments and transparent, interpretable insights for better
-          healthcare decision-making.
+          Your go-to platform for AI-powered heart failure analysis and risk prediction. 
+          Combine machine learning with Explainable AI to gain accurate insights, 
+          understand model decisions, and explore patient data through preprocessing, 
+          EDA, and feature selection — all in one place.
         </p>
         <Link 
           href="/predict" 

@@ -7,5 +7,6 @@ export interface AuthContextType {
   newHistoryItem: PredictionHistoryBase | null;
   login: (userData: User) => void;
   pushNewHistoryItem: (item: PredictionHistoryBase) => void;
+  updateUser: (userData: Partial<User>) => void;
   logout: () => void;
 }

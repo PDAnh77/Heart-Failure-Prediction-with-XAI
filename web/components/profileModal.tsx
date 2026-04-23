@@ -4,6 +4,7 @@ import { IoMdClose, IoMdCamera } from "react-icons/io";
 import { FaLock, FaRocket, FaUser, FaEnvelope } from "react-icons/fa6";
 import { useAuth } from "@/context/authcontext";
 import { toast } from "react-hot-toast";
+import { api } from "@/lib/api";
 import UpdatePasswordModal from "@/components/updatePasswordModal";
 
 interface ProfileModalProps {
@@ -13,21 +14,29 @@ interface ProfileModalProps {
 
 export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     const [isVisible, setIsVisible] = useState(false);
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Basic info states
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
     // Trạng thái cho modal đổi mật khẩu
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
     useEffect(() => {
-        if (user && isOpen) {
+        if (isOpen && user) {
+            // Khi mở modal: Đồng bộ với dữ liệu từ Auth Context
             setUsername(user.username || "");
             setEmail(user.email || "");
+            setAvatarPreview(user.avatar_url || null);
+            setAvatarFile(null);
+        } else if (!isOpen) {
+            setAvatarPreview(user?.avatar_url || null);
+            setAvatarFile(null);
         }
     }, [user, isOpen]);
 
@@ -74,6 +83,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            setAvatarFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setAvatarPreview(reader.result as string);
@@ -82,10 +92,39 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         }
     };
 
-    const handleSaveProfile = () => {
-        // Call API update profile (avatar, etc.) logic here
-        toast.success("Profile updated successfully!");
-        onClose();
+    const handleSaveProfile = async () => {
+        try {
+            setIsLoading(true);
+
+            // Only upload avatar if a new file was selected
+            if (avatarFile) {
+                const formData = new FormData();
+                formData.append("file", avatarFile);
+
+                const response = await api.post("/users/me/avatar", formData, {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                });
+
+                if (response.data) {
+                    updateUser({ avatar_url: response.data.avatar_url });
+                    toast.success("Avatar updated successfully!");
+                }
+            }
+            onClose();
+        } catch (error: any) {
+            console.error("Error updating profile:", error);
+
+            const errorMessage =
+                error.response?.data?.message ||
+                error.response?.data?.detail ||
+                "Something went wrong. Please try again.";
+
+            toast.error(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     if (!isOpen) return null;
@@ -184,15 +223,24 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                                 <div className="mt-8 flex gap-3">
                                     <button
                                         onClick={onClose}
-                                        className="flex-1 px-4 hover:cursor-pointer py-2.5 border border-gray-300 dark:border-[#FFFFFF1A] dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition font-semibold"
+                                        disabled={isLoading}
+                                        className="flex-1 px-4 hover:cursor-pointer py-2.5 border border-gray-300 dark:border-[#FFFFFF1A] dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         Close
                                     </button>
                                     <button
                                         onClick={handleSaveProfile}
-                                        className="flex-1 px-4 hover:cursor-pointer py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 transition font-semibold"
+                                        disabled={isLoading}
+                                        className="flex-1 px-4 hover:cursor-pointer py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-500/20 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                     >
-                                        Save Changes
+                                        {isLoading ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                                Saving...
+                                            </>
+                                        ) : (
+                                            "Save Changes"
+                                        )}
                                     </button>
                                 </div>
                             </div>

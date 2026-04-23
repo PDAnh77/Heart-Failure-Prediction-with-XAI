@@ -231,20 +231,22 @@ for name, model_obj in zip(classifiers, models):
     plt.title(f"GA Optimization Progress: {name}")
     plt.show()
 
-    # Get the best result from the final generation
-    last_best_score = best_score_list[-1]
-    last_best_features = features.columns[best_chromo_list[-1]].tolist()
+    # Get best result across ALL generations
+    best_gen_idx = np.argmax(best_score_list)
+
+    best_score = best_score_list[best_gen_idx]
+    best_features = features.columns[best_chromo_list[best_gen_idx]].tolist()
 
     final_results.append(
         {
             "Classifier": name,
-            "Best_GA_Accuracy": last_best_score,
-            "Selected_Features": last_best_features,
-            "Feature_Count": len(last_best_features),
+            "Best_GA_Accuracy": best_score,
+            "Selected_Features": best_features,
+            "Feature_Count": len(best_features),
         }
     )
-    
-pd.set_option('display.max_colwidth', None)
+
+pd.set_option("display.max_colwidth", None)
 # Convert results to DataFrame for easier comparison
 df_final_comparison = pd.DataFrame(final_results).sort_values(by="Best_GA_Accuracy", ascending=False)
 print("\n--- COMPARISON TABLE AFTER GA ---")

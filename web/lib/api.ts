@@ -1,8 +1,8 @@
 import axios from "axios";
 
 let accessToken: string | null = null; // Token lưu trong bộ nhớ (mất khi reload)
-let isRefreshing = false;              // Cờ quá trình lấy token mới
-let failedQueue: any[] = [];           // Hàng đợi các request bị tạm dừng để chờ token mới
+let isRefreshing = false; // Cờ quá trình lấy token mới
+let failedQueue: any[] = []; // Hàng đợi các request bị tạm dừng để chờ token mới
 
 // Khi có token mới thì chạy tiếp (resolve), nếu lỗi thì hủy (reject)
 const processQueue = (error: any, token: string | null = null) => {
@@ -32,6 +32,14 @@ api.interceptors.response.use(
   (response) => response, // Nếu thành công thì trả về
   async (error) => {
     const originalRequest = error.config;
+
+    if (process.env.NODE_ENV === "development") {
+      console.error("API Error:", {
+        url: originalRequest?.url,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
 
     // Nếu lỗi 401 (Unauthorized) và chưa từng thử refresh trước đó
     if (
