@@ -45,13 +45,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(userData);
   };
 
+  const updateUser = (userData: Partial<User>) => {
+    setUser((prevUser) => (prevUser ? { ...prevUser, ...userData } : null));
+  };
+
   const logout = () => {
     setUser(null);
     setAccessToken(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, newHistoryItem, pushNewHistoryItem }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, newHistoryItem, pushNewHistoryItem, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

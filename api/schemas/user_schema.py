@@ -18,6 +18,7 @@ class UserSignup(UserBase):
 class UserInfo(UserBase):
     id: UUID
     role: str
+    avatar_url: str | None = Field(None)
 
 
 class UserInfoUpdate(UserBase):

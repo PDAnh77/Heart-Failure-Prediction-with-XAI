@@ -1,12 +1,12 @@
-# AI-Based Heart Failure Prediction System with Explainable AI (XAI)
+# AI-Based Heart Failure Analytics System with Explainable AI (XAI)
 ## Overview
-End-to-end AI-powered heart failure prediction application that leverages machine learning models combined with Explainable AI (XAI) techniques to provide transparent and interpretable predictions based on patient clinical and health information.
+A comprehensive AI-powered platform for heart failure analysis and risk prediction. Leverage machine learning models with Explainable AI (XAI) to generate accurate, transparent insights from patient data. Explore end-to-end data workflows including preprocessing, exploratory data analysis (EDA), and feature selection to support data-driven clinical research and decision-making.
 
 * Data preparation and model training for heart failure prediction
 
 * Explainable AI to interpret cardiovascular risk predictions
 
-* Backend API for authentication, patient management, heart failure inference, XAI explanations and prediction history management
+* Backend API for authentication, patient management, heart failure inference, XAI explanations, prediction history management and dataset analysis
 
 * Frontend web application for patient data input and result visualization
 
@@ -44,7 +44,7 @@ End-to-end AI-powered heart failure prediction application that leverages machin
 ## Model & XAI Description
 * Model: Logistic Regression, Random Forest, XGBoost,...
 
-* Features:
+* Features used for prediction:
 
 | Feature | Type | Description |
 | :--- | :--- | :--- |

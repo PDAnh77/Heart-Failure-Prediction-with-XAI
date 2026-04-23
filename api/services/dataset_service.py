@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import seaborn as sns
-from xgboost import XGBClassifier
 from core.supabase_client import supabase
+from lightgbm import LGBMClassifier
 
 DATASET_BUCKET = "heart-failure-datasets"
 EDA_BUCKET = "eda-artifacts"
@@ -32,7 +32,9 @@ def _sanitize(obj):
 
 def load_dataset(dataset_id: str, user_id: str) -> pd.DataFrame:
 
-    if "processed" in dataset_id:
+    if dataset_id.startswith("fs_"):
+        path = f"feature-selection/{user_id}/{dataset_id}.csv"
+    elif dataset_id.startswith("processed_"):
         path = f"processed/{user_id}/{dataset_id}.csv"
     else:
         path = f"raw/{user_id}/{dataset_id}.csv"
@@ -76,7 +78,7 @@ def upload_plot(plt_obj, path, bucket=EDA_BUCKET):
         return None
 
 
-def upload_dataset(file: UploadFile, user_id: str):
+def upload_raw_dataset(file: UploadFile, user_id: str):
     if not file.filename.endswith(".csv"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only CSV files are allowed")
 
@@ -121,7 +123,9 @@ def upload_dataset(file: UploadFile, user_id: str):
             path=path, file=csv_bytes, file_options={"content-type": "text/csv"}
         )
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Upload failed: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Upload processed dataset failed: {str(e)}"
+        )
 
     return {"dataset_id": dataset_id, "columns": columns}
 
@@ -158,15 +162,17 @@ def get_summary(dataset_id: str, owner_id: str, user: dict, target_column: str =
     # ===== GIÁ TRỊ THIẾU =====
     missing_values = df.isnull().sum().to_dict()
 
-    return _sanitize({
-        "rows": rows,
-        "columns": cols,
-        "target_column": target_column,
-        "categorical_features": categorical_features,
-        "numerical_features": numerical_features,
-        "column_types": column_types,
-        "missing_values": missing_values,
-    })
+    return _sanitize(
+        {
+            "rows": rows,
+            "columns": cols,
+            "target_column": target_column,
+            "categorical_features": categorical_features,
+            "numerical_features": numerical_features,
+            "column_types": column_types,
+            "missing_values": missing_values,
+        }
+    )
 
 
 def get_rows(dataset_id: str, owner_id: str, user: dict, limit: int, offset: int):
@@ -257,9 +263,7 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column):
             path=path, file=csv_bytes, file_options={"content-type": "text/csv", "upsert": "true"}
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Lỗi khi lưu dữ liệu đã xử lý: {str(e)}"
-        )
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f": {str(e)}")
 
     return {
         "message": "Preprocessing completed successfully",
@@ -329,7 +333,15 @@ def get_eda(dataset_id: str, target_column: str, owner_id: str, user: dict):
             wedgeprops={"edgecolor": "black"},
         )
         ax[0].set_title(f"{target_column} %")
-        sns.barplot(x=counts.index, y=counts.values, hue=counts.index, ax=ax[1], palette=palette, edgecolor="black", legend=False)
+        sns.barplot(
+            x=counts.index,
+            y=counts.values,
+            hue=counts.index,
+            ax=ax[1],
+            palette=palette,
+            edgecolor="black",
+            legend=False,
+        )
         ax[1].set_title(f"Cases of {target_column}")
         ax[1].set_xlabel(target_column)
         ax[1].set_ylabel("count")
@@ -465,14 +477,18 @@ def genetic_selection(
     X_train, X_test, Y_train, Y_test = train_test_split(features, target, test_size=0.3, random_state=42)
 
     # Khởi tạo Model
-    model = XGBClassifier(
+    model = LGBMClassifier(
+        objective="binary",
         random_state=0,
-        n_estimators=50,
-        max_depth=3,
-        learning_rate=0.105,
-        subsample=0.8,
-        colsample_bytree=0.9,
-        eval_metric="logloss",
+        n_estimators=100,  # Số lượng cây (tương đương XGBoost của bạn)
+        max_depth=4,  # Giới hạn độ sâu của cây để tránh Overfitting trên dataset nhỏ
+        num_leaves=15,  # Số lá tối đa (Nên nhỏ hơn 2^max_depth, ở đây 2^4 = 16)
+        min_child_samples=20,  # Hạ số lượng mẫu tối thiểu cần có trong 1 lá (mặc định là 20)
+        learning_rate=0.05,  # Tốc độ học
+        subsample=0.8,  # Lấy mẫu ngẫu nhiên 80% dữ liệu để xây cây
+        subsample_freq=1,  # Tần suất thực hiện bagging (Bắt buộc = 1 nếu dùng subsample)
+        colsample_bytree=0.8,  # Lấy mẫu ngẫu nhiên 90% features
+        verbose=-1,
     )
 
     # --- ĐÁNH GIÁ MÔ HÌNH BAN ĐẦU (BASELINE) ---
@@ -506,7 +522,29 @@ def genetic_selection(
     # Lấy danh sách feature
     selected_features = features.columns[absolute_best_chromo].tolist()
 
+    columns_to_keep = selected_features.copy()
+    if target_column and target_column not in columns_to_keep:
+        columns_to_keep.append(target_column)
+
+    df_selected = processed_df[columns_to_keep]
+
+    fs_dataset_id = f"fs_{dataset_id}"
+    csv_bytes = df_selected.to_csv(index=False).encode("utf-8")
+
+    path = f"feature-selection/{target_user_id}/{fs_dataset_id}.csv"
+
+    try:
+        supabase.storage.from_(DATASET_BUCKET).upload(
+            path=path, file=csv_bytes, file_options={"content-type": "text/csv", "upsert": "true"}
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Upload feature selection dataset failed: {str(e)}",
+        )
+
     return {
+        "fs_dataset_id": fs_dataset_id,
         "baseline_accuracy": round(baseline_accuracy, 4),
         "original_feature_count": original_feature_count,
         "best_ga_accuracy": round(absolute_best_score, 4),

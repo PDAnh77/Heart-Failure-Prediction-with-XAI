@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Image from "next/image";
 import { FiX } from "react-icons/fi";
 
@@ -9,17 +9,12 @@ interface ImageModalProps {
 }
 
 export default function ImageModal({ imageUrl, onClose }: ImageModalProps) {
-    const [isVisible, setIsVisible] = useState(false);
-
+    // Quản lý khóa cuộn trang (scroll) khi mở modal
     useEffect(() => {
         if (imageUrl) {
             document.body.style.overflow = 'hidden';
-            const timer = setTimeout(() => setIsVisible(true), 10);
-            return () => clearTimeout(timer);
         } else {
-            // Khi đóng, trả lại scroll cho body và reset state
             document.body.style.overflow = 'unset';
-            setIsVisible(false);
         }
 
         return () => {
@@ -27,7 +22,7 @@ export default function ImageModal({ imageUrl, onClose }: ImageModalProps) {
         };
     }, [imageUrl]);
 
-    // Đóng modal lập tức khi nhấn phím Escape
+    // Đóng modal khi nhấn phím Escape
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === "Escape" && imageUrl) {
@@ -45,15 +40,15 @@ export default function ImageModal({ imageUrl, onClose }: ImageModalProps) {
     if (!imageUrl) return null;
 
     return (
-        <div className="relative z-100" aria-labelledby="modal-image" role="dialog">
-            {/* Backdrop */}
+        <div className="relative z-50" aria-labelledby="modal-image" role="dialog">
+            {/* Backdrop: Tăng blur lên 'md' và dùng nền đen 70% để làm nổi bật ảnh lập tức */}
             <div
-                className={`fixed inset-0 bg-gray-500/75 backdrop-blur-sm transition-opacity duration-300 ease-out flex items-center justify-center p-4
-                    ${isVisible ? "opacity-100" : "opacity-0"}`}
+                className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4"
+                onClick={onClose} // Bấm ra ngoài ảnh để đóng
             >
                 {/* Nút tắt */}
                 <button
-                    className="absolute hover:cursor-pointer top-6 right-6 text-gray-300 hover:text-white bg-gray-900/50 hover:bg-gray-900 p-2 rounded-full transition-colors z-110"
+                    className="absolute hover:cursor-pointer top-6 right-6 text-gray-300 hover:text-white bg-gray-900/50 hover:bg-gray-900 p-2 rounded-full transition-colors z-50"
                     onClick={(e) => {
                         e.stopPropagation();
                         onClose();
@@ -62,10 +57,10 @@ export default function ImageModal({ imageUrl, onClose }: ImageModalProps) {
                     <FiX className="w-8 h-8" />
                 </button>
 
-                {/* Vùng chứa ảnh phóng to với hiệu ứng scale lúc hiển thị lên */}
+                {/* Vùng chứa ảnh: Bỏ hoàn toàn các class tạo hiệu ứng chuyển động */}
                 <div
-                    className={`relative w-full max-w-6xl h-[85vh] transform transition-all duration-300 ease-out
-                        ${isVisible ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-4"}`}
+                    className="relative w-full max-w-6xl h-[85vh]"
+                    onClick={(e) => e.stopPropagation()} // Ngăn việc bấm vào chính bức ảnh làm đóng modal
                 >
                     <Image
                         src={imageUrl}

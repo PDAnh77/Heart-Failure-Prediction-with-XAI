@@ -7,7 +7,7 @@ router = APIRouter()
 
 @router.post("/upload")
 def upload_dataset(file: UploadFile, user=Depends(require_roles(["admin", "user"]))):
-    return dataset_service.upload_dataset(file, user["user_id"])
+    return dataset_service.upload_raw_dataset(file, user["user_id"])
 
 
 @router.get("/{dataset_id}/summary")

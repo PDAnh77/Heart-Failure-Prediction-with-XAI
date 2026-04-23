@@ -485,15 +485,15 @@ export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabP
                                             </p>
                                             <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
                                                 <li className="flex items-start gap-2">
-                                                    <span className="text-gray-400 mt-0.5">•</span>
+                                                    <span className="text-gray-400">•</span>
                                                     <span><strong>Raw Format:</strong> Features retain their original scales, string text, and categorical labels.</span>
                                                 </li>
                                                 <li className="flex items-start gap-2">
-                                                    <span className="text-gray-400 mt-0.5">•</span>
+                                                    <span className="text-gray-400">•</span>
                                                     <span><strong>Potential Issues:</strong> May contain duplicate rows, missing values (NaN/Null), or unencoded variables.</span>
                                                 </li>
                                                 <li className="flex items-start gap-2">
-                                                    <span className="text-gray-400 mt-0.5">•</span>
+                                                    <span className="text-gray-400">•</span>
                                                     <span><strong>Algorithm Readiness:</strong> Not yet optimized for training machine learning models.</span>
                                                 </li>
                                             </ul>
@@ -525,19 +525,19 @@ export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabP
                                             </p>
                                             <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
                                                 <li className="flex items-start gap-2">
-                                                    <span className="text-[#2EC4B6] mt-0.5 font-bold">✓</span>
+                                                    <span className="text-[#2EC4B6] font-bold">✓</span>
                                                     <span><strong>Data Cleaning:</strong> Dropped rows with missing target values and removed exact duplicates to prevent bias.</span>
                                                 </li>
                                                 <li className="flex items-start gap-2">
-                                                    <span className="text-[#2EC4B6] mt-0.5 font-bold">✓</span>
+                                                    <span className="text-[#2EC4B6] font-bold">✓</span>
                                                     <span><strong>Imputation:</strong> Handled missing data by filling numerical gaps with the <em>Median</em>, and categorical gaps with the <em>Mode</em>.</span>
                                                 </li>
                                                 <li className="flex items-start gap-2">
-                                                    <span className="text-[#2EC4B6] mt-0.5 font-bold">✓</span>
+                                                    <span className="text-[#2EC4B6] font-bold">✓</span>
                                                     <span><strong>Encoding:</strong> Applied <em>Label Encoding</em> to convert categorical strings into machine-readable numbers.</span>
                                                 </li>
                                                 <li className="flex items-start gap-2">
-                                                    <span className="text-[#2EC4B6] mt-0.5 font-bold">✓</span>
+                                                    <span className="text-[#2EC4B6] font-bold">✓</span>
                                                     <span><strong>Scaling:</strong> Used <em>Standard Scaler</em> on numerical features to ensure equal contribution across variables (Mean=0, Variance=1).</span>
                                                 </li>
                                             </ul>
