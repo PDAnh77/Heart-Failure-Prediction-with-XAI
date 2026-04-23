@@ -4,12 +4,20 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import shap
 import joblib
+import lightgbm as lgb
 from lime.lime_tabular import LimeTabularExplainer
 
 pd.options.display.float_format = "{:.2f}".format
 import warnings
 
 warnings.filterwarnings("ignore")
+
+# --- Thư viện mới cho Missing Data Imputation ---
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import SimpleImputer, IterativeImputer
+
+from imblearn.over_sampling import ADASYN
+from collections import Counter
 
 from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.metrics import confusion_matrix
@@ -30,36 +38,89 @@ from sklearn.neighbors import KNeighborsClassifier
 from xgboost import XGBClassifier
 
 
+# Copy từ notebooks/heart-failure-prediction-6-models.py
+
 # ----------------------------------------------------------
 # Load and preprocess
 # ----------------------------------------------------------
 data = pd.read_csv("../input/heart-failure-prediction/heart.csv")
-
 df1 = data.copy(deep=True)
 
-# Label Encoding
+# ==========================================================
+# GIẢ LẬP DỮ LIỆU KHUYẾT CHO 2 CỘT: CHOLESTEROL (4% missing) & OLDPEAK (10% missing)
+# ==========================================================
+print("\n--- BẮT ĐẦU GIẢ LẬP DỮ LIỆU KHUYẾT (CHOLESTEROL & OLDPEAK) ---")
+np.random.seed(42) # Cố định seed để dễ debug
+
+# 1. Nhóm thiếu <= 5% (Test Mean Imputation)
+# 'Cholesterol' cho trống 4%
+missing_indices_chol = df1.sample(frac=0.04, random_state=42).index
+df1.loc[missing_indices_chol, 'Cholesterol'] = np.nan
+
+# 2. Nhóm thiếu > 5% (Test MICE Imputation)
+# 'Oldpeak' cho trống 10%
+# Dùng random_state khác để các dòng bị thiếu của Oldpeak không trùng hoàn toàn với Cholesterol
+missing_indices_oldpeak = df1.sample(frac=0.10, random_state=3).index 
+df1.loc[missing_indices_oldpeak, 'Oldpeak'] = np.nan
+
+print("Tổng hợp số lượng ô bị khuyết vừa tạo ra:")
+print(df1.isnull().sum()[df1.isnull().sum() > 0])
+
+# ----------------------------------------------------------
+# 1. MISSING DATA IMPUTATION (Dựa trên bài báo)
+# ----------------------------------------------------------
+print("--- Đang kiểm tra và xử lý Missing Data ---")
+# Tính phần trăm dữ liệu thiếu cho mỗi cột
+missing_percentages = df1.isnull().mean() * 100
+
+# Phân loại các cột theo tỷ lệ missing
+cols_missing_under_5 = missing_percentages[(missing_percentages > 0) & (missing_percentages <= 5)].index.tolist()
+cols_missing_over_5 = missing_percentages[missing_percentages > 5].index.tolist()
+
+# BƯỚC 1.1: Xử lý các cột thiếu <= 5% (Mean cho Numeric, Mode cho Categorical)
+for col in cols_missing_under_5:
+    if df1[col].dtype in ['int64', 'float64']:
+        imputer_mean = SimpleImputer(strategy='mean')
+        df1[col] = imputer_mean.fit_transform(df1[[col]])
+    else:
+        imputer_mode = SimpleImputer(strategy='most_frequent')
+        df1[col] = imputer_mode.fit_transform(df1[[col]]).ravel()
+
+
+# BƯỚC 1.2: Label Encoding
 le_sex = LabelEncoder()
 le_chest = LabelEncoder()
 le_ecg = LabelEncoder()
 le_angina = LabelEncoder()
 le_slope = LabelEncoder()
 
-# Fit và transform từng cột
-le_sex.fit(df1["Sex"])
-df1["Sex"] = le_sex.transform(df1["Sex"])
+# Chỉ fit/transform trên các giá trị không bị NaN (nếu có cột categorical nào lọt vào nhóm >5% missing)
+def encode_non_nulls(encoder, series):
+    non_nulls = series.dropna()
+    encoded = encoder.fit_transform(non_nulls)
+    series.loc[series.notnull()] = encoded
+    return series
 
-le_chest.fit(df1["ChestPainType"])
-df1["ChestPainType"] = le_chest.transform(df1["ChestPainType"])
+df1["Sex"] = encode_non_nulls(le_sex, df1["Sex"]).astype('float')
+df1["ChestPainType"] = encode_non_nulls(le_chest, df1["ChestPainType"]).astype('float')
+df1["RestingECG"] = encode_non_nulls(le_ecg, df1["RestingECG"]).astype('float')
+df1["ExerciseAngina"] = encode_non_nulls(le_angina, df1["ExerciseAngina"]).astype('float')
+df1["ST_Slope"] = encode_non_nulls(le_slope, df1["ST_Slope"]).astype('float')
 
-le_ecg.fit(df1["RestingECG"])
-df1["RestingECG"] = le_ecg.transform(df1["RestingECG"])
+# BƯỚC 1.3: Xử lý các cột thiếu > 5% bằng MICE (IterativeImputer)
+if len(cols_missing_over_5) > 0:
+    print(f"[> 5%] Áp dụng MICE Imputation cho các cột: {cols_missing_over_5}")
+    # IterativeImputer mô phỏng phương pháp MICE (Multiple Imputation by Chained Equations)
+    mice_imputer = IterativeImputer(max_iter=10, random_state=0) 
+    
+    # MICE sử dụng toàn bộ các cột để dự đoán các giá trị thiếu
+    # Tạm thời loại bỏ biến mục tiêu 'HeartDisease' khỏi quá trình impute để tránh Data Leakage
+    impute_features = df1.columns.drop("HeartDisease")
+    df1[impute_features] = mice_imputer.fit_transform(df1[impute_features])
 
-le_angina.fit(df1["ExerciseAngina"])
-df1["ExerciseAngina"] = le_angina.transform(df1["ExerciseAngina"])
-
-le_slope.fit(df1["ST_Slope"])
-df1["ST_Slope"] = le_slope.transform(df1["ST_Slope"])
-
+# ----------------------------------------------------------
+# 2. Scaling & Splitting (Giữ nguyên logic cũ)
+# ----------------------------------------------------------
 # MinMaxScaler cho Oldpeak
 mms = MinMaxScaler()
 df1["Oldpeak"] = mms.fit_transform(df1[["Oldpeak"]])
@@ -73,20 +134,56 @@ df1[std_cols] = ss.fit_transform(df1[std_cols])
 features = df1[df1.columns.drop(["HeartDisease", "RestingBP", "RestingECG"])]
 target = df1["HeartDisease"]
 
-# Giữ nguyên DataFrame → SHAP đọc được tên cột
+# ----------------------------------------------------------
+# 3. Splitting & LightGBM preparation
+# ----------------------------------------------------------
 x_train, x_test, y_train, y_test = train_test_split(
     features, target, test_size=0.20, random_state=2
 )
 
+# ----------------------------------------------------------
+# 3. IMBALANCED DATA HANDLING (ADASYN)
+# ----------------------------------------------------------
+print("\n--- Xử lý Imbalanced Data bằng ADASYN ---")
+print(f"Phân phối nhãn (Target) TRƯỚC khi xử lý trên tập train: {Counter(y_train)}")
+
+# Khởi tạo thuật toán ADASYN
+adasyn = ADASYN(random_state=42)
+
+# Fit và transform (Tạo dữ liệu tổng hợp cho nhóm thiểu số)
+# LƯU Ý: Chỉ fit_resample trên tập Train để tránh Data Leakage!
+x_train_resampled, y_train_resampled = adasyn.fit_resample(x_train, y_train)
+
+print(f"Phân phối nhãn (Target) SAU khi xử lý trên tập train: {Counter(y_train_resampled)}")
+
+# # Chuyển đổi lại về DataFrame và Series để tương thích với các bước sau (SHAP, LIME)
+x_train = pd.DataFrame(x_train_resampled, columns=x_train.columns)
+y_train = pd.Series(y_train_resampled, name=y_train.name)
+
+# --- SỬA LỖI NỘI SUY CỦA ADASYN & CHUẨN BỊ CHO LIGHTGBM ---
+categorical_features = ['Sex', 'ChestPainType', 'ExerciseAngina', 'ST_Slope']
+# Vì ADASYN nội suy dữ liệu nên các biến phân loại có thể bị chuyển thành số thập phân (VD: 0.6)
+# Cần làm tròn lại về đúng số nguyên đại diện cho Category
+for col in categorical_features:
+    x_train[col] = x_train[col].round()
+# Ép kiểu dữ liệu sang 'category' để kích hoạt thuật toán Categorical của LightGBM
+for col in categorical_features:
+    x_train[col] = x_train[col].astype('category')
+    x_test[col] = x_test[col].astype('category')
+
+# ----------------------------------------------------------
+
 colors = ["#F93822", "#FDD20E"]
-
-
 # ----------------------------------------------------------
 # Model wrapper (train bằng numpy, SHAP bằng DataFrame)
 # ----------------------------------------------------------
 def model(classifier):
-    classifier.fit(x_train.values, y_train.values)
-    prediction = classifier.predict(x_test.values)
+    if classifier.__class__.__name__ == 'LGBMClassifier':
+        classifier.fit(x_train, y_train)
+        prediction = classifier.predict(x_test)
+    else:
+        classifier.fit(x_train.values, y_train.values)
+        prediction = classifier.predict(x_test.values)
 
     cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
 
@@ -122,7 +219,7 @@ def model_evaluation(classifier):
 
 
 # ----------------------------------------------------------
-# Train models
+# Train 7 models
 # ----------------------------------------------------------
 classifier_lr = LogisticRegression(random_state=0, C=10, penalty="l2")
 model(classifier_lr)
@@ -156,49 +253,16 @@ classifier_xgb = XGBClassifier(
 model(classifier_xgb)
 model_evaluation(classifier_xgb)
 
-# ----------------------------------------------------------
-# GridSearch để tìm bộ tham số có điểm ROC AUC cao nhất
-# ----------------------------------------------------------
-
-# param_grid = {
-#     'n_estimators': [50, 100, 150, 200],      # Số lượng cây
-#     'learning_rate': [0.01, 0.105, 0.2],   # Tốc độ học
-#     'max_depth': [3, 5, 7],                  # Độ sâu cây (thấp để tránh overfit)
-#     'subsample': [0.8, 0.9, 1.0],              # Tỷ lệ mẫu dùng để train mỗi cây
-#     'colsample_bytree': [0.8, 0.9, 1.0],       # Tỷ lệ đặc trưng dùng cho mỗi cây
-# }
-
-# # 1. Thiết lập tìm kiếm
-# # Dùng lại cv giống model() để đảm bảo tính nhất quán
-# cv_search = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
-
-# grid_search = GridSearchCV(
-#     estimator=XGBClassifier(
-#         random_state=0,
-#         eval_metric='logloss',
-#     ),
-#     param_grid=param_grid,
-#     scoring='roc_auc',  # Tối ưu hóa theo ROC AUC
-#     cv=cv_search,
-#     n_jobs=-1,          # Chạy song song full CPU
-#     verbose=1
-# )
-
-# # 2. Chạy tìm kiếm
-# print("Đang tối ưu hóa XGBoost...")
-# grid_search.fit(x_train, y_train)
-
-# # 3. Lấy tham số tốt nhất
-# print("\n--- KẾT QUẢ TỐI ƯU ---")
-# print(f"Tham số tốt nhất: {grid_search.best_params_}")
-# print(f"ROC AUC (Cross-Validation) cao nhất: {grid_search.best_score_:.2%}")
-
-# # 4. Lấy model đã tối ưu gán vào biến classifier_xgb
-# classifier_xgb = grid_search.best_estimator_
-
-# print("\n--- CHẠY ĐÁNH GIÁ VỚI MODEL TỐI ƯU ---")
-# model(classifier_xgb)
-# model_evaluation(classifier_xgb)
+lgbm_basic = lgb.LGBMClassifier(
+    learning_rate=0.05,
+    n_estimators=200,
+    num_leaves=31,
+    min_child_samples=20,
+    random_state=42,
+    verbose=-1
+)
+model(lgbm_basic)
+model_evaluation(lgbm_basic)
 
 # ----------------------------------------------------------
 # Local
@@ -233,7 +297,7 @@ fig = exp.as_pyplot_figure()
 plt.show()
 
 # ----------------------------------------------------------
-# Global
+# XAI: Global Explainability
 # ----------------------------------------------------------
 
 shap.plots.bar(shap_values, show=False)
