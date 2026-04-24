@@ -3,7 +3,7 @@ from uuid import UUID
 import uuid
 from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException, Request, Response, status, UploadFile
-from sqlalchemy import select, insert, update, delete
+from sqlalchemy import or_, select, insert, update, delete, or_
 from starlette.responses import RedirectResponse
 from models.refresh_token_model import RefreshToken
 from models.user_model import User
@@ -62,13 +62,15 @@ def set_refresh_token_cookie(response: Response, refresh_token: str):
 
 
 def login_user(db: Session, request: Request, response: Response, user_login: UserLogin):
-    current_user = db.execute(select(User).where(User.username == user_login.username)).scalar_one_or_none()
+    current_user = db.execute(
+        select(User).where(or_(User.username == user_login.username, User.email == user_login.username))
+    ).scalar_one_or_none()
 
     if not current_user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username/email or password")
 
     if not verify_password(user_login.password, current_user.password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username/email or password")
 
     access_token = generate_access_token(current_user.id, current_user.role)
     refresh_token = generate_refresh_token()

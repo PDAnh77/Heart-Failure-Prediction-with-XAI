@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useRef, UIEvent } from "react";
-import { FiLoader, FiPieChart, FiAlertCircle, FiCheck, FiDatabase } from "react-icons/fi";
+import { FiLoader, FiPieChart, FiAlertCircle, FiCheck, FiDatabase, FiDownload } from "react-icons/fi";
 import { HiOutlineDatabase } from "react-icons/hi";
 import Image from "next/image";
 import toast from "react-hot-toast";
@@ -35,6 +35,8 @@ export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabP
     const [hasMoreProcessed, setHasMoreProcessed] = useState(true);
     const [loadingMoreOrg, setLoadingMoreOrg] = useState(false);
     const [loadingMoreProc, setLoadingMoreProc] = useState(false);
+
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const extractRows = (data: any) => {
         if (Array.isArray(data)) return data;
@@ -143,6 +145,34 @@ export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabP
 
         if (scrollHeight - scrollTop - clientHeight < 50) {
             loadMoreRows(type);
+        }
+    };
+
+    // --- HÀM XỬ LÝ TẢI DATASET ---
+    const handleDownloadProcessed = async () => {
+        if (!processedId) return;
+        try {
+            setIsDownloading(true);
+
+            // Sử dụng responseType 'blob' để nhận file
+            const response = await api.get(`/datasets/${processedId}/download`, {
+                responseType: 'blob'
+            });
+
+            // Tạo link tải file tạm thời và trigger click
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `preprocessed_dataset.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Download Error:", error);
+            toast.error("Failed to download the dataset.");
+        } finally {
+            setIsDownloading(false);
         }
     };
 
@@ -507,6 +537,15 @@ export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabP
                                         <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                                             <span className="w-3 h-3 rounded-full bg-[#2EC4B6]"></span> Preprocessed Data
                                         </h3>
+
+                                        <button
+                                            onClick={handleDownloadProcessed}
+                                            disabled={isDownloading || !processedId}
+                                            className="flex items-center hover:cursor-pointer justify-center min-w-[180px] gap-2 px-4 py-2 bg-[#2EC4B6] hover:bg-[#25a095] text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                        >
+                                            <FiDownload className="w-4 h-4" />
+                                            {isDownloading ? "Downloading..." : "Download Dataset"}
+                                        </button>
                                     </div>
 
                                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

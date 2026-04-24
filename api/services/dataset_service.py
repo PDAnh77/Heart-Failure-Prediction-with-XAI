@@ -287,7 +287,7 @@ def download(dataset_id: str, owner_id, user: dict):
     df.to_csv(stream, index=False)
 
     response = StreamingResponse(iter([stream.getvalue()]), media_type="text/csv")
-    response.headers["Content-Disposition"] = f"attachment; filename=Processed dataset.csv"
+    response.headers["Content-Disposition"] = f"attachment; filename={dataset_id}.csv"
 
     return response
 

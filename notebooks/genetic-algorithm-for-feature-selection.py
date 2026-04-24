@@ -8,6 +8,7 @@ import warnings
 from sklearn.calibration import LabelEncoder
 from sklearn.discriminant_analysis import StandardScaler
 from sklearn.preprocessing import MinMaxScaler
+import time
 
 warnings.filterwarnings("ignore")
 
@@ -55,17 +56,17 @@ models = [
         eval_metric="logloss",
     ),
     LGBMClassifier(
-        objective='binary',
+        objective="binary",
         random_state=0,
-        n_estimators=100,        # Số lượng cây (tương đương XGBoost của bạn)
-        max_depth=4,             # Giới hạn độ sâu của cây để tránh Overfitting trên dataset nhỏ
-        num_leaves=15,           # Số lá tối đa (Nên nhỏ hơn 2^max_depth, ở đây 2^4 = 16)
-        min_child_samples=20,    # Hạ số lượng mẫu tối thiểu cần có trong 1 lá (mặc định là 20)
-        learning_rate=0.05,      # Tốc độ học
-        subsample=0.8,           # Lấy mẫu ngẫu nhiên 80% dữ liệu để xây cây
-        subsample_freq=1,        # Tần suất thực hiện bagging (Bắt buộc = 1 nếu dùng subsample)
-        colsample_bytree=0.8,    # Lấy mẫu ngẫu nhiên 90% features
-        verbose=-1
+        n_estimators=100,  # Số lượng cây (tương đương XGBoost của bạn)
+        max_depth=4,  # Giới hạn độ sâu của cây để tránh Overfitting trên dataset nhỏ
+        num_leaves=15,  # Số lá tối đa (Nên nhỏ hơn 2^max_depth, ở đây 2^4 = 16)
+        min_child_samples=20,  # Hạ số lượng mẫu tối thiểu cần có trong 1 lá (mặc định là 20)
+        learning_rate=0.05,  # Tốc độ học
+        subsample=0.8,  # Lấy mẫu ngẫu nhiên 80% dữ liệu để xây cây
+        subsample_freq=1,  # Tần suất thực hiện bagging (Bắt buộc = 1 nếu dùng subsample)
+        colsample_bytree=0.8,  # Lấy mẫu ngẫu nhiên 90% features
+        verbose=-1,
     ),
 ]
 
@@ -226,6 +227,8 @@ print("--- Starting Feature Selection Optimization using Genetic Algorithm ---")
 for name, model_obj in zip(classifiers, models):
     print(f"\nRunning GA for model: {name}...")
 
+    start_time = time.perf_counter()
+
     # Run GA
     best_chromo_list, best_score_list = generations(
         model=model_obj,
@@ -241,6 +244,9 @@ for name, model_obj in zip(classifiers, models):
         Y_train=Y_train,
         Y_test=Y_test,
     )
+
+    end_time = time.perf_counter()  # kết thúc đo tg
+    elapsed_time = end_time - start_time
 
     plot(best_score_list, 0.8, 1.0, c="orange")
     plt.title(f"GA Optimization Progress: {name}")
@@ -258,6 +264,7 @@ for name, model_obj in zip(classifiers, models):
             "Best_GA_Accuracy": best_score,
             "Selected_Features": best_features,
             "Feature_Count": len(best_features),
+            "Time_Seconds": round(elapsed_time, 2),
         }
     )
 
