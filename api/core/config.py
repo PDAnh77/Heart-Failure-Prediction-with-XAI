@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     REDIRECT_URI: str
     API_URL: str
     CLIENT_URL: str
+    FEATURE_SELECTION_MODEL: str
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", secrets_dir="/run/secrets", extra="ignore"

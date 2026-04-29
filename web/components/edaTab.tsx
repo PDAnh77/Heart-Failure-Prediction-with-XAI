@@ -307,11 +307,6 @@ export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabP
                         <span className="text-xs text-gray-500">Loading more rows...</span>
                     </div>
                 )}
-                {!hasMore && data.length > 0 && (
-                    <div className="py-3 text-center bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-700">
-                        <span className="text-xs text-gray-400">End of dataset</span>
-                    </div>
-                )}
             </div>
         );
     };
@@ -541,7 +536,7 @@ export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabP
                                         <button
                                             onClick={handleDownloadProcessed}
                                             disabled={isDownloading || !processedId}
-                                            className="flex items-center hover:cursor-pointer justify-center min-w-[180px] gap-2 px-4 py-2 bg-[#2EC4B6] hover:bg-[#25a095] text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                            className="flex items-center hover:cursor-pointer justify-center min-w-[180px] gap-2 px-4 py-2 bg-linear-to-r from-[#2EC4B6] to-[#25a095] text-white text-sm font-medium rounded-lg shadow-sm hover:shadow-md hover:from-[#25a095] hover:to-[#1e8278] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-sm disabled:hover:from-[#2EC4B6] disabled:hover:to-[#25a095]"
                                         >
                                             <FiDownload className="w-4 h-4" />
                                             {isDownloading ? "Downloading..." : "Download Dataset"}

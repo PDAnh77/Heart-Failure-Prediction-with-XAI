@@ -101,7 +101,6 @@ export default function Upload() {
             return;
         }
         
-        toast.success(`Selected column: ${selectedTarget}. Proceeding...`);
         router.push(`/analyze/dashboard?id=${datasetId}&target=${encodeURIComponent(selectedTarget)}`);
     };
 

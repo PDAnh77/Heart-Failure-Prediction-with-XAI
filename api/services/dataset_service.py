@@ -14,9 +14,47 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 from core.supabase_client import supabase
+from core.config import settings
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
 
 DATASET_BUCKET = "heart-failure-datasets"
 EDA_BUCKET = "eda-artifacts"
+SELECTED_MODEL = settings.FEATURE_SELECTION_MODEL
+AVAILABLE_MODELS = {
+    "svm": SVC(kernel="linear", C=0.1),
+    "logistic_regression": LogisticRegression(random_state=0, C=10, penalty="l2"),
+    "random_forest": RandomForestClassifier(max_depth=4, random_state=0),
+    "decision_tree": DecisionTreeClassifier(random_state=1000, max_depth=4, min_samples_leaf=1),
+    "knn": KNeighborsClassifier(leaf_size=1, n_neighbors=3, p=1),
+    "xgboost": XGBClassifier(
+        random_state=0,
+        n_estimators=50,
+        max_depth=3,
+        learning_rate=0.105,
+        subsample=0.8,
+        colsample_bytree=0.9,
+        eval_metric="logloss",
+    ),
+    "lightgbm": LGBMClassifier(
+        objective="binary",
+        random_state=0,
+        n_estimators=100,
+        max_depth=4,
+        num_leaves=15,
+        min_child_samples=20,
+        learning_rate=0.05,
+        subsample=0.8,
+        subsample_freq=1,
+        colsample_bytree=0.8,
+        verbose=-1,
+    ),
+}
 
 
 def _sanitize(obj):
@@ -458,6 +496,7 @@ def genetic_selection(
     n_gen: int,
     mutation_rate: float,
     n_parents: int,
+    model_name: str,
 ):
     if n_parents is None or n_parents >= size:
         n_parents = int(size * 0.8)
@@ -476,8 +515,28 @@ def genetic_selection(
 
     X_train, X_test, Y_train, Y_test = train_test_split(features, target, test_size=0.3, random_state=42)
 
+    # --- CHỌN MÔ HÌNH ---
+    default_model = SELECTED_MODEL
+
+    if default_model and default_model not in AVAILABLE_MODELS:
+        print(f"Model '{default_model}' is not supported. Available models: {list(AVAILABLE_MODELS.keys())}")
+        default_model = "decision_tree"
+
+    final_model = default_model
+
+    if user["role"] == "admin" and model_name:
+        if model_name in AVAILABLE_MODELS:
+            final_model = model_name
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Model '{model_name}' is not supported. Available models: {list(AVAILABLE_MODELS.keys())}",
+            )
+
+    print(f"Using model {final_model} for feature selection")
+
     # Khởi tạo Model
-    model = KNeighborsClassifier(leaf_size=1, n_neighbors=3, p=1)
+    model = AVAILABLE_MODELS[final_model]
 
     # --- ĐÁNH GIÁ MÔ HÌNH BAN ĐẦU (BASELINE) ---
     model.fit(X_train, Y_train)

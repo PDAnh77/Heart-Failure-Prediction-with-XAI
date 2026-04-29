@@ -66,8 +66,9 @@ def dataset_feature_selection(
     n_parents: int = Query(None),
     owner_id: str = Query(None),
     user=Depends(require_roles(["admin", "user"])),
+    model_name: str = Query(None)
 ):
 
     return dataset_service.genetic_selection(
-        dataset_id, target_column, owner_id, user, size, n_gen, mutation_rate, n_parents
+        dataset_id, target_column, owner_id, user, size, n_gen, mutation_rate, n_parents, model_name
     )
