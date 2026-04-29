@@ -38,14 +38,6 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (process.env.NODE_ENV === "development") {
-      console.error("API Error:", {
-        url: originalRequest?.url,
-        status: error.response?.status,
-        data: error.response?.data,
-      });
-    }
-
     // Nếu lỗi 401 (Unauthorized) và chưa từng thử refresh trước đó
     if (
       (error.response?.status === 401 || error.response?.status === 403) &&

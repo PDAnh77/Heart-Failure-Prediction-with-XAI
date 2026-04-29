@@ -8,9 +8,9 @@ import { FcGoogle } from "react-icons/fc";
 import { api } from "@/lib/api";
 
 export default function Login() {
-    const [username, setUsername] = useState("")
+    const [loginId, setLoginId] = useState("")
     const [password, setPassword] = useState("")
-    const [errors, setErrors] = useState({ username: "", password: "" })
+    const [errors, setErrors] = useState({ loginId: "", password: "" })
     const [loading, setLoading] = useState(false)
     const [submitted, setSubmitted] = useState(false)
     const router = useRouter()
@@ -29,17 +29,17 @@ export default function Login() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setSubmitted(true)
-        setErrors({ username: "", password: "" })
+        setErrors({ loginId: "", password: "" })
         toast.dismiss();
         let hasError = false;
-        const newErrors = { username: "", password: "" };
+        const newErrors = { loginId: "", password: "" };
 
-        if (!username.trim()) {
-            newErrors.username = "Please enter your username.";
+        if (!loginId.trim()) {
+            newErrors.loginId = "Please enter username or email.";
             hasError = true;
         }
         if (!password) {
-            newErrors.password = "Please enter your password.";
+            newErrors.password = "Please enter password.";
             hasError = true;
         }
 
@@ -50,7 +50,7 @@ export default function Login() {
         setLoading(true)
 
         const payload = {
-            username: username,
+            login_id: loginId,
             password: password
         }
 
@@ -60,7 +60,7 @@ export default function Login() {
             login(current_user)
         } catch (error: any) {
             if (error.response?.status === 401) {
-                toast.error("Invalid username or password.");
+                toast.error("Invalid login info");
                 return;
             }
             toast.error("An error occurred. Please try again later.");
@@ -80,33 +80,32 @@ export default function Login() {
             <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
                 <form onSubmit={handleSubmit} method="POST" noValidate className="space-y-6">
                     <div>
-                        <label htmlFor="username" className="block text-md/6 font-medium text-gray-900 dark:text-gray-100">
-                            Username
+                        <label htmlFor="loginId" className="block text-md/6 font-medium text-gray-900 dark:text-gray-100">
+                            Username or Email
                         </label>
                         <div className="mt-2">
                             <input
-                                id="username"
-                                name="username"
+                                id="loginId"
+                                name="login_id"
                                 type="text"
-                                value={username || ""}
+                                value={loginId || ""}
                                 onChange={(e) => {
-                                    setUsername(e.target.value);
-                                    if (errors.username) {
-                                        setErrors((prev) => ({ ...prev, username: "" }));
+                                    setLoginId(e.target.value);
+                                    if (errors.loginId) {
+                                        setErrors((prev) => ({ ...prev, loginId: "" }));
                                     }
                                 }}
                                 required
-                                placeholder="Username"
-                                autoComplete="username"
+                                placeholder="Username or Email"
                                 className={`block w-full rounded-xl shadow-sm transition bg-white px-4 py-2 text-base text-gray-900 outline-1 -outline-offset-1 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 sm:text-base/6 dark:bg-white/5 dark:text-white dark:placeholder:text-gray-500
-                                    ${errors.username
+                                    ${errors.loginId
                                         ? "outline-red-500 focus:outline-red-500"
                                         : "outline-gray-300 focus:outline-indigo-600 dark:outline-white/10 dark:focus:outline-indigo-500"
                                     }`}
                             />
-                            {errors.username && (
+                            {errors.loginId && (
                                 <p className="mt-1 text-sm text-red-500 animate-in fade-in duration-200">
-                                    {errors.username}
+                                    {errors.loginId}
                                 </p>
                             )}
                         </div>

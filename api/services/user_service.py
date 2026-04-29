@@ -9,7 +9,7 @@ from models.refresh_token_model import RefreshToken
 from models.user_model import User
 from sqlalchemy.orm import Session
 from core.config import settings
-from schemas.user_schema import UserLogin, UserSignup, UserInfoUpdate
+from schemas.user_schema import UserInfo, UserLogin, UserSignup, UserInfoUpdate
 from services.auth_service import (
     generate_access_token,
     verify_password,
@@ -63,7 +63,7 @@ def set_refresh_token_cookie(response: Response, refresh_token: str):
 
 def login_user(db: Session, request: Request, response: Response, user_login: UserLogin):
     current_user = db.execute(
-        select(User).where(or_(User.username == user_login.username, User.email == user_login.username))
+        select(User).where(or_(User.username == user_login.login_id, User.email == user_login.login_id))
     ).scalar_one_or_none()
 
     if not current_user:
@@ -77,7 +77,9 @@ def login_user(db: Session, request: Request, response: Response, user_login: Us
     store_refresh_token(db, request, current_user.id, refresh_token)
     set_refresh_token_cookie(response, refresh_token)
 
-    return {"username": current_user.username, "access_token": access_token, "token_type": "bearer"}
+    user_info = UserInfo.model_validate(current_user)
+
+    return {**user_info.model_dump(), "access_token": access_token, "token_type": "bearer"}
 
 
 async def google_login(request: Request):
