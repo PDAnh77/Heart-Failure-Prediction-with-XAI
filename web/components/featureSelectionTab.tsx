@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { FiCheckCircle, FiCpu, FiTrendingUp, FiInfo, FiFilter } from "react-icons/fi";
+import { FiCheckCircle, FiCpu, FiTrendingUp, FiInfo, FiFilter, FiDownload } from "react-icons/fi";
 import { FaStar, FaCheckCircle } from "react-icons/fa";
 import { FaFilter } from "react-icons/fa6";
 import { api } from "@/lib/api";
@@ -24,6 +24,7 @@ export default function FeatureSelectionTab({ targetColumn, processedId }: Featu
     const [isLoading, setIsLoading] = useState(true);
     const [loadingMessageIdx, setLoadingMessageIdx] = useState(0);
     const [result, setResult] = useState<FSResult | null>(null);
+    const [isDownloading, setIsDownloading] = useState(false);
     const hasFetched = useRef(false);
 
     // Rotate loading message every 5 seconds
@@ -65,6 +66,40 @@ export default function FeatureSelectionTab({ targetColumn, processedId }: Featu
 
         runFS();
     }, [processedId, targetColumn]);
+
+    const handleDownload = async () => {
+        if (!result?.fs_dataset_id) {
+            toast.error("Dataset ID not available");
+            return;
+        }
+
+        setIsDownloading(true);
+        try {
+            const response = await api.get(
+                `/datasets/${result.fs_dataset_id}/download`,
+                {
+                    responseType: 'blob',
+                    params: { target_column: targetColumn }
+                }
+            );
+
+            // Create blob and download
+            const blob = new Blob([response.data], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `feature_selected_dataset.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Download Error:", error);
+            toast.error("Failed to download dataset");
+        } finally {
+            setIsDownloading(false);
+        }
+    };
 
     return (
         <div>
@@ -178,6 +213,18 @@ export default function FeatureSelectionTab({ targetColumn, processedId }: Featu
                                     ))}
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Download Button */}
+                        <div className="mt-8">
+                            <button
+                                onClick={handleDownload}
+                                disabled={isDownloading}
+                                className="flex items-center hover:cursor-pointer justify-center min-w-[220px] gap-2 px-6 py-3 bg-linear-to-r from-[#4361EE] to-[#3a52d5] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:from-[#3a52d5] hover:to-[#2e41b0] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg disabled:hover:from-[#4361EE] disabled:hover:to-[#3a52d5]"
+                            >
+                                <FiDownload className="text-lg" />
+                                {isDownloading ? "Downloading..." : "Download Dataset"}
+                            </button>
                         </div>
                     </div>
                 )}

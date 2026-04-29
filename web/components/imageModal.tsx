@@ -9,7 +9,6 @@ interface ImageModalProps {
 }
 
 export default function ImageModal({ imageUrl, onClose }: ImageModalProps) {
-    // Quản lý khóa cuộn trang (scroll) khi mở modal
     useEffect(() => {
         if (imageUrl) {
             document.body.style.overflow = 'hidden';
@@ -41,12 +40,10 @@ export default function ImageModal({ imageUrl, onClose }: ImageModalProps) {
 
     return (
         <div className="relative z-50" aria-labelledby="modal-image" role="dialog">
-            {/* Backdrop: Tăng blur lên 'md' và dùng nền đen 70% để làm nổi bật ảnh lập tức */}
             <div
                 className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4"
-                onClick={onClose} // Bấm ra ngoài ảnh để đóng
+                onMouseDown={onClose}
             >
-                {/* Nút tắt */}
                 <button
                     className="absolute hover:cursor-pointer top-6 right-6 text-gray-300 hover:text-white bg-gray-900/50 hover:bg-gray-900 p-2 rounded-full transition-colors z-50"
                     onClick={(e) => {
@@ -57,10 +54,10 @@ export default function ImageModal({ imageUrl, onClose }: ImageModalProps) {
                     <FiX className="w-8 h-8" />
                 </button>
 
-                {/* Vùng chứa ảnh: Bỏ hoàn toàn các class tạo hiệu ứng chuyển động */}
                 <div
                     className="relative w-full max-w-6xl h-[85vh]"
-                    onClick={(e) => e.stopPropagation()} // Ngăn việc bấm vào chính bức ảnh làm đóng modal
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                 >
                     <Image
                         src={imageUrl}

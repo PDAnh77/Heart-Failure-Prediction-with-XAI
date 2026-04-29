@@ -9,7 +9,7 @@ class User(Base):
     __tablename__ = "users"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     username = Column(String, unique=True, nullable=False)
-    email = Column(String, nullable=True)
+    email = Column(String, unique=True, nullable=True)
     password = Column(String, nullable=True)
     role = Column(Enum("admin", "user", name="user_roles"), nullable=False, default="user", server_default="user")
     avatar_url = Column(String, nullable=True)

@@ -41,11 +41,15 @@ export default function LogoutModal({ isOpen, onClose, onConfirm }: LogoutModalP
             {/* Backdrop (nền) */}
             <div
                 className={`fixed inset-0 bg-gray-500/75 transition-opacity duration-300 ease-out ${isVisible ? "opacity-100" : "opacity-0"}`}
-                onClick={onClose}
+                onMouseDown={onClose}
             >
                 <div className="flex min-h-full items-center justify-center p-4 text-center sm:items-center sm:p-0">
                     {/* Modal Panel */}
-                    <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg" onClick={(e) => e.stopPropagation()}>
+                    <div
+                        className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg" 
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4 dark:bg-gray-800">
                             <div className="sm:flex sm:items-start">
                                 <div className="mx-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">

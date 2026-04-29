@@ -134,11 +134,12 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             <div className="relative z-50" aria-labelledby="modal-title" role="dialog">
                 <div
                     className={`fixed inset-0 bg-gray-500/75 transition-opacity duration-300 ease-out ${isVisible ? "opacity-100" : "opacity-0"}`}
-                    onClick={onClose}
+                    onMouseDown={onClose}
                 >
                     <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
                         <div
                             className={`relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 w-full sm:max-w-md duration-300 ease-out ${isVisible ? "opacity-100 translate-y-0 sm:scale-100" : "opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"}`}
+                            onMouseDown={(e) => e.stopPropagation()}
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="bg-white px-4 pb-4 pt-5 sm:p-6 dark:bg-[#18181B]">
@@ -184,7 +185,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                                                 type="text"
                                                 value={username}
                                                 disabled
-                                                className="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 dark:bg-white/5 dark:border-[#FFFFFF1A] dark:text-gray-400 rounded-xl cursor-not-allowed"
+                                                className="w-full disabled:pointer-events-none px-4 py-2.5 bg-gray-100 border border-gray-200 dark:bg-white/5 dark:border-[#FFFFFF1A] dark:text-gray-400 rounded-xl cursor-not-allowed"
                                             />
                                         </div>
                                         <div>
@@ -195,7 +196,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                                                 type="email"
                                                 value={email}
                                                 disabled
-                                                className="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 dark:bg-white/5 dark:border-[#FFFFFF1A] dark:text-gray-400 rounded-xl cursor-not-allowed"
+                                                className="w-full disabled:pointer-events-none px-4 py-2.5 bg-gray-100 border border-gray-200 dark:bg-white/5 dark:border-[#FFFFFF1A] dark:text-gray-400 rounded-xl cursor-not-allowed"
                                             />
                                         </div>
 

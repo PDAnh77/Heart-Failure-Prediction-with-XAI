@@ -2,7 +2,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { User } from "@/types/user";
 import { AuthContextType } from "@/types/authcontext";
-import { api, setAccessToken } from "@/lib/api";
+import { api, setAccessToken, setOnAuthFailure } from "@/lib/api";
 import { PredictionHistoryBase } from "@/types/prediction";
 import axios from "axios";
 
@@ -38,6 +38,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     initializeAuth();
+
+    // Register callback to handle auth failures
+    const handleAuthFailure = () => {
+      setUser(null);
+    };
+    setOnAuthFailure(handleAuthFailure);
+
+    return () => {
+      // Cleanup callback on unmount
+      setOnAuthFailure(null);
+    };
   }, []);
 
   const login = (userData: User) => {
