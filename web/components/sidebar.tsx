@@ -346,19 +346,19 @@ export default function Sidebar() {
 
                         {/* TRIGGER BUTTON */}
                         <div
-                            className={`flex items-center gap-3 p-2 rounded-xl transition cursor-pointer ${userMenuOpen ? 'bg-gray-100 dark:bg-white/10' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
+                            className={`flex items-center gap-2 p-2 rounded-xl transition cursor-pointer ${userMenuOpen ? 'bg-gray-100 dark:bg-white/10' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
                             onClick={() => setUserMenuOpen(!userMenuOpen)}
                         >
                             <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shrink-0 shadow-lg shadow-indigo-500/20 overflow-hidden">
                                 {user?.avatar_url ? (
-                                    <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+                                    <img src={user.avatar_url} alt={user.username} />
                                 ) : (
                                     <FaRocket className="text-xs" />
                                 )}
                             </div>
                             <div className="flex flex-col min-w-0">
                                 <span className="text-sm font-bold truncate dark:text-white">
-                                    {user ? user.username : "Guest"}
+                                    {user ? (user.display_name || user.username) : "Guest"}
                                 </span>
                             </div>
                         </div>

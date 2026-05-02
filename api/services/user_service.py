@@ -9,7 +9,7 @@ from models.refresh_token_model import RefreshToken
 from models.user_model import User
 from sqlalchemy.orm import Session
 from core.config import settings
-from schemas.user_schema import UserInfo, UserLogin, UserSignup, UserInfoUpdate
+from schemas.user_schema import UserInfo, UserLogin, UserSignup
 from services.auth_service import (
     generate_access_token,
     verify_password,
@@ -196,40 +196,34 @@ def logout_user(db: Session, request: Request, response: Response):
     return {"detail": "Logged out successfully"}
 
 
-def update_user_by_id(db: Session, user_id: str, user_update: UserInfoUpdate):
+def update_user_by_id(db: Session, user_id: str, user_update):
     user_uuid = check_uuid(user_id)
-    user = db.execute(select(User.id).where(User.id == user_uuid)).scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
     update_data = user_update.model_dump(exclude_unset=True)
+
     result = db.execute(update(User).where(User.id == user_uuid).values(update_data).returning(User))
+    
+    updated_user = result.scalar_one_or_none()
+
+    if not updated_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
     db.commit()
-    return result.scalar_one()
+    return updated_user
 
 
 def update_user_password(db: Session, user_id: str, new_password: str):
     user_uuid = check_uuid(user_id)
-    user = db.execute(select(User.id).where(User.id == user_uuid)).scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
     hashed_password = get_password_hash(new_password)
-    db.execute(update(User).where(User.id == user_uuid).values(password=hashed_password))
+
+    result = db.execute(update(User).where(User.id == user_uuid).values(password=hashed_password).returning(User.id))
+
+    updated_user = result.scalar_one_or_none()
+
+    if not updated_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
     db.commit()
     return {"detail": "Update password successfully"}
-
-
-def delete_user_by_id(db: Session, user_id: str):
-    user_uuid = check_uuid(user_id)
-
-    user = db.execute(select(User.id).where(User.id == user_uuid)).scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
-    db.execute(delete(User).where(User.id == user_uuid))
-    db.commit()
-    return {"detail": "Delete user successfully"}
 
 
 def update_user_avatar(db: Session, user_id: str, file: UploadFile):
@@ -238,8 +232,10 @@ def update_user_avatar(db: Session, user_id: str, file: UploadFile):
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-    # Validate file extension
     allowed_extensions = {".jpg", ".jpeg", ".png"}
+    max_file_size = 5 * 1024 * 1024  # 5MB
+
+    # Validate file extension
     file_ext = None
     if file.filename:
         file_ext = "." + file.filename.rsplit(".", 1)[-1].lower()
@@ -254,6 +250,9 @@ def update_user_avatar(db: Session, user_id: str, file: UploadFile):
         file_content = file.file.read()
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to read file")
+
+    if len(file_content) > max_file_size:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File size must not exceed 5MB")
 
     # Generate unique filename
     filename = f"{uuid.uuid4()}{file_ext}"
@@ -280,3 +279,16 @@ def update_user_avatar(db: Session, user_id: str, file: UploadFile):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to update avatar: {str(e)}"
         )
+
+
+def delete_user_by_id(db: Session, user_id: str):
+    user_uuid = check_uuid(user_id)
+
+    result = db.execute(delete(User).where(User.id == user_uuid).returning(User.id))
+    deleted_user = result.scalar_one_or_none()
+
+    if not deleted_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db.commit()
+    return {"detail": "Delete user successfully"}

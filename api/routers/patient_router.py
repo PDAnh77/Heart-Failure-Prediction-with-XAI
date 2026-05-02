@@ -56,7 +56,7 @@ def create_patient(
     return patient_service.create_patient(db, new_patient, user["user_id"])
 
 
-@router.put("/{patient_id}")
+@router.patch("/{patient_id}")
 def update_patient(
     patient_id: str,
     patient: PatientUpdate,
