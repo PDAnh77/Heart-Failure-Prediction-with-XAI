@@ -15,10 +15,8 @@ interface EdaTabProps {
 }
 
 export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabProps) {
-    const [isLoading, setIsLoading] = useState(true);
     const [summary, setSummary] = useState<DatasetSummary | null>(null);
     const [charts, setCharts] = useState<Record<string, string>>({});
-    const [loadingStep, setLoadingStep] = useState("");
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [duplicatesRemoved, setDuplicatesRemoved] = useState<number>(0);
     const [processedRowCount, setProcessedRowCount] = useState<number | null>(null);
@@ -38,6 +36,10 @@ export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabP
 
     const [isDownloading, setIsDownloading] = useState(false);
 
+    const [isLoadingSummary, setIsLoadingSummary] = useState(true);
+    const [isLoadingPreprocess, setIsLoadingPreprocess] = useState(false);
+    const [isLoadingEda, setIsLoadingEda] = useState(false);
+
     const extractRows = (data: any) => {
         if (Array.isArray(data)) return data;
         return data?.data || data?.rows || data?.items || [];
@@ -54,15 +56,16 @@ export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabP
             fetchedDatasetId.current = datasetId;
 
             try {
-                setIsLoading(true);
-
-                setLoadingStep("Analyzing data structure...");
+                // --- 1. TẢI VÀ HIỂN THỊ SUMMARY ---
+                setIsLoadingSummary(true);
                 const summaryRes = await api.get(`/datasets/${datasetId}/summary`, {
                     params: { target_column: targetColumn }
                 });
                 setSummary(summaryRes.data);
+                setIsLoadingSummary(false);
 
-                setLoadingStep("Optimizing dataset...");
+                // --- 2. PREPROCESS VÀ LẤY DATA PREVIEW ---
+                setIsLoadingPreprocess(true);
                 const preprocessRes = await api.post(`/datasets/${datasetId}/preprocess`, null, {
                     params: { target_column: targetColumn }
                 });
@@ -76,16 +79,22 @@ export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabP
                 setDuplicatesRemoved(preprocessRes.data.duplicates_removed || 0);
                 setProcessedRowCount(preprocessRes.data.rows || null);
 
-                setLoadingStep("Fetching charts from the system...");
-                const [edaRes, orgRowsRes, procRowsRes] = await Promise.all([
-                    api.get(`/datasets/${procId}/eda`, { params: { target_column: targetColumn } }),
+                // Lấy dữ liệu bảng ngay sau khi có procId
+                const [orgRowsRes, procRowsRes] = await Promise.all([
                     api.get(`/datasets/${datasetId}/rows`, { params: { limit: 10, offset: 0 } }),
                     api.get(`/datasets/${procId}/rows`, { params: { limit: 10, offset: 0 } })
                 ]);
 
-                setCharts(edaRes.data.charts || {});
                 setOriginalRows(extractRows(orgRowsRes.data));
                 setProcessedRows(extractRows(procRowsRes.data));
+                setIsLoadingPreprocess(false);
+
+                // --- 3. TẢI BIỂU ĐỒ EDA ---
+                setIsLoadingEda(true);
+                const edaRes = await api.get(`/datasets/${procId}/eda`, { params: { target_column: targetColumn } });
+
+                setCharts(edaRes.data.charts || {});
+                setIsLoadingEda(false);
 
                 toast.success("Analysis completed successfully!");
             } catch (error) {
@@ -93,7 +102,9 @@ export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabP
                 toast.error("Failed to load analysis data.");
                 fetchedDatasetId.current = null;
             } finally {
-                setIsLoading(false);
+                setIsLoadingSummary(false);
+                setIsLoadingPreprocess(false);
+                setIsLoadingEda(false);
             }
         };
 
@@ -313,293 +324,303 @@ export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabP
 
     return (
         <>
-            <div className="mt-6">
-                {isLoading ? (
-                    <div className="flex-1 flex flex-col items-center justify-center min-h-[400px]">
-                        <FiLoader className="w-10 h-10 animate-spin text-[#4361EE] mb-4" />
-                        <p className="text-lg font-medium animate-pulse">{loadingStep}</p>
+            <div className="mt-6 space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
+
+                {/* --- Dataset Scale & Missing Values --- */}
+                {isLoadingSummary ? (
+                    <div className="flex gap-2 items-center justify-center py-10 rounded-2xl border border-gray-100 dark:border-gray-700">
+                        <FiLoader className="w-8 h-8 animate-spin text-[#4361EE]" />
+                        <p className="text-gray-500 font-medium animate-pulse">Analyzing data structure...</p>
                     </div>
-                ) : (
-                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
+                ) : summary && (
+                    <div className="flex flex-col gap-6">
 
-                        {summary && (
-                            <div className="flex flex-col gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-                                {/* --- Dataset Scale & Missing Values --- */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {/* CARD 1: Dataset Scale (1/3 chiều rộng) */}
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-center h-fit">
+                                <div className="flex items-center gap-2 mb-5 font-bold text-gray-800 dark:text-gray-200">
+                                    <HiOutlineDatabase className="w-5 h-5 text-[#4361EE]" />
+                                    <span>Dataset Scale</span>
+                                </div>
 
-                                    {/* CARD 1: Dataset Scale (1/3 chiều rộng) */}
-                                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-center h-fit">
-                                        <div className="flex items-center gap-2 mb-5 font-bold text-gray-800 dark:text-gray-200">
-                                            <HiOutlineDatabase className="w-5 h-5 text-[#4361EE]" />
-                                            <span>Dataset Scale</span>
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex gap-4 flex-wrap">
+                                        <div className="flex-1 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 flex flex-col justify-center border border-gray-100/50 dark:border-gray-700/50">
+                                            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-widest mb-1">Total Rows</span>
+                                            <span className="text-3xl font-black text-[#4361EE]">{summary.rows.toLocaleString()}</span>
                                         </div>
+                                        <div className="flex-1 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 flex flex-col justify-center border border-gray-100/50 dark:border-gray-700/50">
+                                            <span className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-widest mb-1">Total Columns</span>
+                                            <span className="text-3xl font-black text-[#9B5DE5]">{summary.columns}</span>
+                                        </div>
+                                    </div>
 
-                                        <div className="flex flex-col gap-4">
-                                            <div className="flex gap-4 flex-wrap">
-                                                <div className="flex-1 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 flex flex-col justify-center border border-gray-100/50 dark:border-gray-700/50">
-                                                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-widest mb-1">Total Rows</span>
-                                                    <span className="text-3xl font-black text-[#4361EE]">{summary.rows.toLocaleString()}</span>
-                                                </div>
-                                                <div className="flex-1 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 flex flex-col justify-center border border-gray-100/50 dark:border-gray-700/50">
-                                                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-widest mb-1">Total Columns</span>
-                                                    <span className="text-3xl font-black text-[#9B5DE5]">{summary.columns}</span>
+                                    {processedRowCount !== null && processedRowCount !== summary.rows && (
+                                        <div className="w-full bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 flex items-center justify-between border border-gray-100/50 dark:border-gray-700/50">
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-widest mb-1">
+                                                    Cleaned Rows
+                                                </span>
+                                                <div className="flex items-baseline gap-2">
+                                                    <span className="text-3xl font-black text-[#2EC4B6]">
+                                                        {processedRowCount.toLocaleString()}
+                                                    </span>
                                                 </div>
                                             </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
 
-                                            {processedRowCount !== null && processedRowCount !== summary.rows && (
-                                                <div className="w-full bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 flex items-center justify-between border border-gray-100/50 dark:border-gray-700/50">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-widest mb-1">
-                                                            Cleaned Rows
-                                                        </span>
-                                                        <div className="flex items-baseline gap-2">
-                                                            <span className="text-3xl font-black text-[#2EC4B6]">
-                                                                {processedRowCount.toLocaleString()}
+                            {/* CARD 2: Missing Values / Data Quality */}
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 md:col-span-2 flex flex-col relative overflow-hidden">
+
+                                {Object.values(summary.missing_values).some(v => v > 0) || duplicatesRemoved > 0 ? (
+                                    // --- TRẠNG THÁI CÓ LỖI ---
+                                    <div className="flex flex-col gap-4">
+                                        {/* Header: Tiêu đề & Badge Attention */}
+                                        <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                                            <div className="flex items-center gap-2 font-bold text-gray-800 dark:text-gray-200">
+                                                <FiAlertCircle className="w-5 h-5 text-red-600" />
+                                                <span>Data Quality</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Khối Duplicates */}
+                                        {duplicatesRemoved > 0 && (
+                                            <div className="flex items-center justify-between py-3 px-5 bg-orange-50/70 dark:bg-orange-900/10 rounded-xl border border-orange-100 dark:border-orange-800/30">
+                                                <div className="flex items-center gap-3 text-orange-900 dark:text-orange-300 font-semibold">
+                                                    <span>Duplicate Rows:</span>
+                                                </div>
+                                                <span className="text-orange-600 dark:text-orange-500 font-bold">
+                                                    {duplicatesRemoved} removed
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* Lưới Missing Values */}
+                                        {Object.values(summary.missing_values).some(v => v > 0) && (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[140px] overflow-y-auto pr-2 custom-scrollbar">
+                                                {Object.entries(summary.missing_values)
+                                                    .filter(([_, v]) => v > 0)
+                                                    .map(([key, val]) => (
+                                                        <div key={key} className="flex flex-wrap items-center justify-between py-3 px-5 bg-red-50/50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-800/30">
+                                                            <div className="flex items-center gap-2.5 text-gray-800 dark:text-gray-200">
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
+                                                                <span>{key}:</span>
+                                                            </div>
+                                                            <span className="text-red-500">
+                                                                {val} rows missing
                                                             </span>
                                                         </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* CARD 2: Missing Values / Data Quality */}
-                                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 md:col-span-2 flex flex-col relative overflow-hidden">
-
-                                        {Object.values(summary.missing_values).some(v => v > 0) || duplicatesRemoved > 0 ? (
-                                            // --- TRẠNG THÁI CÓ LỖI ---
-                                            <div className="flex flex-col gap-4">
-                                                {/* Header: Tiêu đề & Badge Attention */}
-                                                <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-                                                    <div className="flex items-center gap-2 font-bold text-gray-800 dark:text-gray-200">
-                                                        <FiAlertCircle className="w-5 h-5 text-red-600" />
-                                                        <span>Data Quality</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Khối Duplicates */}
-                                                {duplicatesRemoved > 0 && (
-                                                    <div className="flex items-center justify-between py-3 px-5 bg-orange-50/70 dark:bg-orange-900/10 rounded-xl border border-orange-100 dark:border-orange-800/30">
-                                                        <div className="flex items-center gap-3 text-orange-900 dark:text-orange-300 font-semibold">
-                                                            <span>Duplicate Rows:</span>
-                                                        </div>
-                                                        <span className="text-orange-600 dark:text-orange-500 font-bold">
-                                                            {duplicatesRemoved} removed
-                                                        </span>
-                                                    </div>
-                                                )}
-
-                                                {/* Lưới Missing Values */}
-                                                {Object.values(summary.missing_values).some(v => v > 0) && (
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[140px] overflow-y-auto pr-2 custom-scrollbar">
-                                                        {Object.entries(summary.missing_values)
-                                                            .filter(([_, v]) => v > 0)
-                                                            .map(([key, val]) => (
-                                                                <div key={key} className="flex flex-wrap items-center justify-between py-3 px-5 bg-red-50/50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-800/30">
-                                                                    <div className="flex items-center gap-2.5 text-gray-800 dark:text-gray-200">
-                                                                        <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
-                                                                        <span>{key}:</span>
-                                                                    </div>
-                                                                    <span className="text-red-500">
-                                                                        {val} rows missing
-                                                                    </span>
-                                                                </div>
-                                                            ))}
-                                                    </div>
-                                                )}
-
-                                                <div className="text-sm text-gray-500 dark:text-gray-400">
-                                                    * Data integrity scan identified inconsistencies. Automated cleanup applied where possible.
-                                                </div>
+                                                    ))}
                                             </div>
-                                        ) : (
-                                            // --- TRẠNG THÁI HOÀN HẢO (Không có lỗi) ---
-                                            <>
-                                                <div className="flex items-center gap-2 mb-4 font-semibold text-lg">
-                                                    <FiAlertCircle className="w-5 h-5" />
-                                                    <span>Data Quality</span>
-                                                </div>
-                                                <div className="flex items-center gap-5 mt-2">
-                                                    <div className="w-12 h-12 rounded-full bg-[#2EC4B6]/15 flex items-center justify-center shrink-0">
-                                                        <FiCheck className="w-6 h-6 text-[#2EC4B6]" strokeWidth={3} />
-                                                    </div>
-                                                    <div className="z-10">
-                                                        <h4 className="text-xl font-bold text-[#1f8c82] dark:text-[#2EC4B6] mb-1">Perfect data integrity</h4>
-                                                        <p className="text-sm text-gray-500 dark:text-gray-400">No missing values or duplicates were detected in the dataset.</p>
-                                                    </div>
-                                                </div>
-                                            </>
                                         )}
+
+                                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                                            * Data integrity scan identified inconsistencies. Automated cleanup applied where possible.
+                                        </div>
                                     </div>
-                                </div>
-
-                                {/* --- Features Details (Chia 2 cột) --- */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                                    {/* CARD 3: Numerical Features */}
-                                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <div className="flex items-center">
-                                                <div className="w-1.5 h-6 bg-[#4361EE] rounded-full mr-3"></div>
-                                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Numerical Features</h3>
+                                ) : (
+                                    // --- TRẠNG THÁI HOÀN HẢO (Không có lỗi) ---
+                                    <>
+                                        <div className="flex items-center gap-2 mb-4 font-semibold text-lg">
+                                            <FiAlertCircle className="w-5 h-5" />
+                                            <span>Data Quality</span>
+                                        </div>
+                                        <div className="flex items-center gap-5 mt-2">
+                                            <div className="w-12 h-12 rounded-full bg-[#2EC4B6]/15 flex items-center justify-center shrink-0">
+                                                <FiCheck className="w-6 h-6 text-[#2EC4B6]" strokeWidth={3} />
+                                            </div>
+                                            <div className="z-10">
+                                                <h4 className="text-xl font-bold text-[#1f8c82] dark:text-[#2EC4B6] mb-1">Perfect data integrity</h4>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">No missing values or duplicates were detected in the dataset.</p>
                                             </div>
                                         </div>
-                                        <div className="flex flex-wrap gap-3">
-                                            {summary.numerical_features.map(feat => (
-                                                <div key={feat} className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-900/60 rounded-lg border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 transition-colors">
-                                                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{feat}</span>
-                                                    <span className="text-[10px] text-gray-600 dark:text-gray-300">({summary.column_types?.[feat] || 'N/A'})</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* CARD 4: Categorical Features*/}
-                                    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <div className="flex items-center">
-                                                <div className="w-1.5 h-6 bg-[#9B5DE5] rounded-full mr-3"></div>
-                                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Categorical Features</h3>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-wrap gap-3">
-                                            {summary.categorical_features.map(feat => (
-                                                <div key={feat} className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-900/60 rounded-lg border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 transition-colors">
-                                                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{feat}</span>
-                                                    <span className="text-[10px] text-gray-600 dark:text-gray-300">({summary.column_types?.[feat] || 'N/A'})</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                </div>
+                                    </>
+                                )}
                             </div>
-                        )}
+                        </div>
 
-                        {/* --- DATA PREVIEW (TRƯỚC & SAU) --- */}
-                        <div className="mb-8">
-                            <div className="flex gap-3 mb-6">
-                                <FiDatabase className="w-7 h-7 text-[#2EC4B6]" />
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dataset Comparison</h2>
-                            </div>
+                        {/* --- Features Details (Chia 2 cột) --- */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                            <div className="px-0 md:px-6 space-y-10">
-
-                                {/* Bảng Dữ Liệu Gốc */}
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                                            <span className="w-3 h-3 rounded-full bg-gray-400"></span> Original Data
-                                        </h3>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                        {/* Vùng Bảng (Chiếm 2/3) */}
-                                        <div className="lg:col-span-2">
-                                            {renderDataTable(originalRows, 'original', loadingMoreOrg, hasMoreOriginal)}
-                                        </div>
-
-                                        {/* Vùng Thông tin (Chiếm 1/3) */}
-                                        <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-xl border border-gray-200 dark:border-gray-700 h-fit">
-                                            <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3 text-base border-b border-gray-200 dark:border-gray-700 pb-2">
-                                                About Original Data
-                                            </h4>
-                                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
-                                                This is your raw, untouched dataset exactly as it was uploaded. It serves as the baseline to verify the integrity of the automated preprocessing steps.
-                                            </p>
-                                            <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
-                                                <li className="flex items-start gap-2">
-                                                    <span className="text-gray-400">•</span>
-                                                    <span><strong>Raw Format:</strong> Features retain their original scales, string text, and categorical labels.</span>
-                                                </li>
-                                                <li className="flex items-start gap-2">
-                                                    <span className="text-gray-400">•</span>
-                                                    <span><strong>Potential Issues:</strong> May contain duplicate rows, missing values (NaN/Null), or unencoded variables.</span>
-                                                </li>
-                                                <li className="flex items-start gap-2">
-                                                    <span className="text-gray-400">•</span>
-                                                    <span><strong>Algorithm Readiness:</strong> Not yet optimized for training machine learning models.</span>
-                                                </li>
-                                            </ul>
-                                        </div>
+                            {/* CARD 3: Numerical Features */}
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center">
+                                        <div className="w-1.5 h-6 bg-[#4361EE] rounded-full mr-3"></div>
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Numerical Features</h3>
                                     </div>
                                 </div>
+                                <div className="flex flex-wrap gap-3">
+                                    {summary.numerical_features.map(feat => (
+                                        <div key={feat} className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-900/60 rounded-lg border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 transition-colors">
+                                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{feat}</span>
+                                            <span className="text-[10px] text-gray-600 dark:text-gray-300">({summary.column_types?.[feat] || 'N/A'})</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
 
-                                {/* Bảng Dữ Liệu Đã Xử Lý */}
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                                            <span className="w-3 h-3 rounded-full bg-[#2EC4B6]"></span> Preprocessed Data
-                                        </h3>
+                            {/* CARD 4: Categorical Features*/}
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center">
+                                        <div className="w-1.5 h-6 bg-[#9B5DE5] rounded-full mr-3"></div>
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Categorical Features</h3>
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap gap-3">
+                                    {summary.categorical_features.map(feat => (
+                                        <div key={feat} className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-900/60 rounded-lg border border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 transition-colors">
+                                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{feat}</span>
+                                            <span className="text-[10px] text-gray-600 dark:text-gray-300">({summary.column_types?.[feat] || 'N/A'})</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
 
-                                        <button
-                                            onClick={handleDownloadProcessed}
-                                            disabled={isDownloading || !processedId}
-                                            className="flex items-center hover:cursor-pointer justify-center min-w-[180px] gap-2 px-4 py-2 bg-linear-to-r from-[#2EC4B6] to-[#25a095] text-white text-sm font-medium rounded-lg shadow-sm hover:shadow-md hover:from-[#25a095] hover:to-[#1e8278] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-sm disabled:hover:from-[#2EC4B6] disabled:hover:to-[#25a095]"
-                                        >
-                                            <FiDownload className="w-4 h-4" />
-                                            {isDownloading ? "Downloading..." : "Download Dataset"}
-                                        </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- DATA PREVIEW (TRƯỚC & SAU) --- */}
+                {isLoadingPreprocess ? (
+                    <div className="flex gap-2 items-center justify-center py-12 rounded-2xl border border-gray-100 dark:border-gray-700">
+                        <FiLoader className="w-8 h-8 animate-spin text-[#2EC4B6]" />
+                        <p className="text-gray-500 font-medium animate-pulse">Optimizing and preparing dataset...</p>
+                    </div>
+                ) : processedId && (
+                    <div className="mb-8">
+                        <div className="flex gap-3 mb-6">
+                            <FiDatabase className="w-7 h-7 text-[#2EC4B6]" />
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dataset Comparison</h2>
+                        </div>
+
+                        <div className="px-0 md:px-6 space-y-10">
+
+                            {/* Bảng Dữ Liệu Gốc */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                                        <span className="w-3 h-3 rounded-full bg-gray-400"></span> Original Data
+                                    </h3>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    {/* Vùng Bảng (Chiếm 2/3) */}
+                                    <div className="lg:col-span-2">
+                                        {renderDataTable(originalRows, 'original', loadingMoreOrg, hasMoreOriginal)}
                                     </div>
 
-                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                        {/* Vùng Bảng (Chiếm 2/3) */}
-                                        <div className="lg:col-span-2">
-                                            {renderDataTable(processedRows, 'processed', loadingMoreProc, hasMoreProcessed)}
-                                        </div>
+                                    {/* Vùng Thông tin (Chiếm 1/3) */}
+                                    <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-xl border border-gray-200 dark:border-gray-700 h-fit">
+                                        <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3 text-base border-b border-gray-200 dark:border-gray-700 pb-2">
+                                            About Original Data
+                                        </h4>
+                                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
+                                            This is your raw, untouched dataset exactly as it was uploaded. It serves as the baseline to verify the integrity of the automated preprocessing steps.
+                                        </p>
+                                        <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-gray-400">•</span>
+                                                <span><strong>Raw Format:</strong> Features retain their original scales, string text, and categorical labels.</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-gray-400">•</span>
+                                                <span><strong>Potential Issues:</strong> May contain duplicate rows, missing values (NaN/Null), or unencoded variables.</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-gray-400">•</span>
+                                                <span><strong>Algorithm Readiness:</strong> Not yet optimized for training machine learning models.</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
 
-                                        {/* Vùng Thông tin (Chiếm 1/3) */}
-                                        <div className="bg-[#2EC4B6]/5 dark:bg-[#2EC4B6]/10 p-5 rounded-xl border border-[#2EC4B6]/20 dark:border-[#2EC4B6]/30 h-fit">
-                                            <h4 className="font-semibold text-[#1f8c82] dark:text-[#2EC4B6] mb-3 text-base border-b border-[#2EC4B6]/20 pb-2">
-                                                Applied Transformations
-                                            </h4>
-                                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
-                                                The dataset has been automatically cleaned and standardized through our pipeline to ensure optimal model performance:
-                                            </p>
-                                            <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
-                                                <li className="flex items-start gap-2">
-                                                    <span className="text-[#2EC4B6] font-bold">✓</span>
-                                                    <span><strong>Data Cleaning:</strong> Dropped rows with missing target values and removed exact duplicates to prevent bias.</span>
-                                                </li>
-                                                <li className="flex items-start gap-2">
-                                                    <span className="text-[#2EC4B6] font-bold">✓</span>
-                                                    <span><strong>Imputation:</strong> Handled missing data by filling numerical gaps with the <em>Median</em>, and categorical gaps with the <em>Mode</em>.</span>
-                                                </li>
-                                                <li className="flex items-start gap-2">
-                                                    <span className="text-[#2EC4B6] font-bold">✓</span>
-                                                    <span><strong>Encoding:</strong> Applied <em>Label Encoding</em> to convert categorical strings into machine-readable numbers.</span>
-                                                </li>
-                                                <li className="flex items-start gap-2">
-                                                    <span className="text-[#2EC4B6] font-bold">✓</span>
-                                                    <span><strong>Scaling:</strong> Used <em>Standard Scaler</em> on numerical features to ensure equal contribution across variables (Mean=0, Variance=1).</span>
-                                                </li>
-                                            </ul>
-                                        </div>
+                            {/* Bảng Dữ Liệu Đã Xử Lý */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                                        <span className="w-3 h-3 rounded-full bg-[#2EC4B6]"></span> Preprocessed Data
+                                    </h3>
+
+                                    <button
+                                        onClick={handleDownloadProcessed}
+                                        disabled={isDownloading || !processedId}
+                                        className="flex items-center hover:cursor-pointer justify-center min-w-[180px] gap-2 px-4 py-2 bg-linear-to-r from-[#2EC4B6] to-[#25a095] text-white text-sm font-medium rounded-lg shadow-sm hover:shadow-md hover:from-[#25a095] hover:to-[#1e8278] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-sm disabled:hover:from-[#2EC4B6] disabled:hover:to-[#25a095]"
+                                    >
+                                        <FiDownload className="w-4 h-4" />
+                                        {isDownloading ? "Downloading..." : "Download Dataset"}
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    {/* Vùng Bảng (Chiếm 2/3) */}
+                                    <div className="lg:col-span-2">
+                                        {renderDataTable(processedRows, 'processed', loadingMoreProc, hasMoreProcessed)}
+                                    </div>
+
+                                    {/* Vùng Thông tin (Chiếm 1/3) */}
+                                    <div className="bg-[#2EC4B6]/5 dark:bg-[#2EC4B6]/10 p-5 rounded-xl border border-[#2EC4B6]/20 dark:border-[#2EC4B6]/30 h-fit">
+                                        <h4 className="font-semibold text-[#1f8c82] dark:text-[#2EC4B6] mb-3 text-base border-b border-[#2EC4B6]/20 pb-2">
+                                            Applied Transformations
+                                        </h4>
+                                        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
+                                            The dataset has been automatically cleaned and standardized through our pipeline to ensure optimal model performance:
+                                        </p>
+                                        <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-[#2EC4B6] font-bold">✓</span>
+                                                <span><strong>Data Cleaning:</strong> Dropped rows with missing target values and removed exact duplicates to prevent bias.</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-[#2EC4B6] font-bold">✓</span>
+                                                <span><strong>Imputation:</strong> Handled missing data by filling numerical gaps with the <em>Median</em>, and categorical gaps with the <em>Mode</em>.</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-[#2EC4B6] font-bold">✓</span>
+                                                <span><strong>Encoding:</strong> Applied <em>Label Encoding</em> to convert categorical strings into machine-readable numbers.</span>
+                                            </li>
+                                            <li className="flex items-start gap-2">
+                                                <span className="text-[#2EC4B6] font-bold">✓</span>
+                                                <span><strong>Scaling:</strong> Used <em>Standard Scaler</em> on numerical features to ensure equal contribution across variables (Mean=0, Variance=1).</span>
+                                            </li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                )}
 
-                        {/* SECTION EDA PLOTS */}
-                        <div className="mx-auto w-full mb-6">
-                            <div className="flex items-center gap-3 mb-4 mt-4">
-                                <FiPieChart className="w-7 h-7 text-[#4361EE]" />
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Exploratory Data Analysis</h2>
-                            </div>
+                {/* SECTION EDA PLOTS */}
+                {isLoadingEda ? (
+                    <div className="flex gap-2 items-center justify-center py-16 rounded-2xl border border-gray-100 dark:border-gray-700">
+                        <FiLoader className="w-8 h-8 animate-spin text-[#9B5DE5]" />
+                        <p className="text-gray-500 font-medium animate-pulse">Generating analytical charts...</p>
+                    </div>
+                ) : Object.keys(charts).length > 0 && (
+                    <div className="mx-auto w-full mb-6">
+                        <div className="flex items-center gap-3 mb-4 mt-4">
+                            <FiPieChart className="w-7 h-7 text-[#4361EE]" />
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Exploratory Data Analysis</h2>
+                        </div>
 
-                            <div className="grid grid-cols-1 gap-6 px-6">
-                                {chartConfigurations.map((config, idx) => {
-                                    const imgUrl = charts[config.key];
-                                    if (!imgUrl) return null;
+                        <div className="grid grid-cols-1 gap-6 px-6">
+                            {chartConfigurations.map((config, idx) => {
+                                const imgUrl = charts[config.key];
+                                if (!imgUrl) return null;
 
-                                    return (
-                                        <div key={config.key} className="w-full">
-                                            {renderChartImage(imgUrl, config.title, config.description, idx)}
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                                return (
+                                    <div key={config.key} className="w-full">
+                                        {renderChartImage(imgUrl, config.title, config.description, idx)}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 )}
