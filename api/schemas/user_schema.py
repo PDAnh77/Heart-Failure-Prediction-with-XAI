@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, ConfigDict
 class UserBase(BaseModel):
     username: str
     email: str | None = Field(None)
+    display_name: str | None = Field(None)
 
 
 class UserLogin(BaseModel):
@@ -23,13 +24,15 @@ class UserInfo(UserBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserInfoUpdate(UserBase):
-    role: str
-
-
 class UserPasswordUpdate(BaseModel):
     password: str
 
 
-class UserAvatarUpdate(BaseModel):
-    avatar: str
+class UserUpdateAdmin(UserBase):
+    username: str | None = Field(None)
+    role: str | None = Field(None)
+
+
+class UserUpdateMe(BaseModel):
+    display_name: str | None = Field(None)
+    avatar_url: str | None = Field(None)

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { IoMdClose, IoMdCamera } from "react-icons/io";
-import { FaLock, FaRocket, FaUser, FaEnvelope } from "react-icons/fa6";
+import { FaLock, FaRocket, FaUser, FaEnvelope, FaIdCard } from "react-icons/fa6";
 import { useAuth } from "@/context/authcontext";
 import { toast } from "react-hot-toast";
 import { api } from "@/lib/api";
@@ -20,6 +20,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     // Basic info states
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
+    const [displayName, setDisplayName] = useState("");
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -27,11 +28,12 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     // Trạng thái cho modal đổi mật khẩu
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
+    // Khi mở modal: Đồng bộ với dữ liệu từ Auth Context
     useEffect(() => {
         if (isOpen && user) {
-            // Khi mở modal: Đồng bộ với dữ liệu từ Auth Context
             setUsername(user.username || "");
             setEmail(user.email || "");
+            setDisplayName(user.display_name || "");
             setAvatarPreview(user.avatar_url || null);
             setAvatarFile(null);
         } else if (!isOpen) {
@@ -40,6 +42,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         }
     }, [user, isOpen]);
 
+    // Animation open modal
     useEffect(() => {
         if (isOpen) {
             const timer = setTimeout(() => setIsVisible(true), 10);
@@ -49,6 +52,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         }
     }, [isOpen]);
 
+    // Khóa scroll khi mở modal
     useEffect(() => {
         if (isOpen || isPasswordModalOpen) {
             document.body.style.overflow = 'hidden';
@@ -95,8 +99,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     const handleSaveProfile = async () => {
         try {
             setIsLoading(true);
+            let updatedData = {};
+            let isChanged = false;
 
-            // Only upload avatar if a new file was selected
+            // Kiểm tra và upload Avatar nếu có file mới
             if (avatarFile) {
                 const formData = new FormData();
                 formData.append("file", avatarFile);
@@ -108,14 +114,30 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                 });
 
                 if (response.data) {
-                    updateUser({ avatar_url: response.data.avatar_url });
-                    toast.success("Avatar updated successfully!");
+                    updatedData = { ...updatedData, ...response.data };
+                    isChanged = true;
                 }
             }
+
+            // Kiểm tra và cập nhật Display Name nếu có thay đổi
+            if (user && displayName !== (user.display_name || "")) {
+                const response = await api.patch("/users/me", {
+                    display_name: displayName,
+                });
+
+                if (response.data) {
+                    updatedData = { ...updatedData, ...response.data };
+                    isChanged = true;
+                }
+            }
+
+            if (isChanged) {
+                updateUser(updatedData);
+                toast.success("Profile updated successfully!");
+            }
+
             onClose();
         } catch (error: any) {
-            console.error("Error updating profile:", error);
-
             const errorMessage =
                 error.response?.data?.message ||
                 error.response?.data?.detail ||
@@ -177,6 +199,18 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
                                     {/* Basic info */}
                                     <div className="space-y-4">
+                                        <div>
+                                            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                                                <FaIdCard className="text-xs" /> Display name
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={displayName}
+                                                onChange={(e) => setDisplayName(e.target.value)}
+                                                className="w-full px-4 py-2.5 bg-white border border-gray-200 dark:bg-white/5 dark:border-[#FFFFFF1A] dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-xl"
+                                                placeholder="Enter display name..."
+                                            />
+                                        </div>
                                         <div>
                                             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
                                                 <FaUser className="text-xs" /> Username

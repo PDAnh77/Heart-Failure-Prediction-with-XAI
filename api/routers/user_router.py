@@ -1,7 +1,13 @@
 from fastapi import APIRouter, Depends, UploadFile, File
 from dependencies import get_db
-from schemas.user_schema import UserInfo, UserInfoUpdate, UserPasswordUpdate
-from services.user_service import get_user_by_id, update_user_by_id, delete_user_by_id, update_user_password, update_user_avatar
+from schemas.user_schema import UserInfo, UserUpdateAdmin, UserUpdateMe, UserPasswordUpdate
+from services.user_service import (
+    get_user_by_id,
+    update_user_by_id,
+    delete_user_by_id,
+    update_user_password,
+    update_user_avatar,
+)
 from services.auth_service import require_roles
 from sqlalchemy.orm import Session
 
@@ -36,8 +42,17 @@ def upload_avatar(
     return update_user_avatar(db, user["user_id"], file)
 
 
-@router.put("/{user_id}", dependencies=[Depends(require_roles(["admin"]))])
-def update_user(user_id: str, user_update: UserInfoUpdate, db: Session = Depends(get_db)):
+@router.patch("/me", response_model=UserInfo)
+def update_me(
+    user_update: UserUpdateMe,
+    user=Depends(require_roles(["admin", "user"])),
+    db: Session = Depends(get_db),
+):
+    return update_user_by_id(db, user["user_id"], user_update)
+
+
+@router.patch("/{user_id}", dependencies=[Depends(require_roles(["admin"]))])
+def update_user(user_id: str, user_update: UserUpdateAdmin, db: Session = Depends(get_db)):
     return update_user_by_id(db, user_id, user_update)
 
 

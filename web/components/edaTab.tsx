@@ -505,10 +505,10 @@ export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabP
                                             <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3 text-base border-b border-gray-200 dark:border-gray-700 pb-2">
                                                 About Original Data
                                             </h4>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+                                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
                                                 This is your raw, untouched dataset exactly as it was uploaded. It serves as the baseline to verify the integrity of the automated preprocessing steps.
                                             </p>
-                                            <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                                            <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
                                                 <li className="flex items-start gap-2">
                                                     <span className="text-gray-400">•</span>
                                                     <span><strong>Raw Format:</strong> Features retain their original scales, string text, and categorical labels.</span>
@@ -554,10 +554,10 @@ export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabP
                                             <h4 className="font-semibold text-[#1f8c82] dark:text-[#2EC4B6] mb-3 text-base border-b border-[#2EC4B6]/20 pb-2">
                                                 Applied Transformations
                                             </h4>
-                                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+                                            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
                                                 The dataset has been automatically cleaned and standardized through our pipeline to ensure optimal model performance:
                                             </p>
-                                            <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+                                            <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
                                                 <li className="flex items-start gap-2">
                                                     <span className="text-[#2EC4B6] font-bold">✓</span>
                                                     <span><strong>Data Cleaning:</strong> Dropped rows with missing target values and removed exact duplicates to prevent bias.</span>
