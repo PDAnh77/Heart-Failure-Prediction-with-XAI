@@ -11,13 +11,13 @@ interface ImageModalProps {
 export default function ImageModal({ imageUrl, onClose }: ImageModalProps) {
     useEffect(() => {
         if (imageUrl) {
-            document.body.style.overflow = 'hidden';
+            document.body.style.overflow = "hidden";
         } else {
-            document.body.style.overflow = 'unset';
+            document.body.style.overflow = "unset";
         }
 
         return () => {
-            document.body.style.overflow = 'unset';
+            document.body.style.overflow = "unset";
         };
     }, [imageUrl]);
 
@@ -40,25 +40,15 @@ export default function ImageModal({ imageUrl, onClose }: ImageModalProps) {
 
     return (
         <div className="relative z-50" aria-labelledby="modal-image" role="dialog">
-            <div
-                className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4"
-                onMouseDown={onClose}
-            >
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4">
                 <button
                     className="absolute hover:cursor-pointer top-6 right-6 text-gray-300 hover:text-white bg-gray-900/50 hover:bg-gray-900 p-2 rounded-full transition-colors z-50"
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        onClose();
-                    }}
+                    onClick={onClose}
                 >
                     <FiX className="w-8 h-8" />
                 </button>
 
-                <div
-                    className="relative w-full max-w-6xl h-[85vh]"
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onClick={(e) => e.stopPropagation()}
-                >
+                <div className="relative w-full max-w-6xl h-[85vh]">
                     <Image
                         src={imageUrl}
                         alt="Expanded analysis chart"
