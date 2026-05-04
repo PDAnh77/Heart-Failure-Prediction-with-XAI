@@ -1,9 +1,9 @@
 "use client";
 import { useState, ChangeEvent, DragEvent } from "react";
-import { useAuth } from "@/context/authcontext"
+import { useAuth } from "@/context/authcontext";
 import { useRouter } from "next/navigation";
 import { FaUpload } from "react-icons/fa6";
-import { FiFileText, FiLoader } from "react-icons/fi";
+import { FiFileText, FiLoader, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { IoMdClose } from "react-icons/io";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
@@ -12,14 +12,25 @@ export default function Upload() {
     // File states
     const [file, setFile] = useState<File | null>(null);
     const [isDragging, setIsDragging] = useState(false);
-    
+
     // Upload & Dataset states
     const [isUploading, setIsUploading] = useState(false);
     const [datasetId, setDatasetId] = useState<string | null>(null);
     const [columns, setColumns] = useState<string[]>([]);
     const { user } = useAuth();
+
     const [selectedTarget, setSelectedTarget] = useState<string>("");
-    
+    const [isPreprocessingOpen, setIsPreprocessingOpen] = useState<boolean>(false);
+    const [isFeatureSelectionOpen, setIsFeatureSelectionOpen] = useState<boolean>(false);
+    const [imputationMethod, setImputationMethod] = useState<string>("auto");
+    const [dataBalancing, setDataBalancing] = useState<string>("none");
+
+    // Genetic Algorithm parameters
+    const [size, setSize] = useState<number>(80);
+    const [mutationRate, setMutationRate] = useState<number>(0.2);
+    const [nParents, setNParents] = useState<number | "">("");
+    const [testSize, setTestSize] = useState<number>(0.3);
+
     const router = useRouter();
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
@@ -60,6 +71,8 @@ export default function Upload() {
         setDatasetId(null);
         setColumns([]);
         setSelectedTarget("");
+        setIsPreprocessingOpen(false);
+        setIsFeatureSelectionOpen(false);
     };
 
     // Handle File Upload API
@@ -100,9 +113,52 @@ export default function Upload() {
             toast.error("Please select a target column!");
             return;
         }
-        
-        router.push(`/analyze/dashboard?id=${datasetId}&target=${encodeURIComponent(selectedTarget)}`);
+
+        // Validate Genetic Algorithm parameters
+        if (size < 10 || size > 200) {
+            toast.error("Population Size must be between 10 and 200.");
+            return;
+        }
+
+        if (mutationRate < 0.01 || mutationRate > 0.5) {
+            toast.error("Mutation Rate must be between 0.01 and 0.5.");
+            return;
+        }
+
+        if (testSize < 0.1 || testSize > 0.5) {
+            toast.error("Test Size must be between 0.1 and 0.5.");
+            return;
+        }
+
+        if (nParents !== "") {
+            const parsedParents = Number(nParents);
+            if (parsedParents <= 0) {
+                toast.error("Number of Parents must be greater than 0.");
+                return;
+            }
+            if (parsedParents >= size) {
+                toast.error("Number of Parents must be less than Population Size (size).");
+                return;
+            }
+        }
+
+        // Build query parameters to pass to the dashboard
+        const queryParams = new URLSearchParams({
+            id: datasetId as string,
+            target: selectedTarget,
+            imputation: imputationMethod,
+            balancing: dataBalancing,
+            size: size.toString(),
+            mutation_rate: mutationRate.toString(),
+            test_size: testSize.toString()
+        });
+
+        if (nParents !== "") queryParams.append("n_parents", nParents.toString());
+
+        router.push(`/analyze/dashboard?${queryParams.toString()}`);
     };
+
+    const inputClass = "w-full p-3 mt-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow";
 
     return (
         <div className="p-4 h-full flex flex-col">
@@ -112,10 +168,10 @@ export default function Upload() {
                     Upload your dataset to generate insights and identify the most important features
                 </p>
             </div>
-            
-            <div className="flex flex-col justify-center align-middle h-full items-center flex-1">
-                <div className="w-[60%] min-w-[300px]">
-                    
+
+            <div className={`flex flex-col ${!datasetId ? "justify-center" : "justify-start"} align-middle h-full items-center flex-1 my-10`}>
+                <div className="w-full max-w-2xl">
+
                     {/* Dropzone Area */}
                     <div
                         onDragOver={handleDragOver}
@@ -179,7 +235,7 @@ export default function Upload() {
 
                     {/* Upload Button */}
                     {file && !datasetId && (
-                        <button 
+                        <button
                             onClick={handleUpload}
                             disabled={isUploading}
                             className="mt-6 w-full py-3 flex justify-center items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 dark:disabled:bg-indigo-800 hover:cursor-pointer text-white font-bold rounded-lg transition-colors shadow-lg"
@@ -195,36 +251,142 @@ export default function Upload() {
                         </button>
                     )}
 
-                    {/* Target Column Selection Area */}
+                    {/* Configurations Area */}
                     {datasetId && columns.length > 0 && (
-                        <div className="mt-8 p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                Select Target Column
-                            </h3>
-                            
-                            <select
-                                value={selectedTarget}
-                                onChange={(e) => setSelectedTarget(e.target.value)}
-                                className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none transition-shadow hover:cursor-pointer"
-                            >
-                                <option value="" disabled>-- Select a column --</option>
-                                {columns.map((col, index) => (
-                                    <option key={index} value={col}>
-                                        {col}
-                                    </option>
-                                ))}
-                            </select>
+                        <div className="mt-8 mb-10 p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
 
-                            <button 
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 pb-2 border-b border-gray-200 dark:border-gray-700">
+                                Pipeline Configuration
+                            </h3>
+
+                            {/* --- Target Selection (Always visible) --- */}
+                            <div className="mb-6">
+                                <label htmlFor="target-column" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                                    Target Column <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    id="target-column"
+                                    value={selectedTarget}
+                                    onChange={(e) => setSelectedTarget(e.target.value)}
+                                    className={inputClass}
+                                >
+                                    <option value="" disabled>-- Select a column to predict --</option>
+                                    {columns.map((col, index) => (
+                                        <option key={index} value={col}>{col}</option>
+                                    ))}
+                                </select>
+                                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">The target variable that the machine learning model will attempt to predict.</p>
+                            </div>
+
+                            {/* --- Preprocessing Settings --- */}
+                            <div className="border-t border-gray-100 dark:border-gray-700 pt-4 mt-6">
+                                <button
+                                    onClick={() => setIsPreprocessingOpen(!isPreprocessingOpen)}
+                                    className="flex justify-between items-center w-full group hover:cursor-pointer"
+                                >
+                                    <h4 className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 transition-colors">
+                                        Data Preprocessing
+                                    </h4>
+                                    <div className="p-1 rounded-md">
+                                        {isPreprocessingOpen ?
+                                            <FiChevronUp className="w-5 h-5 text-gray-500" /> :
+                                            <FiChevronDown className="w-5 h-5 text-gray-500" />
+                                        }
+                                    </div>
+                                </button>
+
+                                {isPreprocessingOpen && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 mb-2 animate-in fade-in duration-300">
+                                        <div>
+                                            <label htmlFor="imputation" className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                                Imputation Method
+                                            </label>
+                                            <select id="imputation" value={imputationMethod} onChange={(e) => setImputationMethod(e.target.value)} className={inputClass}>
+                                                <option value="auto">Auto</option>
+                                                <option value="knn">KNN Imputer</option>
+                                                <option value="mice">MICE Imputer</option>
+                                                <option value="mean">Mean (Force all)</option>
+                                                <option value="mode">Mode (Force all)</option>
+                                            </select>
+                                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Method to handle missing values in the dataset.</p>
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="balancing" className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                                Data Balancing
+                                            </label>
+                                            <select id="balancing" value={dataBalancing} onChange={(e) => setDataBalancing(e.target.value)} className={inputClass}>
+                                                <option value="none">None</option>
+                                                <option value="adasync">ADASYN</option>
+                                            </select>
+                                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                                <strong>Note:</strong> The system will only apply this if severe class imbalance is detected.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* --- Feature Selection Settings --- */}
+                            <div className="border-t border-gray-100 dark:border-gray-700 pt-4 mt-4">
+                                <button
+                                    onClick={() => setIsFeatureSelectionOpen(!isFeatureSelectionOpen)}
+                                    className="flex justify-between items-center w-full group hover:cursor-pointer"
+                                >
+                                    <h4 className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 transition-colors">
+                                        Feature Selection (Genetic Algorithm)
+                                    </h4>
+                                    <div className="p-1 rounded-md">
+                                        {isFeatureSelectionOpen ?
+                                            <FiChevronUp className="w-5 h-5 text-gray-500" /> :
+                                            <FiChevronDown className="w-5 h-5 text-gray-500" />
+                                        }
+                                    </div>
+                                </button>
+
+                                {isFeatureSelectionOpen && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 mb-2 animate-in fade-in duration-300">
+                                        <div>
+                                            <label htmlFor="size" className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                                Population Size
+                                            </label>
+                                            <input type="number" id="size" min={10} max={200} value={size} onChange={(e) => setSize(Number(e.target.value))} className={inputClass} />
+                                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Number of individuals in each generation. (Range: 10 - 200).</p>
+                                        </div>
+                                        <div>
+                                            <label htmlFor="mutation-rate" className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                                Mutation Rate
+                                            </label>
+                                            <input type="number" step="0.01" id="mutation-rate" min={0.01} max={0.5} value={mutationRate} onChange={(e) => setMutationRate(Number(e.target.value))} className={inputClass} />
+                                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Probability of a feature flipping its state. (Range: 0.01 - 0.5).</p>
+                                        </div>
+                                        <div>
+                                            <label htmlFor="n-parents" className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                                Number of Parents
+                                            </label>
+                                            <input type="number" id="n-parents" value={nParents} onChange={(e) => setNParents(e.target.value ? Number(e.target.value) : "")} placeholder="Leave empty for default" className={inputClass} />
+                                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Best individuals kept for breeding. Must be less than Population Size.</p>
+                                        </div>
+                                        <div>
+                                            <label htmlFor="test-size" className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                                Test Size
+                                            </label>
+                                            <input type="number" step="0.05" id="test-size" min={0.1} max={0.5} value={testSize} onChange={(e) => setTestSize(Number(e.target.value))} className={inputClass} />
+                                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Proportion of data used for evaluation. (Range: 0.1 - 0.5).</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <button
                                 onClick={handleProceed}
                                 disabled={!selectedTarget}
-                                className="mt-6 w-full py-3 hover:cursor-pointer bg-green-600 hover:bg-green-700 disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:hover:bg-gray-400 dark:disabled:hover:bg-gray-700 disabled:pointer-events-none text-white font-bold rounded-lg transition-colors shadow-lg"
+                                className="mt-8 w-full py-3 hover:cursor-pointer bg-green-600 hover:bg-green-700 disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:hover:bg-gray-400 dark:disabled:hover:bg-gray-700 disabled:pointer-events-none text-white font-bold rounded-lg transition-colors shadow-lg"
                             >
                                 Confirm & Proceed
                             </button>
                         </div>
                     )}
-
                 </div>
             </div>
         </div>

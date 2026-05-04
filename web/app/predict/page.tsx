@@ -1,11 +1,10 @@
 "use client"
 import { useRouter } from "next/navigation";
-import { FormEvent, useState, useRef, useEffect } from "react";
+import { FormEvent, useState, useRef } from "react";
 import { PredictionResult } from "@/types/prediction";
 import { Patient } from "@/types/patient"
 import { useSettings } from "@/context/settingscontext";
 import { useAuth } from "@/context/authcontext";
-import Image from "next/image";
 import { api } from "@/lib/api";
 import toast from "react-hot-toast";
 import { FaHeartbeat, FaUserAlt, FaNotesMedical } from "react-icons/fa";
@@ -13,12 +12,10 @@ import { FaHeartbeat, FaUserAlt, FaNotesMedical } from "react-icons/fa";
 export default function Predict() {
     const router = useRouter();
     const [submitting, setSubmitting] = useState(false);
-    const [result, setResult] = useState<PredictionResult | null>(null);
     const [invalidFields, setInvalidFields] = useState<string[]>([]);
     const formRef = useRef<HTMLFormElement>(null);
     const autoFillBtnRef = useRef<HTMLButtonElement>(null);
     const topRef = useRef<HTMLDivElement>(null);
-    const resultRef = useRef<HTMLDivElement>(null);
     const { user, loading: authLoading, logout, pushNewHistoryItem } = useAuth();
     const { savePrediction } = useSettings();
 
@@ -139,7 +136,6 @@ export default function Predict() {
 
     const handleReset = () => {
         formRef.current?.reset();
-        setResult(null);
         setInvalidFields([]);
         setSubmitting(false);
         toast.dismiss();
@@ -149,15 +145,6 @@ export default function Predict() {
             block: "start",
         });
     };
-
-    useEffect(() => {
-        if (result && resultRef.current) {
-            resultRef.current.scrollIntoView({
-                behavior: "smooth",
-                block: "start",
-            });
-        }
-    }, [result]);
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -182,7 +169,6 @@ export default function Predict() {
         }
 
         setSubmitting(true);
-        setResult(null);
 
         const payload = {
             age: parseInt(formData.get("age") as string),
@@ -202,8 +188,8 @@ export default function Predict() {
         try {
             const res = await api.post("/predictions", payload);
             const data: PredictionResult = res.data;
-            setResult(data);
             pushNewHistoryItem(data.prediction_history);
+            router.push(`/prediction-history/${data.prediction_history.id}`)
         } catch (error: any) {
             if (error.response?.status === 401) {
                 toast.error("Session expired. Please sign in again.");
@@ -216,26 +202,6 @@ export default function Predict() {
         } finally {
             setSubmitting(false);
         }
-    };
-
-    const renderChartImage = (imageUrl: string, title: string) => {
-        if (!imageUrl) return null
-        return (
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-                <h4 className="text-center font-semibold mb-3 text-gray-700 dark:text-gray-300">{title}</h4>
-                <div className="relative w-full max-w-2xl mx-auto overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-900 min-h-[200px] flex items-center justify-center">
-                    <Image
-                        src={imageUrl}
-                        alt={title}
-                        width={0}
-                        height={0}
-                        sizes="100vw"
-                        className="w-full h-auto object-contain hover:scale-102 transition-transform duration-300"
-                        loading="lazy"
-                    />
-                </div>
-            </div>
-        );
     };
 
     return (
@@ -399,70 +365,23 @@ export default function Predict() {
 
                 {/* Các Nút Hành Động */}
                 <div className="mt-8 flex items-center justify-end gap-x-4 border-t border-gray-100 dark:border-gray-800 pt-6">
-                    <button type="button" onClick={handleReset}
-                        className="rounded-xl px-8 py-3 text-base font-semibold text-gray-700 bg-white border border-gray-200 cursor-pointer hover:bg-gray-50 hover:text-indigo-600 transition-colors shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-700">
+                    <button
+                        type="button"
+                        onClick={handleReset}
+                        disabled={submitting}
+                        className="rounded-xl px-8 py-3 text-base font-semibold text-gray-700 bg-white border border-gray-200 cursor-pointer hover:bg-gray-50 hover:text-indigo-600 transition-colors shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                         Reset Form
                     </button>
-                    <button type="submit" disabled={submitting}
-                        className="rounded-xl bg-indigo-600 px-8 py-3 text-base font-semibold text-white shadow-sm cursor-pointer hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/30 transition-all">
+                    <button
+                        type="submit"
+                        disabled={submitting}
+                        className="rounded-xl bg-indigo-600 px-8 py-3 text-base font-semibold text-white shadow-sm cursor-pointer hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
                         {submitting ? "Analyzing..." : "Predict"}
                     </button>
                 </div>
             </form>
-
-            {/* --- HIỂN THỊ KẾT QUẢ --- */}
-            {result && (
-                <div ref={resultRef} className="mt-8 animate-fade-in">
-                    <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white pb-2 border-b border-gray-200 dark:border-gray-700">
-                        Analysis Results
-                    </h2>
-
-                    <div className={`p-5 rounded-2xl border border-l-8 shadow-sm mb-8 transition-all ${result.prediction === 1 ? 'bg-red-50 border-red-500 dark:bg-red-900/20' : 'bg-green-50 border-green-500 dark:bg-green-900/20'}`}>
-                        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                            <div>
-                                <h3 className="text-lg font-bold flex items-center gap-2 text-gray-800 dark:text-gray-200">
-                                    <FaHeartbeat /> Diagnosis Prediction:
-                                </h3>
-                                <p className={`text-3xl font-black mt-2 ${result.prediction === 1 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                                    {result.prediction === 1 ? "RISK DETECTED" : "NORMAL"}
-                                </p>
-                            </div>
-                            <div className="text-center bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                                <span className="block text-xs uppercase tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1">Confidence Score</span>
-                                <span className="text-3xl font-black text-gray-800 dark:text-white">{(result.probability * 100).toFixed(1)}%</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white flex items-center gap-3">
-                        <span className="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full dark:bg-indigo-900 dark:text-indigo-300">AI Logic</span>
-                        Detailed Explanation
-                    </h3>
-
-                    <div className="grid grid-cols-1 gap-8">
-                        <div>
-                            {renderChartImage(result.shap_waterfall, "Feature Impact Analysis (SHAP Waterfall)")}
-                            <p className="text-sm text-gray-500 mt-3 text-center italic dark:text-gray-400 max-w-3xl mx-auto">
-                                Visualizes how individual factors shift the prediction from the baseline.
-                                <span className="font-bold text-red-500"> Red bars</span> indicate factors increasing heart failure risk,
-                                while <span className="font-bold text-blue-500"> Blue bars</span> indicate factors decreasing the risk.
-                            </p>
-                        </div>
-                        <div>
-                            {renderChartImage(result.shap_bar, "Global Feature Importance (SHAP Bar)")}
-                            <p className="text-sm text-gray-500 mt-3 text-center italic dark:text-gray-400 max-w-3xl mx-auto">
-                                Ranks the health indicators by their absolute impact on this prediction. Longer bars mean the AI considered these factors most critical for this patient.
-                            </p>
-                        </div>
-                        <div>
-                            {renderChartImage(result.lime, "Local Interpretation (LIME)")}
-                            <p className="text-sm text-gray-500 mt-3 text-center italic dark:text-gray-400 max-w-3xl mx-auto">
-                                Independent verification: Analyzing which specific features support a "High Risk" diagnosis versus those supporting a "Normal" diagnosis.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }

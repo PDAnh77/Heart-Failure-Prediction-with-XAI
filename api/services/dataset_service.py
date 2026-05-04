@@ -558,6 +558,7 @@ def genetic_selection(
     mutation_rate: float,
     n_parents: int,
     model_name: str,
+    test_size: float,
 ):
     if n_parents is None or n_parents >= size:
         n_parents = int(size * 0.8)
@@ -574,7 +575,7 @@ def genetic_selection(
     target = processed_df[target_column]
     features = processed_df.drop(columns=[target_column])
 
-    X_train, X_test, Y_train, Y_test = train_test_split(features, target, test_size=0.3, random_state=42)
+    X_train, X_test, Y_train, Y_test = train_test_split(features, target, test_size=test_size, random_state=42)
 
     # --- CHỌN MÔ HÌNH ---
     default_model = SELECTED_MODEL

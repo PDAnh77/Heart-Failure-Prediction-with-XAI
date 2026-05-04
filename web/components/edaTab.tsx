@@ -11,10 +11,12 @@ import { DatasetSummary } from "@/types/dataset_summary";
 interface EdaTabProps {
     datasetId: string;
     targetColumn: string;
+    imputation: string;
+    balancing: string;
     onProcessed: (processedId: string) => void;
 }
 
-export default function EDATab({ datasetId, targetColumn, onProcessed }: EdaTabProps) {
+export default function EDATab({ datasetId, targetColumn, imputation, balancing, onProcessed }: EdaTabProps) {
     const [summary, setSummary] = useState<DatasetSummary | null>(null);
     const [charts, setCharts] = useState<Record<string, string>>({});
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
