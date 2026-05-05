@@ -72,8 +72,9 @@ def _sanitize(obj):
 
 
 def load_dataset(dataset_id: str, user_id: str) -> pd.DataFrame:
-
-    if dataset_id.startswith("fs_"):
+    if dataset_id.startswith("pred_"):
+        path = f"batch-prediction/{user_id}/{dataset_id}.csv"
+    elif dataset_id.startswith("fs_"):
         path = f"feature-selection/{user_id}/{dataset_id}.csv"
     elif dataset_id.startswith("processed_"):
         path = f"processed/{user_id}/{dataset_id}.csv"
@@ -83,7 +84,6 @@ def load_dataset(dataset_id: str, user_id: str) -> pd.DataFrame:
     try:
         # 1. Download file from storage
         response = supabase.storage.from_(DATASET_BUCKET).download(path)
-
     except Exception:
         # File not found / storage error
         raise HTTPException(
@@ -93,7 +93,6 @@ def load_dataset(dataset_id: str, user_id: str) -> pd.DataFrame:
     try:
         # 2. Convert bytes → file-like object → DataFrame
         df = pd.read_csv(io.BytesIO(response))
-
     except Exception:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to parse CSV file")
 
@@ -120,8 +119,21 @@ def upload_plot(plt_obj, path, bucket=EDA_BUCKET):
 
 
 def upload_raw_dataset(file: UploadFile, user_id: str):
-    if not file.filename.endswith(".csv"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only CSV files are allowed")
+    valid_extensions = (".csv", ".xlsx", ".xls")
+
+    filename_lower = file.filename.lower()
+
+    if not filename_lower.endswith(valid_extensions):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Only CSV and Excel files (.xlsx, .xls) are allowed"
+        )
+
+    original_file_type = "csv"
+    if filename_lower.endswith(".xlsx"):
+        original_file_type = "xlsx"
+    elif filename_lower.endswith(".xls"):
+        original_file_type = "xls"
 
     # Check file size
     file.file.seek(0, 2)
@@ -131,11 +143,18 @@ def upload_raw_dataset(file: UploadFile, user_id: str):
     if size > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large (max 10MB)")
 
-    # Read csv file
+    # Read file
     try:
-        df = pd.read_csv(file.file)
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid CSV file")
+        if file.filename.lower().endswith(".csv"):
+            df = pd.read_csv(file.file)
+        else:
+            # Đọc file Excel
+            df = pd.read_excel(file.file)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=f"Invalid file format or corrupted file: {str(e)}"
+        )
 
     # Dataset validation
     if df.empty:
@@ -154,6 +173,8 @@ def upload_raw_dataset(file: UploadFile, user_id: str):
 
     # Create dataset id
     dataset_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:6]}"
+    
+    # Chuẩn hóa tất cả dữ liệu thành CSV trước khi lưu lên Supabase
     csv_bytes = df.to_csv(index=False).encode("utf-8")
 
     path = f"raw/{user_id}/{dataset_id}.csv"
@@ -168,7 +189,7 @@ def upload_raw_dataset(file: UploadFile, user_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Upload processed dataset failed: {str(e)}"
         )
 
-    return {"dataset_id": dataset_id, "columns": columns}
+    return {"dataset_id": dataset_id, "columns": columns, "original_file_type": original_file_type}
 
 
 def get_summary(dataset_id: str, owner_id: str, user: dict, target_column: str = None):
@@ -264,7 +285,7 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column, imputa
 
     features_to_process = [col for col in df.columns if col != target_column]
 
-    # Phân loại cột dựa trên logic bạn đã dùng ở hàm summary
+    # Phân loại cột
     categorical_features = [col for col in features_to_process if df[col].nunique() <= 6]
     numerical_features = [col for col in features_to_process if df[col].nunique() > 6]
 
@@ -343,7 +364,6 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column, imputa
             df[col] = le.fit_transform(df[col].astype(str))
 
     # 5. Scaling cho các cột Numerical
-    # Ở đây dùng StandardScaler. Nếu muốn dùng Min-Max, thay bằng MinMaxScaler()
     scaler = StandardScaler()
     if numerical_features:
         df[numerical_features] = scaler.fit_transform(df[numerical_features])
@@ -374,19 +394,39 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column, imputa
     }
 
 
-def download(dataset_id: str, owner_id, user: dict):
+def download(dataset_id: str, owner_id: str, user: dict, file_type: str):
     target_user_id = user["user_id"]
 
     if user["role"] == "admin" and owner_id:
         target_user_id = owner_id
 
+    # Default to csv
+    if not file_type:
+        file_type = "csv"
+
     df = load_dataset(dataset_id, target_user_id)
-
-    stream = io.StringIO()
-    df.to_csv(stream, index=False)
-
-    response = StreamingResponse(iter([stream.getvalue()]), media_type="text/csv")
-    response.headers["Content-Disposition"] = f"attachment; filename={dataset_id}.csv"
+    
+    # Convert format
+    if file_type.lower() in ["xlsx", "xls"]:
+        stream = io.BytesIO()
+        df.to_excel(stream, index=False, engine='openpyxl')
+        stream.seek(0)
+        
+        response = StreamingResponse(
+            iter([stream.getvalue()]), 
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response.headers["Content-Disposition"] = f"attachment; filename={dataset_id}.xlsx"
+    else:
+        stream = io.StringIO()
+        df.to_csv(stream, index=False)
+        stream.seek(0)
+        
+        response = StreamingResponse(
+            iter([stream.getvalue()]), 
+            media_type="text/csv"
+        )
+        response.headers["Content-Disposition"] = f"attachment; filename={dataset_id}.csv"
 
     return response
 

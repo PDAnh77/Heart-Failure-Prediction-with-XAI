@@ -47,8 +47,8 @@ def preprocess_dataset(
 
 
 @router.get("/{dataset_id}/download")
-def download_dataset(dataset_id: str, owner_id: str = Query(None), user=Depends(require_roles(["admin", "user"]))):
-    return dataset_service.download(dataset_id, owner_id, user)
+def download_dataset(dataset_id: str, owner_id: str = Query(None), file_type: str = Query(None), user=Depends(require_roles(["admin", "user"]))):
+    return dataset_service.download(dataset_id, owner_id, user, file_type)
 
 
 @router.get("/{dataset_id}/eda", dependencies=[Depends(require_roles(["admin", "user"]))])

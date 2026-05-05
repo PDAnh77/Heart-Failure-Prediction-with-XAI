@@ -1,16 +1,18 @@
 from typing import List
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, UploadFile, File
 from schemas.prediction_schema import PredictionBase, PredictionGet
 from services.auth_service import require_roles
 from dependencies import get_db
 from sqlalchemy.orm import Session
 from schemas.patient_schema import PatientBase, PatientPredict
-from services.prediction_service import predict_single, predict_batch
 from services.prediction_service import (
     get_predictions_by_user,
     get_prediction_by_id,
     delete_prediction_by_id,
     delete_predictions_by_user,
+    predict_dataframe,
+    predict_single,
+    predict_batch,
 )
 
 router = APIRouter()
@@ -48,6 +50,13 @@ def create_prediction(
 @router.post("/batch", dependencies=[Depends(require_roles(["admin"]))])
 def create_batch_prediction(patients: List[PatientBase]):
     return predict_batch(patients)
+
+
+@router.post("/upload")
+def create_prediction_from_file(
+    dataset_id: str, target_column: str = Query(None), user=Depends(require_roles(["admin", "user"]))
+):
+    return predict_dataframe(dataset_id, user["user_id"], target_column)
 
 
 @router.delete("/me")

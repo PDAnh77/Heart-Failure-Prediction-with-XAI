@@ -164,7 +164,7 @@ export default function Upload() {
         <div className="p-4 h-full flex flex-col">
             <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dataset Analysis & Feature Selection</h1>
-                <p className="mt-1 text-base/6 text-gray-600 dark:text-gray-400">
+                <p className="mt-1 text-gray-600 dark:text-gray-400">
                     Upload your dataset to generate insights and identify the most important features
                 </p>
             </div>
