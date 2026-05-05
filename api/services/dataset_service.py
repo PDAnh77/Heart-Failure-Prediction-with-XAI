@@ -23,6 +23,9 @@ from sklearn.neighbors import KNeighborsClassifier
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer, KNNImputer
+
 DATASET_BUCKET = "heart-failure-datasets"
 EDA_BUCKET = "eda-artifacts"
 SELECTED_MODEL = settings.FEATURE_SELECTION_MODEL
@@ -236,7 +239,7 @@ def get_rows(dataset_id: str, owner_id: str, user: dict, limit: int, offset: int
     return {"total_rows": total_rows, "limit": limit, "offset": offset, "data": data}
 
 
-def preprocess(dataset_id: str, owner_id: str, user: dict, target_column):
+def preprocess(dataset_id: str, owner_id: str, user: dict, target_column, imputation_method: str = "standard"):
     target_user_id = user["user_id"]
 
     if user["role"] == "admin" and owner_id:
@@ -265,24 +268,82 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column):
     categorical_features = [col for col in features_to_process if df[col].nunique() <= 6]
     numerical_features = [col for col in features_to_process if df[col].nunique() > 6]
 
-    # 3. Xử lý giá trị thiếu (Missing Values)
-    for col in features_to_process:
-        if df[col].isnull().any():
+    le = LabelEncoder() # Khởi tạo LabelEncoder dùng chung cho cả 2 phương pháp
+    
+    if imputation_method == "mice":
+        # Lấy tỷ lệ thiếu để áp dụng đúng phương pháp cho từng cột
+        missing_percentages = df[features_to_process].isnull().mean() * 100
+        cols_missing_under_5 = missing_percentages[(missing_percentages > 0) & (missing_percentages <= 5)].index.tolist()
+        cols_missing_over_5 = missing_percentages[missing_percentages > 5].index.tolist()
+
+        # 3.1 Xử lý các cột thiếu <= 5% (Mean cho Numeric, Mode cho Categorical)
+        for col in cols_missing_under_5:
             if col in numerical_features:
-                # Điền giá trị thiếu bằng Trung vị (Median) cho cột số
-                df[col] = df[col].fillna(df[col].median())
+                df[col] = df[col].fillna(df[col].mean())
             else:
-                # Điền bằng giá trị xuất hiện nhiều nhất (Mode) cho cột phân loại
                 df[col] = df[col].fillna(df[col].mode()[0])
 
-    # 4. Label Encoding cho các cột Categorical
-    # Chuyển đổi text/category thành số (0, 1, 2...)
-    le = LabelEncoder()
-    for col in categorical_features:
-        df[col] = le.fit_transform(df[col].astype(str))
+        # 3.2 Label Encode cho non-null values để thuật toán MICE có thể chạy được
+        for col in categorical_features:
+            non_nulls = df[col].dropna()
+            if not non_nulls.empty:
+                df.loc[df[col].notnull(), col] = le.fit_transform(non_nulls.astype(str))
+
+        # 3.3 Áp dụng MICE cho các biến thiếu > 5%
+        if len(cols_missing_over_5) > 0:
+            mice_imputer = IterativeImputer(max_iter=10, random_state=0)
+            df[features_to_process] = mice_imputer.fit_transform(df[features_to_process])
+
+            # MICE có thể tạo số thập phân cho biến phân loại, nên cần làm tròn
+            for col in categorical_features:
+                df[col] = df[col].round()
+                
+    elif imputation_method == "mean":
+        # Áp dụng Average Estimated Method: Dùng trung bình (Mean) cho số, Mode cho phân loại
+        for col in features_to_process:
+            if df[col].isnull().any():
+                if col in numerical_features:
+                    df[col] = df[col].fillna(df[col].mean())
+                else:
+                    df[col] = df[col].fillna(df[col].mode()[0])
+                    
+        # Label Encoding cho các cột Categorical
+        for col in categorical_features:
+            df[col] = le.fit_transform(df[col].astype(str))
+            
+    elif imputation_method == "knn":
+        # Áp dụng K-Nearest Neighbors với k=2 theo như kết quả bài báo[cite: 5]
+        
+        # Cần Encode tạm các giá trị Non-null sang dạng số để tính toán khoảng cách KNN[cite: 5]
+        for col in categorical_features:
+            non_nulls = df[col].dropna()
+            if not non_nulls.empty:
+                df.loc[df[col].notnull(), col] = le.fit_transform(non_nulls.astype(str))
+                
+        # Thực hiện nội suy bằng KNN với K=2
+        knn_imputer = KNNImputer(n_neighbors=2)
+        df[features_to_process] = knn_imputer.fit_transform(df[features_to_process])
+        
+        # Làm tròn kết quả đối với các biến phân loại sau khi KNN trả về số thập phân
+        for col in categorical_features:
+            df[col] = df[col].round()
+
+    else:
+        # XỬ LÝ MẶC ĐỊNH (STANDARD) BAN ĐẦu
+        # 3. Xử lý giá trị thiếu (Missing Values)
+        for col in features_to_process:
+            if df[col].isnull().any():
+                if col in numerical_features:
+                    df[col] = df[col].fillna(df[col].median())
+                else:
+                    df[col] = df[col].fillna(df[col].mode()[0])
+
+        # 4. Label Encoding cho các cột Categorical
+        for col in categorical_features:
+            df[col] = le.fit_transform(df[col].astype(str))
 
     # 5. Scaling cho các cột Numerical
-    # Ở đây dùng StandardScaler. Nếu muốn dùng Min-Max, hãy thay bằng MinMaxScaler()
+    # Ở đây dùng StandardScaler. Nếu muốn dùng Min-Max, thay bằng MinMaxScaler()
     scaler = StandardScaler()
     if numerical_features:
         df[numerical_features] = scaler.fit_transform(df[numerical_features])
