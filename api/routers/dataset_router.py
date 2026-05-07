@@ -1,3 +1,4 @@
+from typing import Literal
 from fastapi import APIRouter, Depends, Query, UploadFile
 from services.auth_service import require_roles
 from services import dataset_service
@@ -35,10 +36,14 @@ def get_dataset_rows(
 def preprocess_dataset(
     dataset_id: str,
     target_column: str,
+    imputation_method: Literal["default", "mice", "mean", "knn"] = Query(
+        "default", 
+        description="Chọn 'default' (Median/Mode), 'mice' (Mean/Mode <=5% và MICE >5%), 'mean' (Average Mean), hoặc 'knn' (K-Nearest Neighbors)"
+    ),
     owner_id: str = Query(None),
     user=Depends(require_roles(["admin", "user"])),
 ):
-    return dataset_service.preprocess(dataset_id, owner_id, user, target_column)
+    return dataset_service.preprocess(dataset_id, owner_id, user, target_column, imputation_method)
 
 
 @router.get("/{dataset_id}/download")
