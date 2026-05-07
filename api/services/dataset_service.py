@@ -125,8 +125,7 @@ def upload_raw_dataset(file: UploadFile, user_id: str):
 
     if not filename_lower.endswith(valid_extensions):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail="Only CSV and Excel files (.xlsx, .xls) are allowed"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Only CSV and Excel files (.xlsx, .xls) are allowed"
         )
 
     original_file_type = "csv"
@@ -152,8 +151,7 @@ def upload_raw_dataset(file: UploadFile, user_id: str):
             df = pd.read_excel(file.file)
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
-            detail=f"Invalid file format or corrupted file: {str(e)}"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid file format or corrupted file: {str(e)}"
         )
 
     # Dataset validation
@@ -173,7 +171,7 @@ def upload_raw_dataset(file: UploadFile, user_id: str):
 
     # Create dataset id
     dataset_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:6]}"
-    
+
     # Chuẩn hóa tất cả dữ liệu thành CSV trước khi lưu lên Supabase
     csv_bytes = df.to_csv(index=False).encode("utf-8")
 
@@ -289,12 +287,14 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column, imputa
     categorical_features = [col for col in features_to_process if df[col].nunique() <= 6]
     numerical_features = [col for col in features_to_process if df[col].nunique() > 6]
 
-    le = LabelEncoder() # Khởi tạo LabelEncoder dùng chung cho cả 2 phương pháp
-    
+    le = LabelEncoder()  # Khởi tạo LabelEncoder dùng chung cho cả 2 phương pháp
+
     if imputation_method == "mice":
         # Lấy tỷ lệ thiếu để áp dụng đúng phương pháp cho từng cột
         missing_percentages = df[features_to_process].isnull().mean() * 100
-        cols_missing_under_5 = missing_percentages[(missing_percentages > 0) & (missing_percentages <= 5)].index.tolist()
+        cols_missing_under_5 = missing_percentages[
+            (missing_percentages > 0) & (missing_percentages <= 5)
+        ].index.tolist()
         cols_missing_over_5 = missing_percentages[missing_percentages > 5].index.tolist()
 
         # 3.1 Xử lý các cột thiếu <= 5% (Mean cho Numeric, Mode cho Categorical)
@@ -318,7 +318,7 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column, imputa
             # MICE có thể tạo số thập phân cho biến phân loại, nên cần làm tròn
             for col in categorical_features:
                 df[col] = df[col].round()
-                
+
     elif imputation_method == "mean":
         # Áp dụng Average Estimated Method: Dùng trung bình (Mean) cho số, Mode cho phân loại
         for col in features_to_process:
@@ -327,24 +327,24 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column, imputa
                     df[col] = df[col].fillna(df[col].mean())
                 else:
                     df[col] = df[col].fillna(df[col].mode()[0])
-                    
+
         # Label Encoding cho các cột Categorical
         for col in categorical_features:
             df[col] = le.fit_transform(df[col].astype(str))
-            
+
     elif imputation_method == "knn":
         # Áp dụng K-Nearest Neighbors với k=2 theo như kết quả bài báo[cite: 5]
-        
+
         # Cần Encode tạm các giá trị Non-null sang dạng số để tính toán khoảng cách KNN[cite: 5]
         for col in categorical_features:
             non_nulls = df[col].dropna()
             if not non_nulls.empty:
                 df.loc[df[col].notnull(), col] = le.fit_transform(non_nulls.astype(str))
-                
+
         # Thực hiện nội suy bằng KNN với K=2
         knn_imputer = KNNImputer(n_neighbors=2)
         df[features_to_process] = knn_imputer.fit_transform(df[features_to_process])
-        
+
         # Làm tròn kết quả đối với các biến phân loại sau khi KNN trả về số thập phân
         for col in categorical_features:
             df[col] = df[col].round()
@@ -405,27 +405,23 @@ def download(dataset_id: str, owner_id: str, user: dict, file_type: str):
         file_type = "csv"
 
     df = load_dataset(dataset_id, target_user_id)
-    
+
     # Convert format
     if file_type.lower() in ["xlsx", "xls"]:
         stream = io.BytesIO()
-        df.to_excel(stream, index=False, engine='openpyxl')
+        df.to_excel(stream, index=False, engine="openpyxl")
         stream.seek(0)
-        
+
         response = StreamingResponse(
-            iter([stream.getvalue()]), 
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            iter([stream.getvalue()]), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
         response.headers["Content-Disposition"] = f"attachment; filename={dataset_id}.xlsx"
     else:
         stream = io.StringIO()
         df.to_csv(stream, index=False)
         stream.seek(0)
-        
-        response = StreamingResponse(
-            iter([stream.getvalue()]), 
-            media_type="text/csv"
-        )
+
+        response = StreamingResponse(iter([stream.getvalue()]), media_type="text/csv")
         response.headers["Content-Disposition"] = f"attachment; filename={dataset_id}.csv"
 
     return response

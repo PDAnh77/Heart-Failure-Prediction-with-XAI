@@ -68,7 +68,10 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                 // --- 2. PREPROCESS VÀ LẤY DATA PREVIEW ---
                 setIsLoadingPreprocess(true);
                 const preprocessRes = await api.post(`/datasets/${datasetId}/preprocess`, null, {
-                    params: { target_column: targetColumn }
+                    params: {
+                        target_column: targetColumn,
+                        imputation_method: imputation
+                    }
                 });
 
                 const procId = preprocessRes.data.processed_dataset_id;

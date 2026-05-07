@@ -22,7 +22,7 @@ export default function Upload() {
     const [selectedTarget, setSelectedTarget] = useState<string>("");
     const [isPreprocessingOpen, setIsPreprocessingOpen] = useState<boolean>(false);
     const [isFeatureSelectionOpen, setIsFeatureSelectionOpen] = useState<boolean>(false);
-    const [imputationMethod, setImputationMethod] = useState<string>("auto");
+    const [imputationMethod, setImputationMethod] = useState<string>("default");
     const [dataBalancing, setDataBalancing] = useState<string>("none");
 
     // Genetic Algorithm parameters
@@ -313,11 +313,10 @@ export default function Upload() {
                                                 Imputation method
                                             </label>
                                             <select id="imputation" value={imputationMethod} onChange={(e) => setImputationMethod(e.target.value)} className={inputClass}>
-                                                <option value="auto">Auto</option>
+                                                <option value="default">Default</option>
                                                 <option value="knn">KNN imputer</option>
                                                 <option value="mice">MICE imputer</option>
                                                 <option value="mean">Mean (Force all)</option>
-                                                <option value="mode">Mode (Force all)</option>
                                             </select>
                                             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Method to handle missing values in the dataset.</p>
                                         </div>
