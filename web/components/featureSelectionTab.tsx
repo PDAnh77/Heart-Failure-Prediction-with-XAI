@@ -84,6 +84,8 @@ export default function FeatureSelectionTab({
 
             if (isManualRerun) {
                 toast.success("Feature selection rerun completed successfully!");
+            } else {
+                toast.success("Feature selection completed successfully!");
             }
         } catch (error) {
             console.error("Feature Selection Error:", error);
@@ -104,28 +106,28 @@ export default function FeatureSelectionTab({
     // --- Validation Logic before Rerun ---
     const handleRerun = () => {
         if (localSize < 10 || localSize > 200) {
-            toast.error("Population Size must be between 10 and 200.");
+            toast.error("Population size must be between 10 and 200.");
             return;
         }
 
         if (localMutationRate < 0.01 || localMutationRate > 0.5) {
-            toast.error("Mutation Rate must be between 0.01 and 0.5.");
+            toast.error("Mutation rate must be between 0.01 and 0.5.");
             return;
         }
 
         if (localTestSize < 0.1 || localTestSize > 0.5) {
-            toast.error("Test Size must be between 0.1 and 0.5.");
+            toast.error("Test size must be between 0.1 and 0.5.");
             return;
         }
 
         if (localNParents !== "") {
             const parsedParents = Number(localNParents);
             if (parsedParents <= 0) {
-                toast.error("Number of Parents must be greater than 0.");
+                toast.error("Number of parents must be greater than 0.");
                 return;
             }
             if (parsedParents >= localSize) {
-                toast.error("Number of Parents must be less than Population Size.");
+                toast.error("Number of parents must be less than Population size.");
                 return;
             }
         }
@@ -342,7 +344,7 @@ export default function FeatureSelectionTab({
                                         placeholder="Leave empty for default"
                                         className={inputClass}
                                     />
-                                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Best individuals kept for breeding. Must be less than Population Size.</p>
+                                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Best individuals kept for breeding. Must be less than Population size.</p>
                                 </div>
 
                                 {/* Test Size */}

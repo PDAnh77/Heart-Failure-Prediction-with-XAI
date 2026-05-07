@@ -324,6 +324,32 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
         );
     };
 
+    const getImputationInfo = (method: string) => {
+        switch (method) {
+            case "knn":
+                return {
+                    label: "KNN Imputer",
+                    detail: "Estimates missing values using nearest neighbors in feature space."
+                };
+            case "mice":
+                return {
+                    label: "MICE Imputer",
+                    detail: "Iteratively imputes each feature using the others as predictors."
+                };
+            case "mean":
+                return {
+                    label: "Mean / Mode",
+                    detail: "Uses mean for numerical features and mode for categorical features."
+                };
+            case "default":
+            default:
+                return {
+                    label: "Median / Mode",
+                    detail: "Uses median for numerical features and mode for categorical features."
+                };
+        }
+    };
+
     return (
         <>
             <div className="mt-6 space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
@@ -525,7 +551,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                                     {/* Vùng Thông tin (Chiếm 1/3) */}
                                     <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-xl border border-gray-200 dark:border-gray-700 h-fit">
                                         <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3 text-base border-b border-gray-200 dark:border-gray-700 pb-2">
-                                            About original data
+                                            About original dataset
                                         </h4>
                                         <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
                                             This is your raw, untouched dataset exactly as it was uploaded. It serves as the baseline to verify the integrity of the automated preprocessing steps.
@@ -574,7 +600,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                                     {/* Vùng Thông tin (Chiếm 1/3) */}
                                     <div className="bg-[#2EC4B6]/5 dark:bg-[#2EC4B6]/10 p-5 rounded-xl border border-[#2EC4B6]/20 dark:border-[#2EC4B6]/30 h-fit">
                                         <h4 className="font-semibold text-[#1f8c82] dark:text-[#2EC4B6] mb-3 text-base border-b border-[#2EC4B6]/20 pb-2">
-                                            Applied transformations
+                                            About preprocessed dataset
                                         </h4>
                                         <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
                                             The dataset has been automatically cleaned and standardized through our pipeline to ensure optimal model performance:
@@ -586,7 +612,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                                             </li>
                                             <li className="flex items-start gap-2">
                                                 <span className="text-[#2EC4B6] font-bold">✓</span>
-                                                <span><strong>Imputation:</strong> Handled missing data by filling numerical gaps with the <em>Median</em>, and categorical gaps with the <em>Mode</em>.</span>
+                                                <span><strong>Imputation:</strong> <em>{getImputationInfo(imputation).label}</em> - {getImputationInfo(imputation).detail}</span>
                                             </li>
                                             <li className="flex items-start gap-2">
                                                 <span className="text-[#2EC4B6] font-bold">✓</span>

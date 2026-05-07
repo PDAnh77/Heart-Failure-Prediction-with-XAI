@@ -127,28 +127,28 @@ export default function Upload() {
 
         // Validate Genetic Algorithm parameters
         if (size < 10 || size > 200) {
-            toast.error("Population Size must be between 10 and 200.");
+            toast.error("Population size must be between 10 and 200.");
             return;
         }
 
         if (mutationRate < 0.01 || mutationRate > 0.5) {
-            toast.error("Mutation Rate must be between 0.01 and 0.5.");
+            toast.error("Mutation rate must be between 0.01 and 0.5.");
             return;
         }
 
         if (testSize < 0.1 || testSize > 0.5) {
-            toast.error("Test Size must be between 0.1 and 0.5.");
+            toast.error("Test size must be between 0.1 and 0.5.");
             return;
         }
 
         if (nParents !== "") {
             const parsedParents = Number(nParents);
             if (parsedParents <= 0) {
-                toast.error("Number of Parents must be greater than 0.");
+                toast.error("Number of parents must be greater than 0.");
                 return;
             }
             if (parsedParents >= size) {
-                toast.error("Number of Parents must be less than Population Size (size).");
+                toast.error("Number of parents must be less than Population size.");
                 return;
             }
         }
@@ -316,7 +316,7 @@ export default function Upload() {
                                                 <option value="default">Default</option>
                                                 <option value="knn">KNN imputer</option>
                                                 <option value="mice">MICE imputer</option>
-                                                <option value="mean">Mean (Force all)</option>
+                                                <option value="mean">Mean / Mode</option>
                                             </select>
                                             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Method to handle missing values in the dataset.</p>
                                         </div>
@@ -375,7 +375,7 @@ export default function Upload() {
                                                 Number of parents
                                             </label>
                                             <input type="number" id="n-parents" value={nParents} onChange={(e) => setNParents(e.target.value ? Number(e.target.value) : "")} placeholder="Leave empty for default" className={inputClass} />
-                                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Best individuals kept for breeding. Must be less than Population Size.</p>
+                                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Best individuals kept for breeding. Must be less than Population size.</p>
                                         </div>
                                         <div>
                                             <label htmlFor="test-size" className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
