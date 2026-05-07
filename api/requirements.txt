@@ -20,3 +20,4 @@ sqlalchemy
 psycopg2-binary
 seaborn==0.13.2
 lightgbm==4.6.0
+openpyxl

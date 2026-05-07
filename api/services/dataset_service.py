@@ -72,8 +72,9 @@ def _sanitize(obj):
 
 
 def load_dataset(dataset_id: str, user_id: str) -> pd.DataFrame:
-
-    if dataset_id.startswith("fs_"):
+    if dataset_id.startswith("pred_"):
+        path = f"batch-prediction/{user_id}/{dataset_id}.csv"
+    elif dataset_id.startswith("fs_"):
         path = f"feature-selection/{user_id}/{dataset_id}.csv"
     elif dataset_id.startswith("processed_"):
         path = f"processed/{user_id}/{dataset_id}.csv"
@@ -83,7 +84,6 @@ def load_dataset(dataset_id: str, user_id: str) -> pd.DataFrame:
     try:
         # 1. Download file from storage
         response = supabase.storage.from_(DATASET_BUCKET).download(path)
-
     except Exception:
         # File not found / storage error
         raise HTTPException(
@@ -93,7 +93,6 @@ def load_dataset(dataset_id: str, user_id: str) -> pd.DataFrame:
     try:
         # 2. Convert bytes → file-like object → DataFrame
         df = pd.read_csv(io.BytesIO(response))
-
     except Exception:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Failed to parse CSV file")
 
@@ -120,8 +119,20 @@ def upload_plot(plt_obj, path, bucket=EDA_BUCKET):
 
 
 def upload_raw_dataset(file: UploadFile, user_id: str):
-    if not file.filename.endswith(".csv"):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only CSV files are allowed")
+    valid_extensions = (".csv", ".xlsx", ".xls")
+
+    filename_lower = file.filename.lower()
+
+    if not filename_lower.endswith(valid_extensions):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Only CSV and Excel files (.xlsx, .xls) are allowed"
+        )
+
+    original_file_type = "csv"
+    if filename_lower.endswith(".xlsx"):
+        original_file_type = "xlsx"
+    elif filename_lower.endswith(".xls"):
+        original_file_type = "xls"
 
     # Check file size
     file.file.seek(0, 2)
@@ -131,11 +142,17 @@ def upload_raw_dataset(file: UploadFile, user_id: str):
     if size > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large (max 10MB)")
 
-    # Read csv file
+    # Read file
     try:
-        df = pd.read_csv(file.file)
-    except Exception:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid CSV file")
+        if file.filename.lower().endswith(".csv"):
+            df = pd.read_csv(file.file)
+        else:
+            # Đọc file Excel
+            df = pd.read_excel(file.file)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid file format or corrupted file: {str(e)}"
+        )
 
     # Dataset validation
     if df.empty:
@@ -154,6 +171,8 @@ def upload_raw_dataset(file: UploadFile, user_id: str):
 
     # Create dataset id
     dataset_id = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:6]}"
+
+    # Chuẩn hóa tất cả dữ liệu thành CSV trước khi lưu lên Supabase
     csv_bytes = df.to_csv(index=False).encode("utf-8")
 
     path = f"raw/{user_id}/{dataset_id}.csv"
@@ -168,7 +187,7 @@ def upload_raw_dataset(file: UploadFile, user_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Upload processed dataset failed: {str(e)}"
         )
 
-    return {"dataset_id": dataset_id, "columns": columns}
+    return {"dataset_id": dataset_id, "columns": columns, "original_file_type": original_file_type}
 
 
 def get_summary(dataset_id: str, owner_id: str, user: dict, target_column: str = None):
@@ -264,16 +283,18 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column, imputa
 
     features_to_process = [col for col in df.columns if col != target_column]
 
-    # Phân loại cột dựa trên logic bạn đã dùng ở hàm summary
+    # Phân loại cột
     categorical_features = [col for col in features_to_process if df[col].nunique() <= 6]
     numerical_features = [col for col in features_to_process if df[col].nunique() > 6]
 
-    le = LabelEncoder() # Khởi tạo LabelEncoder dùng chung cho cả 2 phương pháp
-    
+    le = LabelEncoder()  # Khởi tạo LabelEncoder dùng chung cho cả 2 phương pháp
+
     if imputation_method == "mice":
         # Lấy tỷ lệ thiếu để áp dụng đúng phương pháp cho từng cột
         missing_percentages = df[features_to_process].isnull().mean() * 100
-        cols_missing_under_5 = missing_percentages[(missing_percentages > 0) & (missing_percentages <= 5)].index.tolist()
+        cols_missing_under_5 = missing_percentages[
+            (missing_percentages > 0) & (missing_percentages <= 5)
+        ].index.tolist()
         cols_missing_over_5 = missing_percentages[missing_percentages > 5].index.tolist()
 
         # 3.1 Xử lý các cột thiếu <= 5% (Mean cho Numeric, Mode cho Categorical)
@@ -297,7 +318,7 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column, imputa
             # MICE có thể tạo số thập phân cho biến phân loại, nên cần làm tròn
             for col in categorical_features:
                 df[col] = df[col].round()
-                
+
     elif imputation_method == "mean":
         # Áp dụng Average Estimated Method: Dùng trung bình (Mean) cho số, Mode cho phân loại
         for col in features_to_process:
@@ -306,24 +327,24 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column, imputa
                     df[col] = df[col].fillna(df[col].mean())
                 else:
                     df[col] = df[col].fillna(df[col].mode()[0])
-                    
+
         # Label Encoding cho các cột Categorical
         for col in categorical_features:
             df[col] = le.fit_transform(df[col].astype(str))
-            
+
     elif imputation_method == "knn":
         # Áp dụng K-Nearest Neighbors với k=2 theo như kết quả bài báo[cite: 5]
-        
+
         # Cần Encode tạm các giá trị Non-null sang dạng số để tính toán khoảng cách KNN[cite: 5]
         for col in categorical_features:
             non_nulls = df[col].dropna()
             if not non_nulls.empty:
                 df.loc[df[col].notnull(), col] = le.fit_transform(non_nulls.astype(str))
-                
+
         # Thực hiện nội suy bằng KNN với K=2
         knn_imputer = KNNImputer(n_neighbors=2)
         df[features_to_process] = knn_imputer.fit_transform(df[features_to_process])
-        
+
         # Làm tròn kết quả đối với các biến phân loại sau khi KNN trả về số thập phân
         for col in categorical_features:
             df[col] = df[col].round()
@@ -343,7 +364,6 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column, imputa
             df[col] = le.fit_transform(df[col].astype(str))
 
     # 5. Scaling cho các cột Numerical
-    # Ở đây dùng StandardScaler. Nếu muốn dùng Min-Max, thay bằng MinMaxScaler()
     scaler = StandardScaler()
     if numerical_features:
         df[numerical_features] = scaler.fit_transform(df[numerical_features])
@@ -374,19 +394,35 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column, imputa
     }
 
 
-def download(dataset_id: str, owner_id, user: dict):
+def download(dataset_id: str, owner_id: str, user: dict, file_type: str):
     target_user_id = user["user_id"]
 
     if user["role"] == "admin" and owner_id:
         target_user_id = owner_id
 
+    # Default to csv
+    if not file_type:
+        file_type = "csv"
+
     df = load_dataset(dataset_id, target_user_id)
 
-    stream = io.StringIO()
-    df.to_csv(stream, index=False)
+    # Convert format
+    if file_type.lower() in ["xlsx", "xls"]:
+        stream = io.BytesIO()
+        df.to_excel(stream, index=False, engine="openpyxl")
+        stream.seek(0)
 
-    response = StreamingResponse(iter([stream.getvalue()]), media_type="text/csv")
-    response.headers["Content-Disposition"] = f"attachment; filename={dataset_id}.csv"
+        response = StreamingResponse(
+            iter([stream.getvalue()]), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        response.headers["Content-Disposition"] = f"attachment; filename={dataset_id}.xlsx"
+    else:
+        stream = io.StringIO()
+        df.to_csv(stream, index=False)
+        stream.seek(0)
+
+        response = StreamingResponse(iter([stream.getvalue()]), media_type="text/csv")
+        response.headers["Content-Disposition"] = f"attachment; filename={dataset_id}.csv"
 
     return response
 
@@ -558,6 +594,7 @@ def genetic_selection(
     mutation_rate: float,
     n_parents: int,
     model_name: str,
+    test_size: float,
 ):
     if n_parents is None or n_parents >= size:
         n_parents = int(size * 0.8)
@@ -574,7 +611,7 @@ def genetic_selection(
     target = processed_df[target_column]
     features = processed_df.drop(columns=[target_column])
 
-    X_train, X_test, Y_train, Y_test = train_test_split(features, target, test_size=0.3, random_state=42)
+    X_train, X_test, Y_train, Y_test = train_test_split(features, target, test_size=test_size, random_state=42)
 
     # --- CHỌN MÔ HÌNH ---
     default_model = SELECTED_MODEL
