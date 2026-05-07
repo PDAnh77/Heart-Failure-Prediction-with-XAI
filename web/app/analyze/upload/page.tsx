@@ -45,11 +45,22 @@ export default function Upload() {
     };
 
     const validateAndSetFile = (selectedFile: File | undefined) => {
-        if (selectedFile && selectedFile.name.endsWith('.csv')) {
+        if (selectedFile) {
+            if (!selectedFile.name.endsWith('.csv')) {
+                toast.error("Please select a .csv file only");
+                return;
+            }
+
+            const MAX_SIZE_MB = 10;
+            const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+
+            if (selectedFile.size > MAX_SIZE_BYTES) {
+                toast.error(`File size exceeds the ${MAX_SIZE_MB}MB limit.`);
+                return;
+            }
+
             setFile(selectedFile);
             resetDatasetData();
-        } else {
-            toast.error("Please select a .csv file only");
         }
     };
 
@@ -246,23 +257,23 @@ export default function Upload() {
                                     Uploading...
                                 </>
                             ) : (
-                                "Upload & Analyze Data"
+                                "Upload & Analyze data"
                             )}
                         </button>
                     )}
 
                     {/* Configurations Area */}
                     {datasetId && columns.length > 0 && (
-                        <div className="mt-8 mb-10 p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
+                        <div className="mt-6 mb-10 p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl">
 
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 pb-2 border-b border-gray-200 dark:border-gray-700">
-                                Pipeline Configuration
+                                Pipeline configuration
                             </h3>
 
                             {/* --- Target Selection (Always visible) --- */}
                             <div className="mb-6">
                                 <label htmlFor="target-column" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                                    Target Column <span className="text-red-500">*</span>
+                                    Target column <span className="text-red-500">*</span>
                                 </label>
                                 <select
                                     id="target-column"
@@ -285,7 +296,7 @@ export default function Upload() {
                                     className="flex justify-between items-center w-full group hover:cursor-pointer"
                                 >
                                     <h4 className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 transition-colors">
-                                        Data Preprocessing
+                                        Data preprocessing
                                     </h4>
                                     <div className="p-1 rounded-md">
                                         {isPreprocessingOpen ?
@@ -299,12 +310,12 @@ export default function Upload() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 mb-2 animate-in fade-in duration-300">
                                         <div>
                                             <label htmlFor="imputation" className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                                Imputation Method
+                                                Imputation method
                                             </label>
                                             <select id="imputation" value={imputationMethod} onChange={(e) => setImputationMethod(e.target.value)} className={inputClass}>
                                                 <option value="auto">Auto</option>
-                                                <option value="knn">KNN Imputer</option>
-                                                <option value="mice">MICE Imputer</option>
+                                                <option value="knn">KNN imputer</option>
+                                                <option value="mice">MICE imputer</option>
                                                 <option value="mean">Mean (Force all)</option>
                                                 <option value="mode">Mode (Force all)</option>
                                             </select>
@@ -313,7 +324,7 @@ export default function Upload() {
 
                                         <div>
                                             <label htmlFor="balancing" className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                                Data Balancing
+                                                Data balancing
                                             </label>
                                             <select id="balancing" value={dataBalancing} onChange={(e) => setDataBalancing(e.target.value)} className={inputClass}>
                                                 <option value="none">None</option>
@@ -334,7 +345,7 @@ export default function Upload() {
                                     className="flex justify-between items-center w-full group hover:cursor-pointer"
                                 >
                                     <h4 className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 transition-colors">
-                                        Feature Selection (Genetic Algorithm)
+                                        Feature selection (Genetic algorithm)
                                     </h4>
                                     <div className="p-1 rounded-md">
                                         {isFeatureSelectionOpen ?
@@ -348,28 +359,28 @@ export default function Upload() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 mb-2 animate-in fade-in duration-300">
                                         <div>
                                             <label htmlFor="size" className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                                Population Size
+                                                Population size
                                             </label>
                                             <input type="number" id="size" min={10} max={200} value={size} onChange={(e) => setSize(Number(e.target.value))} className={inputClass} />
                                             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Number of individuals in each generation. (Range: 10 - 200).</p>
                                         </div>
                                         <div>
                                             <label htmlFor="mutation-rate" className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                                Mutation Rate
+                                                Mutation rate
                                             </label>
                                             <input type="number" step="0.01" id="mutation-rate" min={0.01} max={0.5} value={mutationRate} onChange={(e) => setMutationRate(Number(e.target.value))} className={inputClass} />
                                             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Probability of a feature flipping its state. (Range: 0.01 - 0.5).</p>
                                         </div>
                                         <div>
                                             <label htmlFor="n-parents" className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                                Number of Parents
+                                                Number of parents
                                             </label>
                                             <input type="number" id="n-parents" value={nParents} onChange={(e) => setNParents(e.target.value ? Number(e.target.value) : "")} placeholder="Leave empty for default" className={inputClass} />
                                             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Best individuals kept for breeding. Must be less than Population Size.</p>
                                         </div>
                                         <div>
                                             <label htmlFor="test-size" className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                                Test Size
+                                                Test size
                                             </label>
                                             <input type="number" step="0.05" id="test-size" min={0.1} max={0.5} value={testSize} onChange={(e) => setTestSize(Number(e.target.value))} className={inputClass} />
                                             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Proportion of data used for evaluation. (Range: 0.1 - 0.5).</p>

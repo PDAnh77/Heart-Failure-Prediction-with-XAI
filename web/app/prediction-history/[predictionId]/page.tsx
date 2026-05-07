@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import Image from "next/image";
 import { FaUser, FaNotesMedical } from "react-icons/fa6";
+import { FiLoader } from "react-icons/fi";
 import { FaHeartbeat } from "react-icons/fa";
 import { PredictionHistoryDetail } from "@/types/prediction";
 import { useAuth } from "@/context/authcontext";
 import toast from "react-hot-toast";
+import ImageModal from "@/components/imageModal";
 
 export default function PredictionDetailPage() {
     const params = useParams();
@@ -15,6 +17,8 @@ export default function PredictionDetailPage() {
     const [result, setResult] = useState<PredictionHistoryDetail | null>(null);
     const [loadingPrediction, setLoadingPrediction] = useState(true);
     const { loading, user } = useAuth();
+
+    const [modalImageUrl, setModalImageUrl] = useState<string | null>(null);
 
     const GLOSSARY_DATA = [
         { term: "Age", definition: "Patient's age." },
@@ -68,42 +72,54 @@ export default function PredictionDetailPage() {
         return `${hour}:${minute} - ${day}/${month}/${year}`;
     };
 
-    // Truyền URL img Supabase vào src
     const renderChartImage = (imageUrl: string, title: string) => {
-        if (!imageUrl) return null
+        if (!imageUrl) return null;
         return (
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
                 <h4 className="text-center font-semibold mb-3 text-gray-700 dark:text-gray-300">{title}</h4>
-                <div className="relative w-full max-w-2xl mx-auto overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-900 min-h-[200px] flex items-center justify-center">
+                <div
+                    className="relative w-full max-w-2xl mx-auto overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-900 min-h-[200px] flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => setModalImageUrl(imageUrl)}
+                >
                     <Image
                         src={imageUrl}
                         alt={title}
                         width={0}
                         height={0}
                         sizes="100vw"
-                        className="w-full h-auto object-contain hover:scale-102 transition-transform duration-300"
+                        className="w-full h-auto object-contain"
                         priority
                     />
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 transition-opacity z-10">
+                        <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
+                    </div>
                 </div>
             </div>
         );
     };
 
     if (loadingPrediction) return (
-        <div className="fixed inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black dark:border-white"></div>
+        <div className="relative min-h-full">
+            <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
+                <div className="py-3 flex justify-center items-center">
+                    <FiLoader className="h-8 w-8 animate-spin text-indigo-600 mr-2" />
+                    <p className="text-gray-500">Loading history...</p>
+                </div>
+            </div>
         </div>
     );
 
     if (!result) return (
-        <div className="fixed inset-0 flex flex-col items-center justify-center text-gray-500 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm">
-            <p>Patient data not found.</p>
+        <div className="relative min-h-full">
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
+                <p>Patient data not found.</p>
+            </div>
         </div>
     );
 
     return (
         <div className="min-h-screen p-4">
-            <h1 className="text-2xl mb-12 font-bold text-gray-900 dark:text-white">Analysis Report ({formatDateTime(result.created_at.toString())})</h1>
+            <h1 className="text-2xl mb-8 font-bold text-gray-900 dark:text-white">Analysis Report ({formatDateTime(result.created_at.toString())})</h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* LEFT COLUMN: Patient Info */}
@@ -154,7 +170,7 @@ export default function PredictionDetailPage() {
                         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                             <div>
                                 <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                                    <FaHeartbeat /> Diagnosis Prediction:
+                                    <FaHeartbeat /> Diagnosis prediction:
                                 </h3>
                                 <p className={`text-4xl font-extrabold mt-2 tracking-tight 
                                             ${result.predicted_label === 1
@@ -183,7 +199,7 @@ export default function PredictionDetailPage() {
                     <div className="mb-6">
                         <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white flex items-center">
                             <span className="mr-2 bg-indigo-100 text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-md dark:bg-indigo-500/20 dark:text-indigo-300">XAI MODEL</span>
-                            AI Logic Explanation
+                            AI logic explanation
                         </h3>
 
                         <div className="grid grid-cols-1 gap-8">
@@ -211,6 +227,11 @@ export default function PredictionDetailPage() {
                     </div>
                 </div>
             </div>
+
+            <ImageModal
+                imageUrl={modalImageUrl}
+                onClose={() => setModalImageUrl(null)}
+            />
         </div>
     );
 }

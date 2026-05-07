@@ -207,7 +207,7 @@ export default function FeatureSelectionTab({
                                 className="flex items-center hover:cursor-pointer justify-center shrink-0 min-w-[200px] gap-2 px-5 py-2.5 bg-linear-to-r from-[#4361EE] to-[#3a52d5] text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:from-[#3a52d5] hover:to-[#2e41b0] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <FiDownload className="text-lg" />
-                                {isDownloading ? "Downloading..." : "Download Dataset"}
+                                {isDownloading ? "Downloading..." : "Download dataset"}
                             </button>
                         </div>
 
@@ -217,7 +217,7 @@ export default function FeatureSelectionTab({
                             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-[#1A535C] transition-colors relative flex flex-col">
                                 <div className="flex justify-between items-start">
                                     <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        Best Accuracy
+                                        Best accuracy
                                     </p>
                                     <div className="w-10 h-10 bg-[#1A535C]/10 rounded-full flex items-center justify-center shrink-0">
                                         <FaCheckCircle className="text-xl text-[#1A535C] dark:text-teal-400" />
@@ -234,7 +234,7 @@ export default function FeatureSelectionTab({
                                 <div className="mt-4 flex items-center gap-1.5 text-sm font-bold text-[#1A535C] dark:text-teal-400">
                                     <FiTrendingUp className="text-base" />
                                     <span>
-                                        +{(((result?.best_ga_accuracy || 0) - (result?.baseline_accuracy || 0)) * 100).toFixed(2)}% vs baseline
+                                        +{(((result?.best_ga_accuracy || 0) - (result?.baseline_accuracy || 0)) * 100).toFixed(2)}% vs Baseline
                                     </span>
                                 </div>
                             </div>
@@ -243,7 +243,7 @@ export default function FeatureSelectionTab({
                             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 hover:border-[#4361EE] transition-colors relative flex flex-col">
                                 <div className="flex justify-between items-start">
                                     <p className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        Feature Count
+                                        Feature count
                                     </p>
                                     <div className="w-10 h-10 bg-[#4361EE]/10 rounded-full flex items-center justify-center shrink-0">
                                         <FaFilter className="text-xl text-[#4361EE]" />
@@ -255,7 +255,7 @@ export default function FeatureSelectionTab({
                                         {result?.feature_count}
                                     </p>
                                     <span className="text-lg font-medium text-gray-600 dark:text-gray-400">
-                                        Selected Columns
+                                        Selected columns
                                     </span>
                                 </div>
 
@@ -273,7 +273,7 @@ export default function FeatureSelectionTab({
                             <div className="py-4 px-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex items-center gap-2">
                                 <FaStar className="text-[#4361EE] text-xl" />
                                 <h3 className="font-bold text-gray-800 dark:text-gray-200">
-                                    Optimal Feature Subset
+                                    Optimal feature subset
                                 </h3>
                             </div>
                             <div className="p-6">
@@ -295,14 +295,14 @@ export default function FeatureSelectionTab({
                             <div className="py-4 px-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex items-center gap-2">
                                 <IoSettingsSharp className="text-[#4361EE] text-xl" />
                                 <h3 className="font-bold text-gray-900 dark:text-white">
-                                    Algorithm Parameters
+                                    Algorithm parameters
                                 </h3>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 p-6">
                                 {/* Population Size */}
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                        Population Size
+                                        Population size
                                     </label>
                                     <input
                                         type="number"
@@ -317,7 +317,7 @@ export default function FeatureSelectionTab({
                                 {/* Mutation Rate */}
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                        Mutation Rate
+                                        Mutation rate
                                     </label>
                                     <input
                                         type="number"
@@ -333,7 +333,7 @@ export default function FeatureSelectionTab({
                                 {/* Number of Parents */}
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                        Number of Parents
+                                        Number of parents
                                     </label>
                                     <input
                                         type="number"
@@ -348,7 +348,7 @@ export default function FeatureSelectionTab({
                                 {/* Test Size */}
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-800 dark:text-gray-200">
-                                        Test Size
+                                        Test size
                                     </label>
                                     <input
                                         type="number"
@@ -369,7 +369,7 @@ export default function FeatureSelectionTab({
                                     className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold shadow-sm cursor-pointer hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                                 >
                                     <FiPlay className="text-sm" />
-                                    Rerun Selection
+                                    Rerun selection
                                 </button>
                             </div>
                         </div>

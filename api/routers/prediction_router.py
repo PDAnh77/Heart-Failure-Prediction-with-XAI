@@ -52,7 +52,7 @@ def create_batch_prediction(patients: List[PatientBase]):
     return predict_batch(patients)
 
 
-@router.post("/upload")
+@router.post("/upload/{dataset_id}")
 def create_prediction_from_file(
     dataset_id: str, target_column: str = Query(None), user=Depends(require_roles(["admin", "user"]))
 ):

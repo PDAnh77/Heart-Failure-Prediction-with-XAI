@@ -223,7 +223,7 @@ export default function Predict() {
                 {/* CARD 1: Demographic Data */}
                 <div className="bg-white dark:bg-gray-800/60 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
                     <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-                        <FaUserAlt className="text-indigo-600 dark:text-indigo-400" /> Demographic Data
+                        <FaUserAlt className="text-indigo-600 dark:text-indigo-400" /> Demographic data
                     </h3>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         {/* Gender */}
@@ -247,12 +247,12 @@ export default function Predict() {
                 {/* CARD 2: Cardiovascular Metrics */}
                 <div className="bg-white dark:bg-gray-800/60 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
                     <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-                        <FaHeartbeat className="text-indigo-600 dark:text-indigo-400" /> Cardiovascular Metrics
+                        <FaHeartbeat className="text-indigo-600 dark:text-indigo-400" /> Cardiovascular metrics
                     </h3>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         {/* Resting BP */}
                         <div>
-                            <label htmlFor="resting-bp" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Resting Blood Pressure <RequiredMark /></label>
+                            <label htmlFor="resting-bp" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Resting blood pressure <RequiredMark /></label>
                             <div className="relative">
                                 <input id="resting-bp" type="number" name="resting-bp" placeholder="e.g. 120" onChange={handleInputChange} className={getInputClass("resting-bp", true)} />
                                 <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
@@ -263,7 +263,7 @@ export default function Predict() {
                         </div>
                         {/* Cholesterol */}
                         <div>
-                            <label htmlFor="cholesterol" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Serum Cholesterol <RequiredMark /></label>
+                            <label htmlFor="cholesterol" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Serum cholesterol <RequiredMark /></label>
                             <div className="relative">
                                 <input id="cholesterol" type="number" name="cholesterol" placeholder="e.g. 210" onChange={handleInputChange} className={getInputClass("cholesterol", true)} />
                                 <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
@@ -274,7 +274,7 @@ export default function Predict() {
                         </div>
                         {/* Max HR */}
                         <div>
-                            <label htmlFor="max-hr" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Max Heart Rate Achieved <RequiredMark /></label>
+                            <label htmlFor="max-hr" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Max heart rate <RequiredMark /></label>
                             <div className="relative">
                                 <input id="max-hr" type="number" name="max-hr" placeholder="e.g. 150" onChange={handleInputChange} className={getInputClass("max-hr", true)} />
                                 <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
@@ -289,24 +289,24 @@ export default function Predict() {
                 {/* CARD 3: Symptoms & Clinical History */}
                 <div className="bg-white dark:bg-gray-800/60 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
                     <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-                        <FaNotesMedical className="text-indigo-600 dark:text-indigo-400" /> Symptoms & Clinical History
+                        <FaNotesMedical className="text-indigo-600 dark:text-indigo-400" /> Symptoms & Clinical history
                     </h3>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         {/* Chest Pain Type */}
                         <div>
-                            <label htmlFor="chest-pain-type" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Chest Pain Type <RequiredMark /></label>
+                            <label htmlFor="chest-pain-type" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Chest pain type <RequiredMark /></label>
                             <select id="chest-pain-type" defaultValue="" name="chest-pain-type" onChange={handleInputChange} className={getInputClass("chest-pain-type")}>
                                 <option value="" disabled>Select the type of chest pain...</option>
-                                <option value="TA">Typical Angina</option>
-                                <option value="ATA">Atypical Angina</option>
-                                <option value="NAP">Non-Anginal Pain</option>
+                                <option value="TA">Typical angina</option>
+                                <option value="ATA">Atypical angina</option>
+                                <option value="NAP">Non-anginal pain</option>
                                 <option value="ASY">Asymptomatic</option>
                             </select>
                             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Subjective description of pain reported by patient.</p>
                         </div>
                         {/* Fasting BS */}
                         <div>
-                            <label htmlFor="fasting-bs" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Fasting Blood Sugar <RequiredMark /></label>
+                            <label htmlFor="fasting-bs" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Fasting blood sugar <RequiredMark /></label>
                             <select id="fasting-bs" name="fasting-bs" defaultValue="" onChange={handleInputChange} className={getInputClass("fasting-bs")}>
                                 <option value="" disabled>Is fasting blood sugar &gt; 120 mg/dl?</option>
                                 <option value="1">Yes (&gt; 120 mg/dl)</option>
@@ -327,7 +327,7 @@ export default function Predict() {
                         </div>
                         {/* Exercise Angina */}
                         <div>
-                            <label className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">Exercise Induced Angina <RequiredMark /></label>
+                            <label className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">Exercise induced angina <RequiredMark /></label>
                             <div className="flex items-center gap-8 h-10">
                                 <label className="flex items-center gap-2 cursor-pointer group">
                                     <input type="radio" name="exercise-angina" value="Y" className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 focus:ring-indigo-500 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" onChange={handleInputChange} />
@@ -351,7 +351,7 @@ export default function Predict() {
                         </div>
                         {/* ST Slope */}
                         <div>
-                            <label htmlFor="st-slope" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">ST Slope <RequiredMark /></label>
+                            <label htmlFor="st-slope" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">ST slope <RequiredMark /></label>
                             <select id="st-slope" defaultValue="" name="st-slope" onChange={handleInputChange} className={getInputClass("st-slope")}>
                                 <option value="" disabled>Select the slope curve...</option>
                                 <option value="Up">Upsloping</option>

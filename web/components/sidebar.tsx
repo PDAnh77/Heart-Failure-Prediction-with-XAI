@@ -223,8 +223,8 @@ export default function Sidebar() {
                                     <span>Home</span>
                                 </Link>
                             </li>
-                            <li className={itemClass(pathname === "/predict")} onClick={() => setOpen(false)}>
-                                <Link href="/predict" className="flex gap-2 p-2">
+                            <li className={itemClass(pathname === "/predict/individual")} onClick={() => setOpen(false)}>
+                                <Link href="/predict/individual" className="flex gap-2 p-2">
                                     <LuUserSearch className="text-lg" />
                                     <span>Predict</span>
                                 </Link>
@@ -232,7 +232,7 @@ export default function Sidebar() {
                             <li className={itemClass(pathname === "/predict/batch")} onClick={() => setOpen(false)}>
                                 <Link href="/predict/batch" className="flex gap-2 p-2">
                                     <LuUsers className="text-lg" />
-                                    <span>Predict Batch</span>
+                                    <span>Predict batch</span>
                                 </Link>
                             </li>
                             <li className={itemClass(pathname.startsWith("/analyze"))} onClick={() => setOpen(false)}>

@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState, useRef, UIEvent } from "react";
-import { FiLoader, FiPieChart, FiAlertCircle, FiCheck, FiDatabase, FiDownload } from "react-icons/fi";
-import { HiOutlineDatabase } from "react-icons/hi";
+import { FiLoader, FiPieChart, FiAlertCircle, FiCheck, FiDatabase, FiDownload, FiGrid, FiLayers } from "react-icons/fi";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
@@ -231,13 +230,11 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                         alt={title}
                         fill
                         sizes="(max-width: 768px) 100vw, 50vw"
-                        className="object-contain transition-transform duration-300 p-2 group-hover:scale-105"
+                        className="object-contain p-2"
                         loading="lazy"
                     />
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/5 dark:bg-white/5 rounded-xl z-10">
-                        <span className="bg-gray-900/70 text-white px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm shadow-sm">
-                            Click to zoom
-                        </span>
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 transition-opacity">
+                        <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
                     </div>
                 </div>
 
@@ -335,15 +332,20 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                         <p className="text-gray-500 font-medium animate-pulse">Analyzing data structure...</p>
                     </div>
                 ) : summary && (
-                    <div className="flex flex-col gap-6">
+                    <div className="flex flex-col">
+
+                        <div className="flex gap-3 mb-4">
+                            <FiDatabase className="w-7 h-7 text-[#2EC4B6]" />
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dataset summary</h2>
+                        </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
                             {/* CARD 1: Dataset Scale (1/3 chiều rộng) */}
                             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-center h-fit">
                                 <div className="flex items-center gap-2 mb-5 font-bold text-gray-800 dark:text-gray-200">
-                                    <HiOutlineDatabase className="w-5 h-5 text-[#4361EE]" />
-                                    <span>Dataset Scale</span>
+                                    <FiLayers className="w-5 h-5 text-[#4361EE]" />
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Dataset scale</h3>
                                 </div>
 
                                 <div className="flex flex-col gap-4">
@@ -362,7 +364,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                                         <div className="w-full bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 flex items-center justify-between border border-gray-100/50 dark:border-gray-700/50">
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] font-bold text-gray-400 dark:text-gray-400 uppercase tracking-widest mb-1">
-                                                    Cleaned Rows
+                                                    Cleaned rows
                                                 </span>
                                                 <div className="flex items-baseline gap-2">
                                                     <span className="text-3xl font-black text-[#2EC4B6]">
@@ -385,7 +387,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                                         <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
                                             <div className="flex items-center gap-2 font-bold text-gray-800 dark:text-gray-200">
                                                 <FiAlertCircle className="w-5 h-5 text-red-600" />
-                                                <span>Data Quality</span>
+                                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Data quality</h3>
                                             </div>
                                         </div>
 
@@ -393,7 +395,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                                         {duplicatesRemoved > 0 && (
                                             <div className="flex items-center justify-between py-3 px-5 bg-orange-50/70 dark:bg-orange-900/10 rounded-xl border border-orange-100 dark:border-orange-800/30">
                                                 <div className="flex items-center gap-3 text-orange-900 dark:text-orange-300 font-semibold">
-                                                    <span>Duplicate Rows:</span>
+                                                    <span>Duplicate rows:</span>
                                                 </div>
                                                 <span className="text-orange-600 dark:text-orange-500 font-bold">
                                                     {duplicatesRemoved} removed
@@ -429,7 +431,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                                     <>
                                         <div className="flex items-center gap-2 mb-4 font-semibold text-lg">
                                             <FiAlertCircle className="w-5 h-5" />
-                                            <span>Data Quality</span>
+                                            <span>Data quality</span>
                                         </div>
                                         <div className="flex items-center gap-5 mt-2">
                                             <div className="w-12 h-12 rounded-full bg-[#2EC4B6]/15 flex items-center justify-center shrink-0">
@@ -446,14 +448,14 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                         </div>
 
                         {/* --- Features Details (Chia 2 cột) --- */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
 
                             {/* CARD 3: Numerical Features */}
                             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                                 <div className="flex items-center justify-between mb-6">
                                     <div className="flex items-center">
                                         <div className="w-1.5 h-6 bg-[#4361EE] rounded-full mr-3"></div>
-                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Numerical Features</h3>
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Numerical features</h3>
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap gap-3">
@@ -471,7 +473,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                                 <div className="flex items-center justify-between mb-6">
                                     <div className="flex items-center">
                                         <div className="w-1.5 h-6 bg-[#9B5DE5] rounded-full mr-3"></div>
-                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Categorical Features</h3>
+                                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Categorical features</h3>
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap gap-3">
@@ -496,9 +498,9 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                     </div>
                 ) : processedId && (
                     <div className="mb-8">
-                        <div className="flex gap-3 mb-6">
-                            <FiDatabase className="w-7 h-7 text-[#2EC4B6]" />
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dataset Comparison</h2>
+                        <div className="flex gap-3 mb-4">
+                            <FiGrid className="w-7 h-7 text-[#2EC4B6]" />
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Dataset comparison</h2>
                         </div>
 
                         <div className="px-0 md:px-6 space-y-10">
@@ -507,7 +509,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                                        <span className="w-3 h-3 rounded-full bg-gray-400"></span> Original Data
+                                        <span className="w-3 h-3 rounded-full bg-gray-400"></span> Original data
                                     </h3>
                                 </div>
 
@@ -520,7 +522,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                                     {/* Vùng Thông tin (Chiếm 1/3) */}
                                     <div className="bg-gray-50 dark:bg-gray-800/50 p-5 rounded-xl border border-gray-200 dark:border-gray-700 h-fit">
                                         <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-3 text-base border-b border-gray-200 dark:border-gray-700 pb-2">
-                                            About Original Data
+                                            About original data
                                         </h4>
                                         <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
                                             This is your raw, untouched dataset exactly as it was uploaded. It serves as the baseline to verify the integrity of the automated preprocessing steps.
@@ -528,15 +530,15 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                                         <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
                                             <li className="flex items-start gap-2">
                                                 <span className="text-gray-400">•</span>
-                                                <span><strong>Raw Format:</strong> Features retain their original scales, string text, and categorical labels.</span>
+                                                <span><strong>Raw format:</strong> Features retain their original scales, string text, and categorical labels.</span>
                                             </li>
                                             <li className="flex items-start gap-2">
                                                 <span className="text-gray-400">•</span>
-                                                <span><strong>Potential Issues:</strong> May contain duplicate rows, missing values (NaN/Null), or unencoded variables.</span>
+                                                <span><strong>Potential issues:</strong> May contain duplicate rows, missing values (NaN/Null), or unencoded variables.</span>
                                             </li>
                                             <li className="flex items-start gap-2">
                                                 <span className="text-gray-400">•</span>
-                                                <span><strong>Algorithm Readiness:</strong> Not yet optimized for training machine learning models.</span>
+                                                <span><strong>Algorithm readiness:</strong> Not yet optimized for training machine learning models.</span>
                                             </li>
                                         </ul>
                                     </div>
@@ -547,7 +549,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                                        <span className="w-3 h-3 rounded-full bg-[#2EC4B6]"></span> Preprocessed Data
+                                        <span className="w-3 h-3 rounded-full bg-[#2EC4B6]"></span> Preprocessed data
                                     </h3>
 
                                     <button
@@ -556,7 +558,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                                         className="flex items-center hover:cursor-pointer justify-center min-w-[180px] gap-2 px-4 py-2 bg-linear-to-r from-[#2EC4B6] to-[#25a095] text-white text-sm font-medium rounded-lg shadow-sm hover:shadow-md hover:from-[#25a095] hover:to-[#1e8278] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-sm disabled:hover:from-[#2EC4B6] disabled:hover:to-[#25a095]"
                                     >
                                         <FiDownload className="w-4 h-4" />
-                                        {isDownloading ? "Downloading..." : "Download Dataset"}
+                                        {isDownloading ? "Downloading..." : "Download dataset"}
                                     </button>
                                 </div>
 
@@ -569,7 +571,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                                     {/* Vùng Thông tin (Chiếm 1/3) */}
                                     <div className="bg-[#2EC4B6]/5 dark:bg-[#2EC4B6]/10 p-5 rounded-xl border border-[#2EC4B6]/20 dark:border-[#2EC4B6]/30 h-fit">
                                         <h4 className="font-semibold text-[#1f8c82] dark:text-[#2EC4B6] mb-3 text-base border-b border-[#2EC4B6]/20 pb-2">
-                                            Applied Transformations
+                                            Applied transformations
                                         </h4>
                                         <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
                                             The dataset has been automatically cleaned and standardized through our pipeline to ensure optimal model performance:
@@ -577,7 +579,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                                         <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
                                             <li className="flex items-start gap-2">
                                                 <span className="text-[#2EC4B6] font-bold">✓</span>
-                                                <span><strong>Data Cleaning:</strong> Dropped rows with missing target values and removed exact duplicates to prevent bias.</span>
+                                                <span><strong>Data cleaning:</strong> Dropped rows with missing target values and removed exact duplicates to prevent bias.</span>
                                             </li>
                                             <li className="flex items-start gap-2">
                                                 <span className="text-[#2EC4B6] font-bold">✓</span>
@@ -607,9 +609,9 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
                     </div>
                 ) : Object.keys(charts).length > 0 && (
                     <div className="mx-auto w-full mb-6">
-                        <div className="flex items-center gap-3 mb-4 mt-4">
+                        <div className="flex items-center gap-3 my-4">
                             <FiPieChart className="w-7 h-7 text-[#4361EE]" />
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Exploratory Data Analysis</h2>
+                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Exploratory data analysis</h2>
                         </div>
 
                         <div className="grid grid-cols-1 gap-6 px-6">
