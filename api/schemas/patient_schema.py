@@ -10,7 +10,7 @@ class PatientBase(BaseModel):
         pattern="^(TA|ATA|NAP|ASY)$",
         description="Chest pain type [TA: Typical Angina, ATA: Atypical Angina, NAP: Non-Anginal Pain, ASY: Asymptomatic]",
     )
-    resting_bp: int = Field(..., gt=0, description="Resting blood pressure [mm Hg]")
+    resting_bp: int = Field(..., ge=0, description="Resting blood pressure [mm Hg]")
     cholesterol: int = Field(..., ge=0, description="Serum cholesterol [mm/dl]")
     fasting_bs: int = Field(
         ..., ge=0, le=1, description="Fasting blood sugar [1: if FastingBS > 120 mg/dl, 0: otherwise]"

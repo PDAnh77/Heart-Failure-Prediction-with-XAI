@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useContext, useState, useEffect } from "react";
 import { User } from "@/types/user";
-import { AuthContextType } from "@/types/authcontext";
+import { AuthContextType } from "@/types/auth_context";
 import { api, setAccessToken, setOnAuthFailure } from "@/lib/api";
 import { PredictionHistoryBase } from "@/types/prediction";
 import axios from "axios";

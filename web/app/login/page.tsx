@@ -18,7 +18,7 @@ export default function Login() {
 
     useEffect(() => {
         if (user && submitted) {
-            router.push("/predict")
+            router.push("/predict/individual")
         }
     }, [user, submitted, router])
 

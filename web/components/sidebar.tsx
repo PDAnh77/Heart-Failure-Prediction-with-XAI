@@ -9,11 +9,13 @@ import SettingsModal from "@/components/settingsModal";
 import ProfileModal from "@/components/profileModal";
 import { useAuth } from "@/context/authcontext"
 import { TbLayoutSidebarFilled } from "react-icons/tb";
-import { FaMicroscope, FaHouse, FaRightToBracket, FaRightFromBracket, FaRocket, FaRegTrashCan, FaUser } from "react-icons/fa6";
-import { IoIosArrowForward, IoIosArrowDown, IoMdSettings } from "react-icons/io";
+import { FaRocket, FaRegTrashCan } from "react-icons/fa6";
+import { FiHome } from "react-icons/fi";
+import { LuUserSearch, LuSettings, LuLogOut, LuLogIn, LuCircleUserRound, LuUsers } from "react-icons/lu";
+import { MdInsertChartOutlined } from "react-icons/md";
+import { IoIosArrowForward, IoIosArrowDown } from "react-icons/io";
 import { api } from "@/lib/api";
 import { PredictionHistoryBase } from "@/types/prediction";
-import { IoStatsChartSharp } from "react-icons/io5";
 import { PiHeartbeatFill } from "react-icons/pi";
 
 export default function Sidebar() {
@@ -217,19 +219,25 @@ export default function Sidebar() {
                         <ul className="space-y-2">
                             <li className={itemClass(pathname === "/")} onClick={() => setOpen(false)}>
                                 <Link href="/" className="flex gap-2 p-2">
-                                    <FaHouse className="text-lg" />
+                                    <FiHome className="text-lg" />
                                     <span>Home</span>
                                 </Link>
                             </li>
-                            <li className={itemClass(pathname === "/predict")} onClick={() => setOpen(false)}>
-                                <Link href="/predict" className="flex gap-2 p-2">
-                                    <FaMicroscope className="text-lg" />
+                            <li className={itemClass(pathname === "/predict/individual")} onClick={() => setOpen(false)}>
+                                <Link href="/predict/individual" className="flex gap-2 p-2">
+                                    <LuUserSearch className="text-lg" />
                                     <span>Predict</span>
+                                </Link>
+                            </li>
+                            <li className={itemClass(pathname === "/predict/batch")} onClick={() => setOpen(false)}>
+                                <Link href="/predict/batch" className="flex gap-2 p-2">
+                                    <LuUsers className="text-lg" />
+                                    <span>Predict batch</span>
                                 </Link>
                             </li>
                             <li className={itemClass(pathname.startsWith("/analyze"))} onClick={() => setOpen(false)}>
                                 <Link href="/analyze/upload" className="flex gap-2 p-2">
-                                    <IoStatsChartSharp className="text-lg" />
+                                    <MdInsertChartOutlined className="text-lg" />
                                     <span>Analyze</span>
                                 </Link>
                             </li>
@@ -297,26 +305,30 @@ export default function Sidebar() {
                         {userMenuOpen && (
                             <div className="absolute bottom-full left-2 right-2 mb-2 bg-white dark:bg-[#1A1A1B] border border-gray-200 dark:border-[#FFFFFF1A] rounded-2xl shadow-2xl overflow-hidden z-60 animate-in fade-in slide-in-from-bottom-2 duration-200">
                                 <ul className="p-1">
-                                    <li>
-                                        <button
-                                            className="flex items-center transition w-full cursor-pointer gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-sm"
-                                            onClick={() => {
-                                                setUserMenuOpen(false);
-                                                setShowProfileModal(true);
-                                            }}
-                                        >
-                                            <FaUser className="text-lg" />
-                                            <span>Profile</span>
-                                        </button>
-                                    </li>
+                                    {user && (
+                                        <>
+                                            <li>
+                                                <button
+                                                    className="flex items-center transition w-full cursor-pointer gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-sm"
+                                                    onClick={() => {
+                                                        setUserMenuOpen(false);
+                                                        setShowProfileModal(true);
+                                                    }}
+                                                >
+                                                    <LuCircleUserRound className="text-lg" />
+                                                    <span>Profile</span>
+                                                </button>
+                                            </li>
 
-                                    <div className="h-px bg-gray-100 dark:bg-white/5 my-1" />
-
+                                            <div className="h-px bg-gray-100 dark:bg-white/5 my-1" />
+                                        </>
+                                    )}
+                                    
                                     <li>
                                         <button
                                             className="flex items-center transition w-full cursor-pointer gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-sm"
                                             onClick={() => { setUserMenuOpen(false); setShowSettingModal(true); }}>
-                                            <IoMdSettings className="text-lg" />
+                                            <LuSettings className="text-lg" />
                                             <span>Settings</span>
                                         </button>
                                     </li>
@@ -326,7 +338,7 @@ export default function Sidebar() {
                                     {user ? (
                                         <li onClick={handleLogoutClick}>
                                             <div className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition text-sm cursor-pointer">
-                                                <FaRightFromBracket className="text-lg" />
+                                                <LuLogOut className="text-lg" />
                                                 <span>Logout</span>
                                             </div>
                                         </li>
@@ -335,7 +347,7 @@ export default function Sidebar() {
                                             <Link href="/login"
                                                 className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition text-sm"
                                                 onClick={() => { setUserMenuOpen(false); setOpen(false); }}>
-                                                <FaRightToBracket className="text-lg" />
+                                                <LuLogIn className="text-lg" />
                                                 <span>Sign in</span>
                                             </Link>
                                         </li>

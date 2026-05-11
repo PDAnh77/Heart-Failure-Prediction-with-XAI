@@ -47,8 +47,8 @@ def preprocess_dataset(
 
 
 @router.get("/{dataset_id}/download")
-def download_dataset(dataset_id: str, owner_id: str = Query(None), user=Depends(require_roles(["admin", "user"]))):
-    return dataset_service.download(dataset_id, owner_id, user)
+def download_dataset(dataset_id: str, owner_id: str = Query(None), file_type: str = Query(None), user=Depends(require_roles(["admin", "user"]))):
+    return dataset_service.download(dataset_id, owner_id, user, file_type)
 
 
 @router.get("/{dataset_id}/eda", dependencies=[Depends(require_roles(["admin", "user"]))])
@@ -71,9 +71,9 @@ def dataset_feature_selection(
     n_parents: int = Query(None),
     owner_id: str = Query(None),
     user=Depends(require_roles(["admin", "user"])),
-    model_name: str = Query(None)
+    model_name: str = Query(None),
+    test_size: float = Query(0.3, ge=0.1, le=0.5),
 ):
-
     return dataset_service.genetic_selection(
-        dataset_id, target_column, owner_id, user, size, n_gen, mutation_rate, n_parents, model_name
+        dataset_id, target_column, owner_id, user, size, n_gen, mutation_rate, n_parents, model_name, test_size
     )

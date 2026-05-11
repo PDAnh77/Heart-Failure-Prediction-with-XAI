@@ -9,8 +9,19 @@ import { useAuth } from "@/context/authcontext";
 function DashboardContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
+
     const datasetId = searchParams.get("id");
     const targetColumn = searchParams.get("target");
+
+    const imputation = searchParams.get("imputation") || "auto";
+    const balancing = searchParams.get("balancing") || "no";
+    
+    const size = searchParams.get("size") ? Number(searchParams.get("size")) : 80;
+    const mutationRate = searchParams.get("mutation_rate") ? Number(searchParams.get("mutation_rate")) : 0.2;
+    const testSize = searchParams.get("test_size") ? Number(searchParams.get("test_size")) : 0.3;
+    const nParentsStr = searchParams.get("n_parents");
+    const nParents = nParentsStr ? Number(nParentsStr) : undefined;
+
 
     const [activeTab, setActiveTab] = useState<"eda" | "fs">("eda");
     const [processedId, setProcessedId] = useState<string | null>(null);
@@ -18,7 +29,7 @@ function DashboardContent() {
 
     useEffect(() => {
         if (!loading && !user) {
-            router.push("/login"); // Thay đổi đường dẫn này theo route login thực tế của bạn
+            router.push("/login");
         }
     }, [user, loading, router]);
 
@@ -89,6 +100,8 @@ function DashboardContent() {
                     <EDATab
                         datasetId={datasetId}
                         targetColumn={targetColumn}
+                        imputation={imputation}
+                        balancing={balancing}
                         onProcessed={(id) => setProcessedId(id)}
                     />
                 </div>
@@ -97,6 +110,10 @@ function DashboardContent() {
                     <FeatureSelectionTab
                         targetColumn={targetColumn}
                         processedId={processedId}
+                        size={size}
+                        mutationRate={mutationRate}
+                        testSize={testSize}
+                        nParents={nParents}
                     />
                 </div>
 
