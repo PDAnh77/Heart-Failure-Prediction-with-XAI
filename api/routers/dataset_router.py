@@ -73,7 +73,8 @@ def dataset_feature_selection(
     user=Depends(require_roles(["admin", "user"])),
     model_name: str = Query(None),
     test_size: float = Query(0.3, ge=0.1, le=0.5),
+    apply_adasyn: bool = Query(False, description="Áp dụng ADASYN để cân bằng dữ liệu trước"),
 ):
     return dataset_service.genetic_selection(
-        dataset_id, target_column, owner_id, user, size, n_gen, mutation_rate, n_parents, model_name, test_size
+        dataset_id, target_column, owner_id, user, size, n_gen, mutation_rate, n_parents, model_name, test_size, apply_adasyn
     )
