@@ -296,7 +296,7 @@ export default function Upload() {
                                     className="flex justify-between items-center w-full group hover:cursor-pointer"
                                 >
                                     <h4 className="text-lg font-semibold text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 transition-colors">
-                                        Data preprocessing
+                                        Preprocessing & Resampling
                                     </h4>
                                     <div className="p-1 rounded-md">
                                         {isPreprocessingOpen ?
@@ -327,7 +327,7 @@ export default function Upload() {
                                             </label>
                                             <select id="balancing" value={dataBalancing} onChange={(e) => setDataBalancing(e.target.value)} className={inputClass}>
                                                 <option value="none">None</option>
-                                                <option value="adasync">ADASYN</option>
+                                                <option value="adasyn">ADASYN</option>
                                             </select>
                                             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                                                 <strong>Note:</strong> The system will only apply this if severe class imbalance is detected.

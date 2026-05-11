@@ -15,7 +15,7 @@ export default function Home() {
           EDA, and feature selection — all in one place.
         </p>
         <Link 
-          href="/predict" 
+          href="/predict/individual" 
           className="inline-flex gap-2 items-center mt-4 hover:cursor-pointer text-white bg-indigo-600 py-2 px-4 rounded-xl hover:bg-indigo-500 transition-colors"
         >
           Learn More
