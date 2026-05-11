@@ -596,7 +596,7 @@ def genetic_selection(
     n_parents: int,
     model_name: str,
     test_size: float,
-    apply_adasyn: bool = False,
+    balancing_method: str = "none",
 ):
     if n_parents is None or n_parents >= size:
         n_parents = int(size * 0.8)
@@ -617,7 +617,7 @@ def genetic_selection(
 
     # --- ADASYN DATA BALANCING ---
     adasyn_info = None
-    if apply_adasyn:
+    if balancing_method == "adasyn":
         class_counts = Y_train.value_counts()
         if len(class_counts) >= 2 and class_counts.min() / class_counts.max() < 0.9:
             try:
