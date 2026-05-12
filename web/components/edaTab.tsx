@@ -11,11 +11,10 @@ interface EdaTabProps {
     datasetId: string;
     targetColumn: string;
     imputation: string;
-    balancing: string;
     onProcessed: (processedId: string) => void;
 }
 
-export default function EDATab({ datasetId, targetColumn, imputation, balancing, onProcessed }: EdaTabProps) {
+export default function EDATab({ datasetId, targetColumn, imputation, onProcessed }: EdaTabProps) {
     const [summary, setSummary] = useState<DatasetSummary | null>(null);
     const [charts, setCharts] = useState<Record<string, string>>({});
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -194,27 +193,27 @@ export default function EDATab({ datasetId, targetColumn, imputation, balancing,
     const chartConfigurations = [
         {
             key: "target_distribution",
-            title: "Target Distribution",
+            title: "Target distribution",
             description: "Illustrates the distribution of the target variable. This helps identify if the dataset is balanced or imbalanced, which is crucial for model evaluation."
         },
         {
             key: "target_correlation",
-            title: "Target Correlation",
+            title: "Target correlation",
             description: "Shows how strongly each individual numerical feature correlates directly with the target variable, highlighting the most predictive factors."
         },
         {
             key: "full_correlation",
-            title: "Feature Correlation Matrix",
+            title: "Feature correlation matrix",
             description: "Displays the correlation matrix across all features. Distinct colored regions indicate strong relationships, useful for spotting multicollinearity."
         },
         {
             key: "anova_score",
-            title: "ANOVA F-Scores (Numerical)",
+            title: "ANOVA F-Test (Numerical)",
             description: "Measures the linear dependency between numerical features and the target. Features with higher F-scores are highly informative for the model."
         },
         {
             key: "chi_square_score",
-            title: "Chi-Square Scores (Categorical)",
+            title: "Chi-Square (Categorical)",
             description: "Evaluates the statistical significance of categorical features against the target variable. Higher scores indicate stronger relevance."
         }
     ];

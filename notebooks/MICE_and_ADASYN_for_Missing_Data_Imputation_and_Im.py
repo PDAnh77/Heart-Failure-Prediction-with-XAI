@@ -144,28 +144,28 @@ x_train, x_test, y_train, y_test = train_test_split(
 # ----------------------------------------------------------
 # 3. IMBALANCED DATA HANDLING (ADASYN)
 # ----------------------------------------------------------
-# print("\n--- Xử lý Imbalanced Data bằng ADASYN ---")
-# print(f"Phân phối nhãn (Target) TRƯỚC khi xử lý trên tập train: {Counter(y_train)}")
+print("\n--- Xử lý Imbalanced Data bằng ADASYN ---")
+print(f"Phân phối nhãn (Target) TRƯỚC khi xử lý trên tập train: {Counter(y_train)}")
 
-# # Khởi tạo thuật toán ADASYN
-# adasyn = ADASYN(random_state=42)
+# Khởi tạo thuật toán ADASYN
+adasyn = ADASYN(random_state=42)
 
-# # Fit và transform (Tạo dữ liệu tổng hợp cho nhóm thiểu số)
-# # LƯU Ý: Chỉ fit_resample trên tập Train để tránh Data Leakage!
-# x_train_resampled, y_train_resampled = adasyn.fit_resample(x_train, y_train)
+# Fit và transform (Tạo dữ liệu tổng hợp cho nhóm thiểu số)
+# LƯU Ý: Chỉ fit_resample trên tập Train để tránh Data Leakage!
+x_train_resampled, y_train_resampled = adasyn.fit_resample(x_train, y_train)
 
 # print(f"Phân phối nhãn (Target) SAU khi xử lý trên tập train: {Counter(y_train_resampled)}")
 
-# # # Chuyển đổi lại về DataFrame và Series để tương thích với các bước sau (SHAP, LIME)
-# x_train = pd.DataFrame(x_train_resampled, columns=x_train.columns)
-# y_train = pd.Series(y_train_resampled, name=y_train.name)
+# Chuyển đổi lại về DataFrame và Series để tương thích với các bước sau (SHAP, LIME)
+x_train = pd.DataFrame(x_train_resampled, columns=x_train.columns)
+y_train = pd.Series(y_train_resampled, name=y_train.name)
 
 # --- SỬA LỖI NỘI SUY CỦA ADASYN & CHUẨN BỊ CHO LIGHTGBM ---
 categorical_features = ['Sex', 'ChestPainType', 'ExerciseAngina', 'ST_Slope']
 # Vì ADASYN nội suy dữ liệu nên các biến phân loại có thể bị chuyển thành số thập phân (VD: 0.6)
 # Cần làm tròn lại về đúng số nguyên đại diện cho Category
-# for col in categorical_features:
-#     x_train[col] = x_train[col].round()
+for col in categorical_features:
+    x_train[col] = x_train[col].round()
 # Ép kiểu dữ liệu sang 'category' để kích hoạt thuật toán Categorical của LightGBM
 for col in categorical_features:
     x_train[col] = x_train[col].astype('category')

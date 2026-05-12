@@ -136,6 +136,11 @@ export default function PredictBatch() {
 
             const { predictions, ...dataToSave } = res.data;
             sessionStorage.setItem('batchPredictionResult', JSON.stringify(dataToSave));
+            if (selectedTarget) {
+                sessionStorage.setItem('batchPredictionTargetColumn', selectedTarget);
+            } else {
+                sessionStorage.removeItem('batchPredictionTargetColumn');
+            }
             router.push("/predict/batch/result");
         } catch (error: any) {
             if (error.response) {
@@ -337,7 +342,7 @@ export default function PredictBatch() {
                                 {/* Target Selection (Optional) */}
                                 <div className="mb-6">
                                     <label htmlFor="target-column" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                                        Target column <span className="text-gray-400 text-sm font-normal ml-1">(Optional)</span>
+                                        Result column <span className="text-gray-400 text-sm font-normal ml-1">(Optional)</span>
                                     </label>
                                     <select
                                         id="target-column"

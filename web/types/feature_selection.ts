@@ -6,4 +6,9 @@ export interface FSResult {
     selected_features: string[];
     feature_count: number;
     found_at_generation: number;
+    adasyn?: {
+        before?: Record<string, number>;
+        after?: Record<string, number>;
+        skipped?: string;
+    };
 }
