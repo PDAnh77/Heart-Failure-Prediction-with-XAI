@@ -37,8 +37,8 @@ def preprocess_dataset(
     dataset_id: str,
     target_column: str,
     imputation_method: Literal["default", "mice", "mean", "knn"] = Query(
-        "default", 
-        description="Chọn 'default' (Median/Mode), 'mice' (Mean/Mode <=5% và MICE >5%), 'mean' (Average Mean), hoặc 'knn' (K-Nearest Neighbors)"
+        "default",
+        description="Choose 'default' (Median/Mode), 'mice' (Mean/Mode for <=5% missing values and MICE for >5%), 'mean' (Average Mean), or 'knn' (K-Nearest Neighbors)",
     ),
     owner_id: str = Query(None),
     user=Depends(require_roles(["admin", "user"])),
@@ -47,7 +47,12 @@ def preprocess_dataset(
 
 
 @router.get("/{dataset_id}/download")
-def download_dataset(dataset_id: str, owner_id: str = Query(None), file_type: str = Query(None), user=Depends(require_roles(["admin", "user"]))):
+def download_dataset(
+    dataset_id: str,
+    owner_id: str = Query(None),
+    file_type: str = Query(None),
+    user=Depends(require_roles(["admin", "user"])),
+):
     return dataset_service.download(dataset_id, owner_id, user, file_type)
 
 
@@ -73,8 +78,42 @@ def dataset_feature_selection(
     user=Depends(require_roles(["admin", "user"])),
     model_name: str = Query(None),
     test_size: float = Query(0.3, ge=0.1, le=0.5),
-    balancing_method: Literal["none", "adasyn"] = Query("none", description="Chọn phương pháp cân bằng dữ liệu: 'none' (không áp dụng) hoặc 'adasyn' (ADASYN oversampling)"),
+    balancing_method: Literal["none", "adasyn"] = Query(
+        "none",
+        description="Choose a data balancing method: 'none' (no balancing applied) or 'adasyn' (ADASYN oversampling)",
+    ),
 ):
     return dataset_service.genetic_selection(
-        dataset_id, target_column, owner_id, user, size, n_gen, mutation_rate, n_parents, model_name, test_size, balancing_method
+        dataset_id,
+        target_column,
+        owner_id,
+        user,
+        size,
+        n_gen,
+        mutation_rate,
+        n_parents,
+        model_name,
+        test_size,
+        balancing_method,
+    )
+
+
+@router.get("/{dataset_id}/feature-selection-evaluation")
+def get_feature_selection_evaluation(
+    dataset_id: str,
+    fs_dataset_id: str,
+    target_column: str,
+    model_name: str = Query(None),
+    test_size: float = Query(0.3, ge=0.1, le=0.5),
+    owner_id: str = Query(None),
+    user=Depends(require_roles(["admin", "user"])),
+):
+    return dataset_service.evaluate_feature_selection(
+        dataset_id=dataset_id,
+        fs_dataset_id=fs_dataset_id,
+        target_column=target_column,
+        owner_id=owner_id,
+        user=user,
+        model_name=model_name,
+        test_size=test_size,
     )

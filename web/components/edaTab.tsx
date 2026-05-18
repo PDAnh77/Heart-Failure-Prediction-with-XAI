@@ -406,8 +406,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, onProcesse
                             </div>
 
                             {/* CARD 2: Missing Values / Data Quality */}
-                            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 md:col-span-2 flex flex-col relative overflow-hidden">
-
+                            <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 md:col-span-2 flex flex-col relative overflow-hidden h-fit">
                                 {Object.values(summary.missing_values).some(v => v > 0) || duplicatesRemoved > 0 ? (
                                     // --- TRẠNG THÁI CÓ LỖI ---
                                     <div className="flex flex-col gap-4">
