@@ -10,6 +10,8 @@ import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { ThemeProvider } from "next-themes";
 import AppToaster from "@/components/appToaster";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages } from "next-intl/server";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -49,32 +51,37 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en" className={`${inter.variable} ${geistMono.variable}`} suppressHydrationWarning>
+    <html lang={locale} className={`${inter.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <head>
       </head>
       <body className={"antialiased"}>
-        <AuthProvider>
-          <ThemeProvider attribute="class" enableSystem defaultTheme="system">
-            <SettingsProvider>
-              <div className="flex flex-col lg:flex-row h-screen">
-                <Sidebar />
-                <main className="flex-1 p-4 h-full overflow-y-auto">
-                  <GlobalSnowWrapper />
-                  {children}
-                  <AppToaster />
-                  <Analytics />
-                  <SpeedInsights />
-                </main>
-              </div>
-            </SettingsProvider>
-          </ThemeProvider>
-        </AuthProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <AuthProvider>
+            <ThemeProvider attribute="class" enableSystem defaultTheme="system">
+              <SettingsProvider>
+                <div className="flex flex-col lg:flex-row h-screen">
+                  <Sidebar />
+                  <main className="flex-1 p-4 h-full overflow-y-auto">
+                    <GlobalSnowWrapper />
+                    {children}
+                    <AppToaster />
+                    <Analytics />
+                    <SpeedInsights />
+                  </main>
+                </div>
+              </SettingsProvider>
+            </ThemeProvider>
+          </AuthProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

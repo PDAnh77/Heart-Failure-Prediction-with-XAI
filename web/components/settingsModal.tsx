@@ -4,6 +4,7 @@ import { useSettings } from "@/context/settingscontext";
 import { useTheme } from "next-themes";
 import { IoMdClose } from "react-icons/io";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 interface SettingsModalProps {
     isOpen: boolean;
@@ -12,10 +13,18 @@ interface SettingsModalProps {
 
 export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     const [isVisible, setIsVisible] = useState(false);
-    const { savePrediction, setSavePrediction } = useSettings();
-    const { snowMode, setSnowMode } = useSettings();
+    const {
+        savePrediction,
+        setSavePrediction,
+        snowMode,
+        setSnowMode,
+        language,
+        setLanguage,
+        isReady,
+    } = useSettings();
     const { theme, setTheme } = useTheme();
     const isDarkMode = theme === 'dark';
+    const t = useTranslations("settings");
 
     // Xử lý hiệu ứng transition khi mở modal
     useEffect(() => {
@@ -76,12 +85,12 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             {/* Header & Nút đóng */}
                             <div className="flex items-center justify-between mb-5">
                                 <h3 className="text-xl font-semibold leading-6 text-gray-900 dark:text-white" id="modal-title">
-                                    Settings
+                                    {t("title")}
                                 </h3>
                                 <button
                                     onClick={onClose}
                                     className="p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-gray-700 dark:text-gray-300 dark:hover:text-gray-50 rounded-full transition-colors hover:cursor-pointer"
-                                    aria-label="Close settings"
+                                    aria-label={t("closeAria")}
                                 >
                                     <IoMdClose className="w-6 h-6" />
                                 </button>
@@ -90,20 +99,39 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                             {/* Danh sách Settings */}
                             <div className="divide-y divide-gray-200 dark:divide-gray-700">
                                 <SettingRow
-                                    title="Dark mode"
-                                    description="Switch between light and dark themes to reduce eye strain."
+                                    title={t("darkMode")}
+                                    description=""
                                     enabled={isDarkMode}
                                     setEnabled={(value) => setTheme(value ? 'dark' : 'light')}
                                 />
+                                <div className="flex items-center justify-between py-4">
+                                    <div className="flex flex-col pr-4">
+                                        <span className="text-base font-medium text-gray-900 dark:text-white">
+                                            {t("language")}
+                                        </span>
+                                    </div>
+
+                                    <div className="w-40 shrink-0">
+                                        <select
+                                            value={language}
+                                            onChange={(event) => setLanguage(event.target.value as 'vi' | 'en')}
+                                            disabled={!isReady}
+                                            className="w-full rounded-md bg-white px-3 py-2 text-sm text-gray-900 shadow-sm disabled:cursor-not-allowed disabled:opacity-60 dark:bg-gray-900 dark:text-gray-100 dark:focus:border-gray-100 dark:focus:ring-gray-100"
+                                        >
+                                            <option value="vi">{t("languageVi")}</option>
+                                            <option value="en">{t("languageEn")}</option>
+                                        </select>
+                                    </div>
+                                </div>
                                 <SettingRow
-                                    title="Snowfall effect"
-                                    description="Enable falling snow on the background."
+                                    title={t("snowfall")}
+                                    description=""
                                     enabled={snowMode}
                                     setEnabled={setSnowMode}
                                 />
                                 <SettingRow
-                                    title="Save prediction history"
-                                    description="Store prediction results so you can review them later."
+                                    title={t("savePredictionHistory")}
+                                    description=""
                                     enabled={savePrediction}
                                     setEnabled={setSavePrediction}
                                 />

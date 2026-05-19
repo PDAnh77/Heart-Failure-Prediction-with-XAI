@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { FaRegTrashCan } from "react-icons/fa6";
+import { useTranslations } from "next-intl";
 
 interface DeleteModalProps {
     isOpen: boolean;
@@ -10,6 +11,8 @@ interface DeleteModalProps {
 
 export default function DeleteModal({ isOpen, onClose, onConfirm, isDeleting }: DeleteModalProps) {
     const [isVisible, setIsVisible] = useState(false);
+    const t = useTranslations("deleteModal");
+    const tCommon = useTranslations("common");
 
     useEffect(() => {
         if (isOpen) {
@@ -51,11 +54,11 @@ export default function DeleteModal({ isOpen, onClose, onConfirm, isDeleting }: 
                                 </div>
                                 <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
                                     <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white" id="modal-title">
-                                        Delete Prediction
+                                        {t("title")}
                                     </h3>
                                     <div className="mt-2">
                                         <p className="text-sm text-gray-500 dark:text-gray-300">
-                                            Are you sure you want to delete this prediction history? This action cannot be undone.
+                                            {t("body")}
                                         </p>
                                     </div>
                                 </div>
@@ -68,7 +71,7 @@ export default function DeleteModal({ isOpen, onClose, onConfirm, isDeleting }: 
                                 onClick={onConfirm}
                                 className="inline-flex w-full cursor-pointer justify-center rounded-xl bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 disabled:opacity-50 sm:ml-3 sm:w-auto"
                             >
-                                {isDeleting ? "Deleting..." : "Delete"}
+                                {isDeleting ? tCommon("deleting") : tCommon("delete")}
                             </button>
                             <button
                                 type="button"
@@ -76,7 +79,7 @@ export default function DeleteModal({ isOpen, onClose, onConfirm, isDeleting }: 
                                 onClick={onClose}
                                 className="mt-3 inline-flex w-full cursor-pointer justify-center rounded-xl bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto dark:bg-gray-600 dark:text-white dark:ring-gray-500 dark:hover:bg-gray-500"
                             >
-                                Cancel
+                                {tCommon("cancel")}
                             </button>
                         </div>
                     </div>

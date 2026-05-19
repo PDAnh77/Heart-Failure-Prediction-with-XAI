@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { FaRightFromBracket } from "react-icons/fa6";
+import { useTranslations } from "next-intl";
 
 interface LogoutModalProps {
     isOpen: boolean;
@@ -9,6 +10,8 @@ interface LogoutModalProps {
 
 export default function LogoutModal({ isOpen, onClose, onConfirm }: LogoutModalProps) {
     const [isVisible, setIsVisible] = useState(false);
+    const t = useTranslations("logoutModal");
+    const tCommon = useTranslations("common");
 
     useEffect(() => {
         if (isOpen) {
@@ -57,11 +60,11 @@ export default function LogoutModal({ isOpen, onClose, onConfirm }: LogoutModalP
                                 </div>
                                 <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
                                     <h3 className="text-base font-semibold leading-6 text-gray-900 dark:text-white" id="modal-title">
-                                        Logout
+                                        {t("title")}
                                     </h3>
                                     <div className="mt-2">
                                         <p className="text-sm text-gray-500 dark:text-gray-300">
-                                            Are you sure you want to log out?
+                                            {t("body")}
                                         </p>
                                     </div>
                                 </div>
@@ -73,14 +76,14 @@ export default function LogoutModal({ isOpen, onClose, onConfirm }: LogoutModalP
                                 onClick={onConfirm}
                                 className="inline-flex w-full cursor-pointer justify-center rounded-xl bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
                             >
-                                Confirm
+                                {tCommon("confirm")}
                             </button>
                             <button
                                 type="button"
                                 onClick={onClose}
                                 className="mt-3 inline-flex w-full cursor-pointer justify-center rounded-xl bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto dark:bg-gray-600 dark:text-white dark:ring-gray-500 dark:hover:bg-gray-500"
                             >
-                                Cancel
+                                {tCommon("cancel")}
                             </button>
                         </div>
                     </div>
