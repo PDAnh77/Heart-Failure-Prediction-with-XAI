@@ -1,12 +1,14 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
-import { FiTrendingUp, FiInfo, FiDownload, FiPlay, FiLoader } from "react-icons/fi";
+import Image from "next/image";
+import { FiTrendingUp, FiInfo, FiDownload, FiPlay, FiLoader, FiBarChart2 } from "react-icons/fi";
 import { FaStar, FaCheckCircle, FaBalanceScale } from "react-icons/fa";
 import { FaFilter } from "react-icons/fa6";
 import { IoSettingsSharp } from "react-icons/io5";
 import { api } from "@/lib/api";
 import toast from "react-hot-toast";
-import { FSResult } from "@/types/feature_selection";
+import { EvalResult, FSResult } from "@/types/feature_selection";
+import ImageModal from "./imageModal";
 
 interface FeatureSelectionTabProps {
     targetColumn: string;
@@ -40,6 +42,7 @@ export default function FeatureSelectionTab({
     const [loadingMessageIdx, setLoadingMessageIdx] = useState(0);
     const [result, setResult] = useState<FSResult | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null); // State cho Modal
     const hasFetched = useRef(false);
 
     // Local states for parameter configuration
@@ -47,6 +50,10 @@ export default function FeatureSelectionTab({
     const [localMutationRate, setLocalMutationRate] = useState<number>(mutationRate);
     const [localTestSize, setLocalTestSize] = useState<number>(testSize);
     const [localNParents, setLocalNParents] = useState<number | string>(nParents ?? "");
+
+    // --- State evaluation ---
+    const [evalResult, setEvalResult] = useState<EvalResult | null>(null);
+    const [isEvalLoading, setIsEvalLoading] = useState(false);
 
     // Thêm State để dễ dàng cấu hình phương pháp Balancing (ADASYN, SMOTE, none)
     const [localBalancing, setLocalBalancing] = useState<string>(
@@ -63,6 +70,24 @@ export default function FeatureSelectionTab({
         }
         return () => clearInterval(interval);
     }, [isLoading]);
+
+    const fetchEvaluation = async (fsDatasetId: string) => {
+        setIsEvalLoading(true);
+        try {
+            const res = await api.get(`/datasets/${processedId}/feature-selection-evaluation`, {
+                params: {
+                    fs_dataset_id: fsDatasetId,
+                    target_column: targetColumn,
+                    test_size: localTestSize
+                }
+            });
+            setEvalResult(res.data);
+        } catch (error) {
+            toast.error("Could not load deep evaluation metrics.");
+        } finally {
+            setIsEvalLoading(false);
+        }
+    };
 
     // Extracted API call function to allow re-running
     const runFS = useCallback(async (isManualRerun: boolean = false) => {
@@ -95,11 +120,15 @@ export default function FeatureSelectionTab({
             } else {
                 toast.success("Feature selection completed successfully!");
             }
+
+            if (res.data.fs_dataset_id) {
+                fetchEvaluation(res.data.fs_dataset_id);
+            }
         } catch (error) {
-            console.error("Feature Selection Error:", error);
             toast.error("Feature selection failed. Please check your parameters.");
         } finally {
             setIsLoading(false);
+            setEvalResult(null);
         }
     }, [processedId, targetColumn, localSize, localMutationRate, localTestSize, localNParents, localBalancing]);
 
@@ -169,7 +198,6 @@ export default function FeatureSelectionTab({
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
         } catch (error) {
-            console.error("Download Error:", error);
             toast.error("Failed to download dataset");
         } finally {
             setIsDownloading(false);
@@ -181,6 +209,22 @@ export default function FeatureSelectionTab({
     // Trích xuất linh hoạt dữ liệu balancing trả về từ API (hỗ trợ adasyn, smote, v.v.)
     // Dùng Type Assertion 'any' để linh hoạt đọc key từ kết quả trả về
     const balancingStats = result?.[localBalancing as keyof typeof result] as any || result?.adasyn;
+
+    const MetricCompare = ({ label, before, after }: { label: string, before: number, after: number }) => {
+        const isBetter = after >= before;
+        return (
+            <div className="flex flex-col items-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-800">
+                <span className="text-xs font-bold text-gray-500 uppercase">{label}</span>
+                <div className="mt-2 flex items-center gap-3">
+                    <span className="text-lg font-medium text-gray-400">{(before * 100).toFixed(1)}%</span>
+                    <span className="text-gray-300 dark:text-gray-600">→</span>
+                    <span className={`text-xl font-bold ${isBetter ? 'text-[#4361EE] dark:text-indigo-300' : 'text-red-500'}`}>
+                        {(after * 100).toFixed(1)}%
+                    </span>
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div>
@@ -355,6 +399,80 @@ export default function FeatureSelectionTab({
                             </div>
                         </div>
 
+                        {/* --- DEEP EVALUATION --- */}
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm mt-6">
+                            <div className="py-4 px-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <FiBarChart2 className="text-[#4361EE] text-xl" />
+                                    <h3 className="font-bold text-gray-800 dark:text-gray-200">Impact evaluation</h3>
+                                </div>
+                                {isEvalLoading && (
+                                    <div className="flex items-center gap-2 text-sm text-[#4361EE] animate-pulse">
+                                        <FiLoader className="animate-spin" /> Generating interpretability charts...
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-6">
+                                {isEvalLoading ? (
+                                    <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-900/20 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                                        <p className="text-gray-500">Please wait while we evaluate the selected features...</p>
+                                    </div>
+                                ) : evalResult ? (
+                                    <div className="space-y-6">
+                                        {/* Metrics Table */}
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <MetricCompare label="Accuracy" before={evalResult.metrics_before.accuracy} after={evalResult.metrics_after.accuracy} />
+                                            <MetricCompare label="Recall (Sensitivity)" before={evalResult.metrics_before.recall} after={evalResult.metrics_after.recall} />
+                                            <MetricCompare label="Precision" before={evalResult.metrics_before.precision} after={evalResult.metrics_after.precision} />
+                                            <MetricCompare label="F1-Score" before={evalResult.metrics_before.f1_score} after={evalResult.metrics_after.f1_score} />
+                                        </div>
+
+                                        {/* Charts - Hiển thị thành 2 cột cho gọn */}
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                            {evalResult.confusion_matrix_chart_url && (
+                                                <div
+                                                    className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white"
+                                                    onClick={() => setSelectedImage(evalResult.confusion_matrix_chart_url)}
+                                                >
+                                                    <Image
+                                                        src={evalResult.confusion_matrix_chart_url}
+                                                        alt="Confusion Matrix Comparison"
+                                                        width={600}
+                                                        height={400}
+                                                        className="w-full h-auto object-contain"
+                                                    />
+                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity">
+                                                        <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {evalResult.roc_chart_url && (
+                                                <div
+                                                    className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white"
+                                                    onClick={() => setSelectedImage(evalResult.roc_chart_url)}
+                                                >
+                                                    <Image
+                                                        src={evalResult.roc_chart_url}
+                                                        alt="ROC Curve Comparison"
+                                                        width={600}
+                                                        height={400}
+                                                        className="w-full h-auto object-contain"
+                                                    />
+                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity">
+                                                        <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center text-gray-500 py-8">Evaluation data is not available.</div>
+                                )}
+                            </div>
+                        </div>
+
                         {/* --- CONFIGURATION PANEL --- */}
                         <div className="bg-white dark:bg-gray-800 mb-6 mt-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                             <div className="py-4 px-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex items-center gap-2">
@@ -460,6 +578,11 @@ export default function FeatureSelectionTab({
                     </div>
                 )}
             </div>
+
+            <ImageModal
+                imageUrl={selectedImage}
+                onClose={() => setSelectedImage(null)}
+            />
         </div>
     );
 }
