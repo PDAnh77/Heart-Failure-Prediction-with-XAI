@@ -1,21 +1,23 @@
 import { FaArrowRightLong } from "react-icons/fa6";
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 
-export default function Home() {
+export default async function Home() {
+  const t = await getTranslations("home");
   const quickLinks = [
     {
-      title: "Individual Patient",
-      description: "Submit a single patient and get risk + XAI insights.",
+      title: t("quickLinks.individual.title"),
+      description: t("quickLinks.individual.description"),
       href: "/predict/individual",
     },
     {
-      title: "Batch Prediction",
-      description: "Upload a file and score multiple patients at once.",
+      title: t("quickLinks.batch.title"),
+      description: t("quickLinks.batch.description"),
       href: "/predict/batch",
     },
     {
-      title: "Data Analysis",
-      description: "Explore model behavior, EDA, and feature selection.",
+      title: t("quickLinks.analysis.title"),
+      description: t("quickLinks.analysis.description"),
       href: "/analyze/dashboard",
     },
   ];
@@ -24,13 +26,10 @@ export default function Home() {
     <div className="flex h-full items-center px-8 md:px-20">
       <div>
         <h1 className="text-6xl font-bold dark:text-white">
-          Heart Failure Analytics
+          {t("title")}
         </h1>
         <p className="text-xl mt-4 text-gray-500 max-w-3xl">
-          Your go-to platform for AI-powered heart failure analysis and risk prediction.
-          Combine machine learning with Explainable AI to gain accurate insights,
-          understand model decisions, and explore patient data through preprocessing,
-          EDA, and feature selection — all in one place.
+          {t("description")}
         </p>
         <div className="mt-8">
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

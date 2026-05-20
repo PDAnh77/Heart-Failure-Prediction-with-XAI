@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { toast } from 'react-hot-toast';
+import { useLocale, useTranslations } from "next-intl";
 import LogoutModal from "@/components/logoutModal";
 import DeleteModal from "@/components/deletePredictionModal";
 import SettingsModal from "@/components/settingsModal";
@@ -37,6 +38,10 @@ export default function Sidebar() {
     const [offset, setOffset] = useState(0);
     const [hasMore, setHasMore] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
+    const t = useTranslations("sidebar");
+    const tCommon = useTranslations("common");
+    const locale = useLocale();
+    const localeTag = locale === "vi" ? "vi-VN" : "en-US";
 
     const handleLogoutClick = () => {
         setShowLogoutModal(true);
@@ -90,7 +95,7 @@ export default function Sidebar() {
             router.push("/login");
         } catch (error: any) {
             console.log(error);
-            toast.error("Logout failed.");
+            toast.error(t("logoutFailed"));
         }
     };
 
@@ -112,7 +117,7 @@ export default function Sidebar() {
     const formatDateTime = (dateString: string) => {
         const date = new Date(dateString);
 
-        const parts = new Intl.DateTimeFormat('vi-VN', {
+        const parts = new Intl.DateTimeFormat(localeTag, {
             hour: '2-digit',
             minute: '2-digit',
             day: '2-digit',
@@ -185,7 +190,7 @@ export default function Sidebar() {
                 >
                     <TbLayoutSidebarFilled className="text-xl" />
                 </button>
-                <span className="font-bold ml-2">Heart Failure Analytics</span>
+                <span className="font-bold ml-2">{tCommon("appName")}</span>
             </div>
 
             <div
@@ -214,31 +219,31 @@ export default function Sidebar() {
                     <div className="p-2 space-y-2 sticky top-0 z-10 bg-gray-50 dark:bg-[#18181B]">
                         <div className="flex gap-1 p-2 my-4">
                             <PiHeartbeatFill className="text-xl text-red-500" />
-                            <p className="font-bold text-sm">Heart Failure Analytics</p>
+                            <p className="font-bold text-sm">{tCommon("appName")}</p>
                         </div>
                         <ul className="space-y-2">
                             <li className={itemClass(pathname === "/")} onClick={() => setOpen(false)}>
                                 <Link href="/" className="flex gap-2 p-2">
                                     <FiHome className="text-lg" />
-                                    <span>Home</span>
+                                    <span>{t("home")}</span>
                                 </Link>
                             </li>
                             <li className={itemClass(pathname === "/predict/individual")} onClick={() => setOpen(false)}>
                                 <Link href="/predict/individual" className="flex gap-2 p-2">
                                     <LuUserSearch className="text-lg" />
-                                    <span>Predict</span>
+                                    <span>{t("predict")}</span>
                                 </Link>
                             </li>
                             <li className={itemClass(pathname === "/predict/batch")} onClick={() => setOpen(false)}>
                                 <Link href="/predict/batch" className="flex gap-2 p-2">
                                     <LuUsers className="text-lg" />
-                                    <span>Predict batch</span>
+                                    <span>{t("predictBatch")}</span>
                                 </Link>
                             </li>
                             <li className={itemClass(pathname.startsWith("/analyze"))} onClick={() => setOpen(false)}>
                                 <Link href="/analyze/upload" className="flex gap-2 p-2">
                                     <MdInsertChartOutlined className="text-lg" />
-                                    <span>Analyze</span>
+                                    <span>{t("analyze")}</span>
                                 </Link>
                             </li>
                         </ul>
@@ -250,7 +255,7 @@ export default function Sidebar() {
                             className="text-sm cursor-pointer flex items-center text-gray-500 dark:text-gray-300 mb-2"
                             onClick={() => setShowPredictions(!showPredictions)}
                         >
-                            <span className="ml-2 mr-1">Recent predictions</span>
+                            <span className="ml-2 mr-1">{t("recentPredictions")}</span>
                             {showPredictions ? <IoIosArrowDown /> : <IoIosArrowForward />}
                         </div>
 
@@ -288,13 +293,13 @@ export default function Sidebar() {
                                         );
                                     })
                                 ) : (
-                                    <li className="text-xs text-gray-400 mx-2">No records found</li>
+                                    <li className="text-xs text-gray-400 mx-2">{tCommon("noRecords")}</li>
                                 )}
                             </ul>
                         )}
 
                         {loadingMore && hasMore && (
-                            <li className="text-xs text-gray-400 mx-2">Loading more...</li>
+                            <li className="text-xs text-gray-400 mx-2">{tCommon("loadingMore")}</li>
                         )}
                     </div>
 
@@ -316,7 +321,7 @@ export default function Sidebar() {
                                                     }}
                                                 >
                                                     <LuCircleUserRound className="text-lg" />
-                                                    <span>Profile</span>
+                                                    <span>{tCommon("profile")}</span>
                                                 </button>
                                             </li>
 
@@ -329,7 +334,7 @@ export default function Sidebar() {
                                             className="flex items-center transition w-full cursor-pointer gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-sm"
                                             onClick={() => { setUserMenuOpen(false); setShowSettingModal(true); }}>
                                             <LuSettings className="text-lg" />
-                                            <span>Settings</span>
+                                            <span>{tCommon("settings")}</span>
                                         </button>
                                     </li>
 
@@ -339,7 +344,7 @@ export default function Sidebar() {
                                         <li onClick={handleLogoutClick}>
                                             <div className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition text-sm cursor-pointer">
                                                 <LuLogOut className="text-lg" />
-                                                <span>Logout</span>
+                                                <span>{tCommon("logout")}</span>
                                             </div>
                                         </li>
                                     ) : (
@@ -348,7 +353,7 @@ export default function Sidebar() {
                                                 className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 transition text-sm"
                                                 onClick={() => { setUserMenuOpen(false); setOpen(false); }}>
                                                 <LuLogIn className="text-lg" />
-                                                <span>Sign in</span>
+                                                <span>{tCommon("signIn")}</span>
                                             </Link>
                                         </li>
                                     )}
@@ -370,7 +375,7 @@ export default function Sidebar() {
                             </div>
                             <div className="flex flex-col min-w-0">
                                 <span className="text-sm font-bold truncate dark:text-white">
-                                    {user ? (user.display_name || user.username) : "Guest"}
+                                    {user ? (user.display_name || user.username) : tCommon("guest")}
                                 </span>
                             </div>
                         </div>

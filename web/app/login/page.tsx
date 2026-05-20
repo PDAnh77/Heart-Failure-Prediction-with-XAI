@@ -5,6 +5,7 @@ import { useAuth } from "@/context/authcontext";
 import { User } from "@/types/user";
 import { FcGoogle } from "react-icons/fc";
 import { api } from "@/lib/api";
+import { useTranslations } from "next-intl";
 
 export default function Login() {
     const [loginId, setLoginId] = useState("")
@@ -12,6 +13,8 @@ export default function Login() {
     const [errors, setErrors] = useState({ loginId: "", password: "" })
     const [loading, setLoading] = useState(false)
     const { login } = useAuth();
+    const t = useTranslations("login");
+    const tCommon = useTranslations("common");
 
     const handleGoogleLogin = () => {
         window.location.href = "/api/auth/google";
@@ -25,11 +28,11 @@ export default function Login() {
         const newErrors = { loginId: "", password: "" };
 
         if (!loginId.trim()) {
-            newErrors.loginId = "Please enter username or email.";
+            newErrors.loginId = t("errors.loginIdRequired");
             hasError = true;
         }
         if (!password) {
-            newErrors.password = "Please enter password.";
+            newErrors.password = t("errors.passwordRequired");
             hasError = true;
         }
 
@@ -50,13 +53,13 @@ export default function Login() {
             login(current_user)
             setLoginId("")
             setPassword("")
-            toast.success("Signed in successfully.")
+            toast.success(t("toast.success"))
         } catch (error: any) {
             if (error.response?.status === 401) {
-                toast.error("Invalid login info");
+                toast.error(t("toast.invalidCredentials"));
                 return;
             }
-            toast.error("An error occurred. Please try again later.");
+            toast.error(t("toast.genericError"));
         } finally {
             setLoading(false)
         }
@@ -66,7 +69,7 @@ export default function Login() {
         <div className="flex min-h-full flex-col px-6 py-12 lg:px-8">
             <div className="sm:mx-auto sm:w-full sm:max-w-sm">
                 <h2 className="mt-10 text-center text-2xl/9 font-bold tracking-tight text-gray-900 dark:text-white">
-                    Sign in to your account
+                    {t("title")}
                 </h2>
             </div>
 
@@ -74,7 +77,7 @@ export default function Login() {
                 <form onSubmit={handleSubmit} method="POST" noValidate className="space-y-6">
                     <div>
                         <label htmlFor="loginId" className="block text-md/6 font-medium text-gray-900 dark:text-gray-100">
-                            Username or Email
+                            {t("fields.loginId")}
                         </label>
                         <div className="mt-2">
                             <input
@@ -89,7 +92,7 @@ export default function Login() {
                                     }
                                 }}
                                 required
-                                placeholder="Username or Email"
+                                placeholder={t("fields.loginIdPlaceholder")}
                                 className={`block w-full rounded-xl shadow-sm transition bg-white px-4 py-2 text-base text-gray-900 outline-1 -outline-offset-1 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 sm:text-base/6 dark:bg-white/5 dark:text-white dark:placeholder:text-gray-500
                                     ${errors.loginId
                                         ? "outline-red-500 focus:outline-red-500"
@@ -107,7 +110,7 @@ export default function Login() {
                     <div>
                         <div className="flex items-center justify-between">
                             <label htmlFor="password" className="block text-md/6 font-medium text-gray-900 dark:text-gray-100">
-                                Password
+                                {t("fields.password")}
                             </label>
                             <div className="text-sm">
                                 <a
@@ -115,7 +118,7 @@ export default function Login() {
                                     tabIndex={-1}
                                     className="hidden font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
                                 >
-                                    Forgot password?
+                                    {t("other.forgotPassword")}
                                 </a>
                             </div>
                         </div>
@@ -132,7 +135,7 @@ export default function Login() {
                                     }
                                 }}
                                 required
-                                placeholder="Password"
+                                placeholder={t("fields.passwordPlaceholder")}
                                 autoComplete="current-password"
                                 className={`block w-full rounded-xl shadow-sm transition bg-white px-4 py-2 text-base text-gray-900 outline-1 -outline-offset-1 placeholder:text-gray-400 focus:outline-2 focus:-outline-offset-2 sm:text-base/6 dark:bg-white/5 dark:text-white dark:placeholder:text-gray-500
                                     ${errors.password
@@ -154,7 +157,7 @@ export default function Login() {
                             disabled={loading}
                             className="flex w-full transition justify-center rounded-md bg-indigo-600 px-3 py-2 text-base/6 font-semibold text-white shadow-xs hover:bg-indigo-500 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 dark:bg-indigo-500 dark:shadow-none dark:hover:bg-indigo-400 dark:focus-visible:outline-indigo-500"
                         >
-                            {loading ? "Signing in..." : "Sign in"}
+                            {loading ? t("actions.signingIn") : t("actions.signIn")}
                         </button>
                     </div>
                 </form>
@@ -166,7 +169,7 @@ export default function Login() {
                         </div>
                         <div className="relative flex justify-center text-sm">
                             <span className="bg-white dark:bg-[#0a0a0a] px-2 text-gray-500 dark:text-gray-400">
-                                Or sign in with
+                                {t("other.orSignInWith")}
                             </span>
                         </div>
                     </div>
@@ -178,7 +181,7 @@ export default function Login() {
                             className="flex w-full transition items-center justify-center gap-2 rounded-md bg-white px-3 py-2 border border-gray-200 dark:border-gray-600 text-base/6 font-semibold text-gray-900 shadow-sm hover:bg-gray-50 cursor-pointer dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
                         >
                             <FcGoogle className="text-2xl" />
-                            Google
+                            {tCommon("google")}
                         </button>
                     </div>
                 </div>

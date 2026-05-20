@@ -6,6 +6,7 @@ import { useAuth } from "@/context/authcontext";
 import { toast } from "react-hot-toast";
 import { api } from "@/lib/api";
 import UpdatePasswordModal from "@/components/updatePasswordModal";
+import { useTranslations } from "next-intl";
 
 interface ProfileModalProps {
     isOpen: boolean;
@@ -16,6 +17,8 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
     const [isVisible, setIsVisible] = useState(false);
     const { user, updateUser } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const t = useTranslations("profile");
+    const tCommon = useTranslations("common");
 
     // Basic info states
     const [username, setUsername] = useState("");
@@ -133,7 +136,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
 
             if (isChanged) {
                 updateUser(updatedData);
-                toast.success("Profile updated successfully!");
+                toast.success(t("toast.success"));
             }
 
             onClose();
@@ -141,7 +144,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             const errorMessage =
                 error.response?.data?.message ||
                 error.response?.data?.detail ||
-                "Something went wrong. Please try again.";
+                t("toast.genericError");
 
             toast.error(errorMessage);
         } finally {
@@ -167,7 +170,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                             <div className="bg-white px-4 pb-4 pt-5 sm:p-6 dark:bg-[#18181B]">
                                 {/* Header */}
                                 <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Profile</h3>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t("title")}</h3>
                                     <button onClick={onClose} className="p-1.5 hover:cursor-pointer text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors">
                                         <IoMdClose className="w-6 h-6" />
                                     </button>
@@ -201,19 +204,19 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                                     <div className="space-y-4">
                                         <div>
                                             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                                <FaIdCard className="text-xs" /> Display name
+                                                <FaIdCard className="text-xs" /> {t("fields.displayName")}
                                             </label>
                                             <input
                                                 type="text"
                                                 value={displayName}
                                                 onChange={(e) => setDisplayName(e.target.value)}
                                                 className="w-full px-4 py-2.5 bg-white border border-gray-200 dark:bg-white/5 dark:border-[#FFFFFF1A] dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-xl"
-                                                placeholder="Enter display name..."
+                                                placeholder={t("fields.displayNamePlaceholder")}
                                             />
                                         </div>
                                         <div>
                                             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                                <FaUser className="text-xs" /> Username
+                                                <FaUser className="text-xs" /> {t("fields.username")}
                                             </label>
                                             <input
                                                 type="text"
@@ -224,7 +227,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                                         </div>
                                         <div>
                                             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                                <FaEnvelope className="text-xs" /> Email
+                                                <FaEnvelope className="text-xs" /> {t("fields.email")}
                                             </label>
                                             <input
                                                 type="email"
@@ -237,7 +240,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                                         {/* Manage Password Row */}
                                         <div>
                                             <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                                <FaLock className="text-xs" /> Password
+                                                <FaLock className="text-xs" /> {t("fields.password")}
                                             </label>
                                             <div className="flex items-center justify-between w-full px-4 py-2.5 bg-gray-100 border border-gray-200 dark:bg-white/5 dark:border-[#FFFFFF1A] rounded-xl">
                                                 <span className="text-gray-400 dark:text-gray-500 tracking-widest font-bold">
@@ -247,7 +250,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                                                     onClick={() => setIsPasswordModalOpen(true)}
                                                     className="text-sm font-bold hover:cursor-pointer text-indigo-600 dark:text-indigo-400 hover:underline"
                                                 >
-                                                    Edit
+                                                    {t("actions.edit")}
                                                 </button>
                                             </div>
                                         </div>
@@ -261,7 +264,7 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                                         disabled={isLoading}
                                         className="flex-1 px-4 hover:cursor-pointer py-2.5 border border-gray-300 dark:border-[#FFFFFF1A] dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        Close
+                                        {tCommon("close")}
                                     </button>
                                     <button
                                         onClick={handleSaveProfile}
@@ -271,10 +274,10 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                                         {isLoading ? (
                                             <>
                                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                                Saving...
+                                                {tCommon("saving")}
                                             </>
                                         ) : (
-                                            "Save Changes"
+                                            tCommon("saveChanges")
                                         )}
                                     </button>
                                 </div>
