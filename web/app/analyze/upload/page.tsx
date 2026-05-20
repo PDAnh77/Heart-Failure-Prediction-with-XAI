@@ -328,6 +328,7 @@ export default function Upload() {
                                             <select id="balancing" value={dataBalancing} onChange={(e) => setDataBalancing(e.target.value)} className={inputClass}>
                                                 <option value="none">None</option>
                                                 <option value="adasyn">ADASYN</option>
+                                                <option value="smote">SMOTE</option>
                                             </select>
                                             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                                                 <strong>Note:</strong> The system will only apply this if severe class imbalance is detected.
