@@ -10,7 +10,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${baseUrl}/predict`,
+      url: `${baseUrl}/predict/individual`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.8,

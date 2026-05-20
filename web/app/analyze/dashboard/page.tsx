@@ -62,7 +62,7 @@ function DashboardContent() {
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Detailed Dataset Analysis</h1>
                         <p className="text-gray-500 dark:text-gray-400 mt-1">
-                            Target Feature: <span className="font-bold text-[#4361EE] uppercase bg-[#4361EE]/10 px-2 py-0.5 rounded ml-1">{targetColumn}</span>
+                            Target feature: <span className="font-bold text-[#4361EE] uppercase bg-[#4361EE]/10 px-2 py-0.5 rounded ml-1">{targetColumn}</span>
                         </p>
                     </div>
                 </div>
@@ -101,9 +101,8 @@ function DashboardContent() {
                         datasetId={datasetId}
                         targetColumn={targetColumn}
                         imputation={imputation}
-                        balancing={balancing}
                         onProcessed={(id) => setProcessedId(id)}
-                    />
+                        />
                 </div>
 
                 <div className={`${activeTab === "fs" ? "block" : "hidden"}`}>
@@ -114,6 +113,7 @@ function DashboardContent() {
                         mutationRate={mutationRate}
                         testSize={testSize}
                         nParents={nParents}
+                        balancing={balancing}
                     />
                 </div>
 

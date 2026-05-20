@@ -1,6 +1,8 @@
 import io
 from random import randint
 import uuid
+import copy
+import shap
 from datetime import datetime
 from fastapi import HTTPException, UploadFile, status
 from fastapi.responses import StreamingResponse
@@ -24,6 +26,7 @@ from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 
 from sklearn.experimental import enable_iterative_imputer
+from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
 from sklearn.impute import IterativeImputer, KNNImputer
 from imblearn.over_sampling import ADASYN
 
@@ -728,3 +731,158 @@ def genetic_selection(
         "found_at_generation": int(best_gen_index + 1),
         "adasyn": adasyn_info,
     }
+
+
+def evaluate_feature_selection(
+    dataset_id: str,
+    fs_dataset_id: str,
+    target_column: str,
+    owner_id: str,
+    user: dict,
+    model_name: str,
+    test_size: float,
+):
+    target_user_id = owner_id if (user["role"] == "admin" and owner_id) else user["user_id"]
+
+    # 2 tập dữ liệu từ Supabase Storage
+    df_original = load_dataset(dataset_id, target_user_id)
+    df_selected = load_dataset(fs_dataset_id, target_user_id)
+
+    if target_column not in df_original.columns:
+        raise HTTPException(status_code=400, detail=f"Target column '{target_column}' not found.")
+
+    # Tách Features và Target
+    Y_orig = df_original[target_column]
+    X_orig = df_original.drop(columns=[target_column])
+
+    Y_sel = df_selected[target_column]
+    X_sel = df_selected.drop(columns=[target_column])
+
+    # Chia tập Train/Test
+    X_train_orig, X_test_orig, Y_train_orig, Y_test_orig = train_test_split(
+        X_orig, Y_orig, test_size=test_size, random_state=42
+    )
+    X_train_sel, X_test_sel, Y_train_sel, Y_test_sel = train_test_split(
+        X_sel, Y_sel, test_size=test_size, random_state=42
+    )
+
+    # Xác định mô hình sử dụng
+    final_model_name = model_name if (user["role"] == "admin" and model_name) else SELECTED_MODEL
+    if final_model_name not in AVAILABLE_MODELS:
+        final_model_name = "decision_tree"
+
+    # LUÔN GIỮ COPY ĐỂ BẢO VỆ SERVER
+    model_before = copy.deepcopy(AVAILABLE_MODELS[final_model_name])
+    model_after = copy.deepcopy(AVAILABLE_MODELS[final_model_name])
+
+    # =================================================================
+    # ĐÁNH GIÁ MÔ HÌNH TRƯỚC (BASELINE)
+    # =================================================================
+    model_before.fit(X_train_orig, Y_train_orig)
+    preds_before = model_before.predict(X_test_orig)
+
+    metrics_before = {
+        "accuracy": round(accuracy_score(Y_test_orig, preds_before), 4),
+        "precision": round(precision_score(Y_test_orig, preds_before, average="binary", zero_division=0), 4),
+        "recall": round(recall_score(Y_test_orig, preds_before, average="binary", zero_division=0), 4),
+        "f1_score": round(f1_score(Y_test_orig, preds_before, average="binary", zero_division=0), 4),
+    }
+    cm_before = confusion_matrix(Y_test_orig, preds_before)
+
+    # =================================================================
+    # ĐÁNH GIÁ MÔ HÌNH SAU GA (OPTIMIZED)
+    # =================================================================
+    model_after.fit(X_train_sel, Y_train_sel)
+    preds_after = model_after.predict(X_test_sel)
+
+    metrics_after = {
+        "accuracy": round(accuracy_score(Y_test_sel, preds_after), 4),
+        "precision": round(precision_score(Y_test_sel, preds_after, average="binary", zero_division=0), 4),
+        "recall": round(recall_score(Y_test_sel, preds_after, average="binary", zero_division=0), 4),
+        "f1_score": round(f1_score(Y_test_sel, preds_after, average="binary", zero_division=0), 4),
+    }
+    cm_after = confusion_matrix(Y_test_sel, preds_after)
+
+    # =================================================================
+    # VẼ ĐỒ THỊ CONFUSION MATRIX
+    # =================================================================
+    fig_cm, axes_cm = plt.subplots(1, 2, figsize=(11, 4.5))
+
+    sns.heatmap(
+        cm_before,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        ax=axes_cm[0],
+        cbar=False,
+        annot_kws={"size": 14, "weight": "bold"},
+    )
+    axes_cm[0].set_title("Confusion Matrix (Before Selection)", fontsize=12, pad=10)
+    axes_cm[0].set_xlabel("Predicted Label")
+    axes_cm[0].set_ylabel("Actual Label")
+
+    sns.heatmap(
+        cm_after,
+        annot=True,
+        fmt="d",
+        cmap="Greens",
+        ax=axes_cm[1],
+        cbar=False,
+        annot_kws={"size": 14, "weight": "bold"},
+    )
+    axes_cm[1].set_title("Confusion Matrix (After Selection)", fontsize=12, pad=10)
+    axes_cm[1].set_xlabel("Predicted Label")
+    axes_cm[1].set_ylabel("Actual Label")
+
+    plt.tight_layout()
+    chart_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/confusion_matrix_comparison.png")
+
+    # =================================================================
+    # VẼ BIỂU ĐỒ ROC CURVE SO SÁNH
+    # =================================================================
+    roc_chart_url = None
+    try:
+        from sklearn.metrics import roc_curve, auc
+        
+        # Lấy xác suất dự đoán (class 1)
+        probs_before = model_before.predict_proba(X_test_orig)[:, 1]
+        probs_after = model_after.predict_proba(X_test_sel)[:, 1]
+        
+        # Tính ROC curve
+        fpr_before, tpr_before, _ = roc_curve(Y_test_orig, probs_before)
+        roc_auc_before = auc(fpr_before, tpr_before)
+        
+        fpr_after, tpr_after, _ = roc_curve(Y_test_sel, probs_after)
+        roc_auc_after = auc(fpr_after, tpr_after)
+        
+        # Vẽ đồ thị
+        fig_roc, ax_roc = plt.subplots(figsize=(7, 6))
+        ax_roc.plot(fpr_before, tpr_before, color='darkorange', lw=2, linestyle='--',
+                    label=f'Before Selection (AUC = {roc_auc_before:.3f})')
+        ax_roc.plot(fpr_after, tpr_after, color='green', lw=2.5, 
+                    label=f'After Selection (AUC = {roc_auc_after:.3f})')
+        ax_roc.plot([0, 1], [0, 1], color='gray', lw=1, linestyle='--')
+        
+        ax_roc.set_xlim([0.0, 1.0])
+        ax_roc.set_ylim([0.0, 1.05])
+        ax_roc.set_xlabel('False Positive Rate (1 - Specificity)', fontsize=11)
+        ax_roc.set_ylabel('True Positive Rate (Sensitivity)', fontsize=11)
+        ax_roc.set_title('Receiver Operating Characteristic (ROC) Comparison', fontsize=13, pad=15)
+        ax_roc.legend(loc="lower right", frameon=True, shadow=True)
+        
+        plt.tight_layout()
+        roc_chart_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/roc_comparison.png")
+        
+    except Exception as e:
+        print(f"Error gen ROC plot: {e}")
+
+    return _sanitize(
+        {
+            "status": "success",
+            "model_evaluated": final_model_name,
+            "metrics_before": metrics_before,
+            "metrics_after": metrics_after,
+            "confusion_matrix_chart_url": chart_url,
+            "roc_chart_url": roc_chart_url,
+        }
+    )
