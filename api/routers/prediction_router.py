@@ -1,5 +1,5 @@
-from typing import List
-from fastapi import APIRouter, Depends, Query, UploadFile, File
+from typing import List, Dict, Any
+from fastapi import APIRouter, Depends, Query
 from schemas.prediction_schema import PredictionBase, PredictionGet
 from services.auth_service import require_roles
 from dependencies import get_db
@@ -13,6 +13,7 @@ from services.prediction_service import (
     predict_dataframe,
     predict_single,
     predict_batch,
+    generate_single_xai,
 )
 
 router = APIRouter()
@@ -58,6 +59,9 @@ def create_prediction_from_file(
 ):
     return predict_dataframe(dataset_id, user["user_id"], target_column)
 
+@router.post("/xai/on-demand", dependencies=[Depends(require_roles(["admin", "user"]))])
+def create_xai_on_demand(patient_raw: Dict[str, Any]): 
+    return generate_single_xai(patient_raw)
 
 @router.delete("/me")
 def delete_user_predictions_me(user=Depends(require_roles(["admin", "user"])), db: Session = Depends(get_db)):

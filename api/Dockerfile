@@ -6,7 +6,10 @@ WORKDIR /app
 COPY ./requirements.txt .
 
 RUN apt-get update && \
-  apt-get install -y libgomp1 curl && \
+  apt-get dist-upgrade -y && \
+  apt-get install -y --no-install-recommends \
+  libgomp1 \
+  curl && \
   apt-get clean && \
   rm -rf /var/lib/apt/lists/*
 

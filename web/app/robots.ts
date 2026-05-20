@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
             {
                 userAgent: "*",
                 allow: "/",
-                disallow: ["/prediction-history/", "/analyze/"]
+                disallow: ["/prediction-history/", "/analyze/", "/predict/batch/"]
             }
         ],
         sitemap: `${process.env.CLIENT_URL}/sitemap.xml`

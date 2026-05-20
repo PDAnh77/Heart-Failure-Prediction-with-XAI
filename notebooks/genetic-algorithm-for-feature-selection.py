@@ -1,24 +1,15 @@
+import time
+import warnings
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 from random import randint
-import warnings
-
 from sklearn.calibration import LabelEncoder
 from sklearn.discriminant_analysis import StandardScaler
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.preprocessing import MinMaxScaler
-import time
-
-warnings.filterwarnings("ignore")
-
 from sklearn.model_selection import train_test_split
-
-
-def split(features, target):
-    X_train, X_test, Y_train, Y_test = train_test_split(features, target, test_size=0.2, random_state=42)
-    return X_train, X_test, Y_train, Y_test
-
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
@@ -28,7 +19,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from xgboost import XGBClassifier
 from lightgbm import LGBMClassifier
 
-from sklearn.metrics import accuracy_score
+warnings.filterwarnings("ignore")
 
 classifiers = [
     "SVC",
@@ -55,20 +46,24 @@ models = [
         colsample_bytree=0.9,
         eval_metric="logloss",
     ),
-    LGBMClassifier
-    (objective='binary',
+    LGBMClassifier(
+        objective="binary",
         random_state=0,
-        n_estimators=100,        # Số lượng cây (tương đương XGBoost của bạn)
-        max_depth=4,             # Giới hạn độ sâu của cây để tránh Overfitting trên dataset nhỏ
-        num_leaves=15,           # Số lá tối đa (Nên nhỏ hơn 2^max_depth, ở đây 2^4 = 16)
-        min_child_samples=20,    # Hạ số lượng mẫu tối thiểu cần có trong 1 lá (mặc định là 20)
-        learning_rate=0.05,      # Tốc độ học
-        subsample=0.8,           # Lấy mẫu ngẫu nhiên 80% dữ liệu để xây cây
-        subsample_freq=1,        # Tần suất thực hiện bagging (Bắt buộc = 1 nếu dùng subsample)
-        colsample_bytree=0.8,    # Lấy mẫu ngẫu nhiên 90% features
-        verbose=-1 )
+        n_estimators=100,
+        max_depth=4,
+        num_leaves=15,
+        min_child_samples=20,
+        learning_rate=0.05,
+        subsample=0.8,
+        subsample_freq=1,
+        colsample_bytree=0.8,
+        verbose=-1,
+    ),
 ]
 
+def split(features, target):
+    X_train, X_test, Y_train, Y_test = train_test_split(features, target, test_size=0.2, random_state=42)
+    return X_train, X_test, Y_train, Y_test
 
 def acc_score(df, label):
     Score = pd.DataFrame({"Classifier": classifiers})
@@ -220,15 +215,14 @@ print(score1)
 
 X_train, X_test, Y_train, Y_test = split(features, target)
 
+print("--- Starting Feature Selection Optimization using Genetic Algorithm ---")
 final_results = []
 
-print("--- Starting Feature Selection Optimization using Genetic Algorithm ---")
 for name, model_obj in zip(classifiers, models):
     print(f"\nRunning GA for model: {name}...")
 
-    start_time = time.perf_counter()
+    start_time = time.perf_counter()  # Bắt đầu đếm thời gian
 
-    # Run GA
     best_chromo_list, best_score_list = generations(
         model=model_obj,
         df=features,
@@ -244,7 +238,7 @@ for name, model_obj in zip(classifiers, models):
         Y_test=Y_test,
     )
 
-    end_time = time.perf_counter()  # kết thúc đo tg
+    end_time = time.perf_counter()  # kết thúc đo thời gian chạy
     elapsed_time = end_time - start_time
 
     plot(best_score_list, 0.8, 1.0, c="orange")
@@ -253,22 +247,42 @@ for name, model_obj in zip(classifiers, models):
 
     # Get the best result from the final generation
     best_gen_index = np.argmax(best_score_list)
+    best_chromosome = best_chromo_list[best_gen_index]
 
     overall_best_score = best_score_list[best_gen_index]
-    overall_best_features = features.columns[best_chromo_list[best_gen_index]].tolist()
+    overall_best_features = features.columns[best_chromosome].tolist()
+
+    # --- TÍNH TOÁN CÁC CHỈ SỐ BỔ SUNG (Precision, Recall, F1) ---
+    # Lấy ra tập dữ liệu chỉ chứa các features tốt nhất
+    X_train_best = X_train.iloc[:, best_chromosome]
+    X_test_best = X_test.iloc[:, best_chromosome]
+
+    # Huấn luyện lại model với tập features tốt nhất và dự đoán
+    model_obj.fit(X_train_best, Y_train)
+    predictions_best = model_obj.predict(X_test_best)
+
+    # Tính toán metrics
+    precision = precision_score(Y_test, predictions_best)
+    recall = recall_score(Y_test, predictions_best)
+    f1 = f1_score(Y_test, predictions_best)
 
     final_results.append(
         {
             "Classifier": name,
-            "Best_GA_Accuracy": overall_best_score,
+            "Accuracy": overall_best_score,
+            "Precision": precision,
+            "Recall": recall,
+            "F1_Score": f1,
             "Selected_Features": overall_best_features,
             "Feature_Count": len(overall_best_features),
-            "Best_Generation": best_gen_index + 1  # +1 vì index bắt đầu từ 0
+            "Best_Generation": best_gen_index + 1,
+            "Execution_Time_Seconds": round(elapsed_time, 2),
         }
     )
 
 pd.set_option("display.max_colwidth", None)
-# Convert results to DataFrame for easier comparison
-df_final_comparison = pd.DataFrame(final_results).sort_values(by="Best_GA_Accuracy", ascending=False)
+df_final_comparison = pd.DataFrame(final_results).sort_values(by="Accuracy", ascending=False)
+
 print("\n--- COMPARISON TABLE AFTER GA ---")
-print(df_final_comparison)
+df_final_comparison.reset_index(drop=True, inplace=True)
+print(df_final_comparison.to_string())

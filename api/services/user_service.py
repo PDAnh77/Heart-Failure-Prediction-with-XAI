@@ -106,7 +106,7 @@ async def google_callback(db: Session, request: Request):
         user_id = existing_user.id
     refresh_token = generate_refresh_token()
     store_refresh_token(db, request, user_id, refresh_token)
-    response = RedirectResponse(url=f"{settings.CLIENT_URL}/predict")
+    response = RedirectResponse(url=f"{settings.CLIENT_URL}")
     set_refresh_token_cookie(response, refresh_token)
     return response
 

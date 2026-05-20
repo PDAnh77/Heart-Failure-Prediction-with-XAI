@@ -1,6 +1,5 @@
 "use client"
-import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { toast } from 'react-hot-toast';
 import { useAuth } from "@/context/authcontext";
 import { User } from "@/types/user";
@@ -12,15 +11,7 @@ export default function Login() {
     const [password, setPassword] = useState("")
     const [errors, setErrors] = useState({ loginId: "", password: "" })
     const [loading, setLoading] = useState(false)
-    const [submitted, setSubmitted] = useState(false)
-    const router = useRouter()
-    const { login, user } = useAuth();
-
-    useEffect(() => {
-        if (user && submitted) {
-            router.push("/predict/individual")
-        }
-    }, [user, submitted, router])
+    const { login } = useAuth();
 
     const handleGoogleLogin = () => {
         window.location.href = "/api/auth/google";
@@ -28,7 +19,6 @@ export default function Login() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setSubmitted(true)
         setErrors({ loginId: "", password: "" })
         toast.dismiss();
         let hasError = false;
@@ -58,6 +48,9 @@ export default function Login() {
             const res = await api.post("/auth/login", payload)
             const current_user: User = res.data
             login(current_user)
+            setLoginId("")
+            setPassword("")
+            toast.success("Signed in successfully.")
         } catch (error: any) {
             if (error.response?.status === 401) {
                 toast.error("Invalid login info");

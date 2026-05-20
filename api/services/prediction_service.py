@@ -1,7 +1,6 @@
-import io
 import re
 import uuid
-from typing import List, Dict
+from typing import List, Dict, Any
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -268,10 +267,16 @@ def predict_dataframe(dataset_id: str, user_id: str, target_column: str):
     # Run batch prediction
     batch_result = predict_batch(valid_patients)
 
-    # Extract prediction results (0 or 1) and append to the original dataframe
+    # Extract prediction results and probabilities
     predictions_list = [item["prediction"] for item in batch_result["predictions"]]
+    probabilities_list = [item["probability"] for item in batch_result["predictions"]]
+
+    # Append to the original dataframe
     result_col_name = target_column if target_column else "prediction_result"
+    prob_col_name = f"{result_col_name}_prediction_probability" if target_column else "prediction_probability"
+
     original_df[result_col_name] = predictions_list
+    original_df[prob_col_name] = probabilities_list
 
     pred_dataset_id = f"pred_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{str(uuid.uuid4())[:6]}"
     path = f"batch-prediction/{user_id}/{pred_dataset_id}.csv"
@@ -288,6 +293,9 @@ def predict_dataframe(dataset_id: str, user_id: str, target_column: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Prediction completed, but failed to save result file: {str(e)}",
         )
+
+    # Remove 'predictions' array from the final response
+    batch_result.pop("predictions", None)
 
     # Append the download ID to the response
     batch_result["file_id"] = pred_dataset_id
@@ -333,6 +341,60 @@ def get_prediction_by_id(db: Session, prediction_id: str, user: dict):
     if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Prediction not found")
     return result
+
+
+def generate_single_xai(patient_raw: Dict[str, Any]):
+    pipeline = get_pipeline()
+    model = pipeline["model"]
+    features = pipeline["features"]
+    background_data = pipeline["shap_background"]
+    lime_data = pipeline["lime_training_data"]
+
+    # Chuyển raw data thành DataFrame để tận dụng hàm build_column_mapping
+    raw_df = pd.DataFrame([patient_raw])
+
+    # Map tên cột (hàm này có sẵn trong file của bạn, dùng biến COLUMN_ALIASES)
+    try:
+        column_mapping = build_column_mapping(raw_df.columns.tolist())
+    except HTTPException as e:
+        raise e
+
+    mapped_df = raw_df.rename(columns=column_mapping)
+
+    # Lọc lấy đúng các cột cần thiết (REQUIRED_COLUMNS)
+    mapped_df = mapped_df[REQUIRED_COLUMNS].copy()
+    mapped_df = mapped_df.where(pd.notnull(mapped_df), None)
+
+    # Chuyển lại thành dict để đưa cho Pydantic
+    mapped_record = mapped_df.to_dict(orient="records")[0]
+
+    # Validate bằng PatientPredict
+    try:
+        mapped_record["save_prediction"] = False
+        patient_valid = PatientPredict(**mapped_record)
+    except ValidationError as e:
+        error_details = [f"{err.get('loc')[0]}: {err.get('msg')}" for err in e.errors()]
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"message": "Invalid patient data format", "errors": error_details},
+        )
+
+    # Bỏ các trường không nằm trong mô hình dự đoán
+    clean_dict = patient_valid.model_dump()
+    clean_dict.pop("save_prediction", None)
+
+    clean_df = pd.DataFrame([clean_dict])
+    x_processed = prepare_dataframe(clean_df, pipeline)
+
+    plots = generate_patient_xai_images(
+        model=model,
+        background_data=background_data,
+        lime_train_data=lime_data,
+        features_list=features,
+        processed_df=x_processed,
+        raw_row=clean_df[features],
+    )
+    return plots
 
 
 def delete_prediction_by_id(db: Session, prediction_id: str, user: dict):
