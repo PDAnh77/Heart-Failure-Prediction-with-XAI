@@ -1,0 +1,127 @@
+{
+  "common": {
+    "appName": "Heart Failure Analytics",
+    "guest": "Khách",
+    "profile": "Hồ sơ",
+    "settings": "Cài đặt",
+    "logout": "Đăng xuất",
+    "signIn": "Đăng nhập",
+    "cancel": "Hủy",
+    "close": "Đóng",
+    "confirm": "Xác nhận",
+    "delete": "Xóa",
+    "deleting": "Đang xóa...",
+    "saveChanges": "Lưu thay đổi",
+    "saving": "Đang lưu...",
+    "loadingMore": "Đang tải thêm...",
+    "noRecords": "Không có dữ liệu",
+    "google": "Google"
+  },
+  "sidebar": {
+    "home": "Trang chủ",
+    "predict": "Dự đoán",
+    "predictBatch": "Dự đoán hàng loạt",
+    "analyze": "Phân tích",
+    "recentPredictions": "Gần đây",
+    "logoutFailed": "Đăng xuất thất bại."
+  },
+  "login": {
+    "title": "Đăng nhập tài khoản",
+    "fields": {
+      "loginId": "Tên đăng nhập hoặc Email",
+      "loginIdPlaceholder": "Tên đăng nhập hoặc Email",
+      "password": "Mật khẩu",
+      "passwordPlaceholder": "Mật khẩu"
+    },
+    "actions": {
+      "signIn": "Đăng nhập",
+      "signingIn": "Đang đăng nhập..."
+    },
+    "errors": {
+      "loginIdRequired": "Vui lòng nhập tên đăng nhập hoặc email.",
+      "passwordRequired": "Vui lòng nhập mật khẩu."
+    },
+    "toast": {
+      "success": "Đăng nhập thành công.",
+      "invalidCredentials": "Thông tin đăng nhập không hợp lệ",
+      "genericError": "Đã có lỗi xảy ra. Vui lòng thử lại sau."
+    },
+    "other": {
+      "orSignInWith": "Hoặc đăng nhập bằng",
+      "forgotPassword": "Quên mật khẩu?"
+    }
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "closeAria": "Đóng cài đặt",
+    "darkMode": "Chế độ nền tối",
+    "language": "Ngôn ngữ",
+    "languageVi": "Tiếng Việt (VI)",
+    "languageEn": "Tiếng Anh (EN)",
+    "snowfall": "Hiệu ứng tuyết rơi",
+    "savePredictionHistory": "Lưu lịch sử dự đoán"
+  },
+  "logoutModal": {
+    "title": "Đăng xuất",
+    "body": "Bạn chắc chắn muốn đăng xuất?"
+  },
+  "deleteModal": {
+    "title": "Xóa dự đoán",
+    "body": "Bạn chắc chắn muốn xóa lịch sử dự đoán này? Hành động này không thể hoàn tác."
+  },
+  "updatePassword": {
+    "title": "Cập nhật mật khẩu",
+    "fields": {
+      "newPassword": "Mật khẩu mới",
+      "newPasswordPlaceholder": "Nhập mật khẩu mới",
+      "confirmPassword": "Xác nhận mật khẩu",
+      "confirmPasswordPlaceholder": "Nhập lại mật khẩu mới"
+    },
+    "actions": {
+      "update": "Cập nhật"
+    },
+    "errors": {
+      "required": "Vui lòng điền đầy đủ thông tin.",
+      "mismatch": "Mật khẩu không khớp."
+    },
+    "toast": {
+      "success": "Cập nhật mật khẩu thành công.",
+      "genericError": "Có lỗi xảy ra. Vui lòng thử lại."
+    }
+  },
+  "profile": {
+    "title": "Hồ sơ",
+    "fields": {
+      "displayName": "Tên hiển thị",
+      "displayNamePlaceholder": "Nhập tên hiển thị...",
+      "username": "Tên đăng nhập",
+      "email": "Email",
+      "password": "Mật khẩu"
+    },
+    "actions": {
+      "edit": "Sửa"
+    },
+    "toast": {
+      "success": "Cập nhật hồ sơ thành công!",
+      "genericError": "Có lỗi xảy ra. Vui lòng thử lại."
+    }
+  },
+  "home": {
+    "title": "Heart Failure Analytics",
+    "description": "Nền tảng hỗ trợ phân tích suy tim và dự đoán nguy cơ bằng AI. Kết hợp học máy và AI giải thích được (XAI) để mang đến dự đoán chính xác, giúp bạn hiểu rõ cách mô hình đưa ra quyết định. Khám phá dữ liệu bệnh nhân thông qua tiền xử lý, EDA và lựa chọn đặc trưng.",
+    "quickLinks": {
+      "individual": {
+        "title": " Đánh giá bệnh nhân",
+        "description": "Phân tích nguy cơ suy tim dựa trên thông tin hồ sơ bệnh nhân cùng các biểu đồ giải thích (XAI)."
+      },
+      "batch": {
+        "title": "Dự đoán nhiều bệnh nhân",
+        "description": "Xử lý và dự đoán bệnh của nhiều bệnh nhân cùng lúc."
+      },
+      "analysis": {
+        "title": "Phân tích dữ liệu",
+        "description": "Tiền xử lý, phân tích khám phá (EDA) và lựa chọn đặc trưng từ tập dữ liệu."
+      }
+    }
+  }
+}

@@ -6,11 +6,12 @@ export interface FSResult {
   selected_features: string[];
   feature_count: number;
   found_at_generation: number;
-  adasyn?: {
+  balancing?: {
+    method: "smote" | "adasyn" | "none" | string;
     before?: Record<string, number>;
     after?: Record<string, number>;
     skipped?: string;
-  };
+  } | null;
 }
 
 export interface Metrics {

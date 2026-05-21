@@ -288,8 +288,26 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column, imputa
     features_to_process = [col for col in df.columns if col != target_column]
 
     # Phân loại cột
-    categorical_features = [col for col in features_to_process if df[col].nunique() <= 6]
-    numerical_features = [col for col in features_to_process if df[col].nunique() > 6]
+    categorical_features = []
+    numerical_features = []
+    unprocessed_columns = []
+
+    for col in features_to_process:
+        is_numeric = pd.api.types.is_numeric_dtype(df[col])
+        unique_count = df[col].nunique()
+
+        if is_numeric and unique_count > 6:
+            numerical_features.append(col)
+        elif not is_numeric and unique_count > 15:
+            unprocessed_columns.append(col)
+        else:
+            categorical_features.append(col)
+
+    if unprocessed_columns:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"message": f"Some columns cannot be preprocessed: {', '.join(unprocessed_columns)}"},
+        )
 
     le = LabelEncoder()  # Khởi tạo LabelEncoder dùng chung cho cả 2 phương pháp
 
@@ -643,7 +661,10 @@ def genetic_selection(
                     detail=f"SMOTE failed: {str(e)}",
                 )
         else:
-            balancing_info = {"method": "smote", "skipped": "Dataset is already balanced (ratio >= 0.9), SMOTE was not applied"}
+            balancing_info = {
+                "method": "smote",
+                "skipped": "Dataset is already balanced (ratio >= 0.9), SMOTE was not applied.",
+            }
     elif balancing_method == "adasyn":
         class_counts = Y_train.value_counts()
         if len(class_counts) >= 2 and class_counts.min() / class_counts.max() < 0.9:
@@ -667,7 +688,10 @@ def genetic_selection(
                     detail=f"ADASYN failed: {str(e)}",
                 )
         else:
-            balancing_info = {"method": "adasyn", "skipped": "Dataset is already balanced (ratio >= 0.9), ADASYN was not applied"}
+            balancing_info = {
+                "method": "adasyn",
+                "skipped": "Dataset is already balanced (ratio >= 0.9), ADASYN was not applied.",
+            }
 
     # --- CHỌN MÔ HÌNH ---
     default_model = SELECTED_MODEL
@@ -866,36 +890,41 @@ def evaluate_feature_selection(
     roc_chart_url = None
     try:
         from sklearn.metrics import roc_curve, auc
-        
+
         # Lấy xác suất dự đoán (class 1)
         probs_before = model_before.predict_proba(X_test_orig)[:, 1]
         probs_after = model_after.predict_proba(X_test_sel)[:, 1]
-        
+
         # Tính ROC curve
         fpr_before, tpr_before, _ = roc_curve(Y_test_orig, probs_before)
         roc_auc_before = auc(fpr_before, tpr_before)
-        
+
         fpr_after, tpr_after, _ = roc_curve(Y_test_sel, probs_after)
         roc_auc_after = auc(fpr_after, tpr_after)
-        
+
         # Vẽ đồ thị
         fig_roc, ax_roc = plt.subplots(figsize=(7, 6))
-        ax_roc.plot(fpr_before, tpr_before, color='darkorange', lw=2, linestyle='--',
-                    label=f'Before Selection (AUC = {roc_auc_before:.3f})')
-        ax_roc.plot(fpr_after, tpr_after, color='green', lw=2.5, 
-                    label=f'After Selection (AUC = {roc_auc_after:.3f})')
-        ax_roc.plot([0, 1], [0, 1], color='gray', lw=1, linestyle='--')
-        
+        ax_roc.plot(
+            fpr_before,
+            tpr_before,
+            color="darkorange",
+            lw=2,
+            linestyle="--",
+            label=f"Before Selection (AUC = {roc_auc_before:.3f})",
+        )
+        ax_roc.plot(fpr_after, tpr_after, color="green", lw=2.5, label=f"After Selection (AUC = {roc_auc_after:.3f})")
+        ax_roc.plot([0, 1], [0, 1], color="gray", lw=1, linestyle="--")
+
         ax_roc.set_xlim([0.0, 1.0])
         ax_roc.set_ylim([0.0, 1.05])
-        ax_roc.set_xlabel('False Positive Rate (1 - Specificity)', fontsize=11)
-        ax_roc.set_ylabel('True Positive Rate (Sensitivity)', fontsize=11)
-        ax_roc.set_title('Receiver Operating Characteristic (ROC) Comparison', fontsize=13, pad=15)
+        ax_roc.set_xlabel("False Positive Rate (1 - Specificity)", fontsize=11)
+        ax_roc.set_ylabel("True Positive Rate (Sensitivity)", fontsize=11)
+        ax_roc.set_title("Receiver Operating Characteristic (ROC) Comparison", fontsize=13, pad=15)
         ax_roc.legend(loc="lower right", frameon=True, shadow=True)
-        
+
         plt.tight_layout()
         roc_chart_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/roc_comparison.png")
-        
+
     except Exception as e:
         print(f"Error gen ROC plot: {e}")
 

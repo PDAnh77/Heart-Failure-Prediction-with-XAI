@@ -206,9 +206,9 @@ export default function FeatureSelectionTab({
 
     const inputClass = "w-full p-2 mt-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#4361EE] outline-none transition-shadow";
 
-    // Trích xuất linh hoạt dữ liệu balancing trả về từ API (hỗ trợ adasyn, smote, v.v.)
-    // Dùng Type Assertion 'any' để linh hoạt đọc key từ kết quả trả về
-    const balancingStats = result?.[localBalancing as keyof typeof result] as any || result?.adasyn;
+    // Extract balancing info returned from backend (shape: { method, before?, after?, skipped? })
+    // Use only when the returned `method` matches the current `localBalancing` selection
+    const balancingStats = result?.balancing && result.balancing.method === localBalancing ? result.balancing : null;
 
     const MetricCompare = ({ label, before, after }: { label: string, before: number, after: number }) => {
         const isBetter = after >= before;

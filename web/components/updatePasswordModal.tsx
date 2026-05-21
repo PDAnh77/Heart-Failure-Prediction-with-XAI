@@ -4,6 +4,7 @@ import { IoMdClose } from "react-icons/io";
 import { FaLock } from "react-icons/fa6";
 import { toast } from "react-hot-toast";
 import { api } from "@/lib/api";
+import { useTranslations } from "next-intl";
 
 interface UpdatePasswordModalProps {
     isOpen: boolean;
@@ -15,6 +16,8 @@ export default function UpdatePasswordModal({ isOpen, onClose }: UpdatePasswordM
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const t = useTranslations("updatePassword");
+    const tCommon = useTranslations("common");
 
     useEffect(() => {
         if (isOpen) {
@@ -29,12 +32,12 @@ export default function UpdatePasswordModal({ isOpen, onClose }: UpdatePasswordM
 
     const handleSave = async () => {
         if (!newPassword || !confirmPassword) {
-            toast.error("Please fill in all fields.");
+            toast.error(t("errors.required"));
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            toast.error("Passwords do not match.");
+            toast.error(t("errors.mismatch"));
             return;
         }
 
@@ -45,14 +48,14 @@ export default function UpdatePasswordModal({ isOpen, onClose }: UpdatePasswordM
                 password: newPassword,
             });
 
-            toast.success("Password updated successfully.");
+            toast.success(t("toast.success"));
             onClose();
         } catch (error: any) {
             console.error("Error updating password:", error);
 
             const errorMessage =
                 error.response?.data?.message ||
-                "Something went wrong. Please try again.";
+                t("toast.genericError");
 
             toast.error(errorMessage);
         } finally {
@@ -79,7 +82,7 @@ export default function UpdatePasswordModal({ isOpen, onClose }: UpdatePasswordM
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                     <FaLock className="text-indigo-600 dark:text-indigo-400" />
-                                    Update Password
+                                    {t("title")}
                                 </h3>
                                 <button
                                     onClick={onClose}
@@ -93,11 +96,11 @@ export default function UpdatePasswordModal({ isOpen, onClose }: UpdatePasswordM
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                        New Password
+                                        {t("fields.newPassword")}
                                     </label>
                                     <input
                                         type="password"
-                                        placeholder="Enter new password"
+                                        placeholder={t("fields.newPasswordPlaceholder")}
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
                                         disabled={isLoading}
@@ -107,11 +110,11 @@ export default function UpdatePasswordModal({ isOpen, onClose }: UpdatePasswordM
 
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-                                        Confirm Password
+                                        {t("fields.confirmPassword")}
                                     </label>
                                     <input
                                         type="password"
-                                        placeholder="Confirm new password"
+                                        placeholder={t("fields.confirmPasswordPlaceholder")}
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
                                         disabled={isLoading}
@@ -127,7 +130,7 @@ export default function UpdatePasswordModal({ isOpen, onClose }: UpdatePasswordM
                                     disabled={isLoading}
                                     className="flex-1 px-4 py-2.5 border hover:cursor-pointer border-gray-300 dark:border-[#FFFFFF1A] dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Cancel
+                                    {tCommon("cancel")}
                                 </button>
 
                                 <button
@@ -138,7 +141,7 @@ export default function UpdatePasswordModal({ isOpen, onClose }: UpdatePasswordM
                                     {isLoading ? (
                                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                     ) : (
-                                        "Update"
+                                        t("actions.update")
                                     )}
                                 </button>
                             </div>

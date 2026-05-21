@@ -100,9 +100,12 @@ export default function EDATab({ datasetId, targetColumn, imputation, onProcesse
                 setIsLoadingEda(false);
 
                 toast.success("Analysis completed successfully!");
-            } catch (error) {
-                console.error("EDA Error:", error);
-                toast.error("Failed to load analysis data.");
+            } catch (error: any) {
+                const message =
+                    error?.response?.data?.detail?.message ||
+                    error?.message ||
+                    "Something went wrong";
+                toast.error(message);
                 fetchedDatasetId.current = null;
             } finally {
                 setIsLoadingSummary(false);
@@ -183,7 +186,6 @@ export default function EDATab({ datasetId, targetColumn, imputation, onProcesse
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
         } catch (error) {
-            console.error("Download Error:", error);
             toast.error("Failed to download the dataset.");
         } finally {
             setIsDownloading(false);
