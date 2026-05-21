@@ -47,6 +47,74 @@ data = pd.read_csv("../input/heart-failure-prediction/heart.csv")
 df1 = data.copy(deep=True)
 
 # ==========================================================
+# 0. XỬ LÝ NGOẠI LAI (OUTLIER) BẰNG PHƯƠNG PHÁP IQR
+# ==========================================================
+print("\n--- BẮT ĐẦU PHÁT HIỆN VÀ XỬ LÝ NGOẠI LAI (IQR) ---")
+
+# Chỉ áp dụng IQR cho các cột số liên tục có ý nghĩa lâm sàng
+# Loại trừ: FastingBS (binary 0/1), HeartDisease (target)
+# Lưu ý đặc biệt:
+#   - Cholesterol=0: là missing data ẩn (mã hóa bằng 0), KHÔNG xử lý tại đây
+#   - RestingBP=0: bất khả thi về sinh học → xử lý riêng dướbên i
+#   - Oldpeak âm: bất hợp lý lâm sàng → clip về 0
+numeric_outlier_cols = ["Age", "RestingBP", "Cholesterol", "MaxHR", "Oldpeak"]
+
+print("\n[IQR] Thống kê TRƯỚC khi xử lý:")
+print(df1[numeric_outlier_cols].describe().T[["min", "25%", "50%", "75%", "max"]])
+
+# --- BƯỚC 0.1: Xử lý đặc biệt trước IQR ---
+
+# RestingBP = 0 là bất khả thi sinh học → thay bằng NaN để impute sau
+bp_zero_mask = df1["RestingBP"] == 0
+if bp_zero_mask.sum() > 0:
+    print(f"\n[RestingBP] Phát hiện {bp_zero_mask.sum()} giá trị = 0 (bất khả thi) → thay bằng NaN")
+    df1.loc[bp_zero_mask, "RestingBP"] = np.nan
+
+# Cholesterol = 0 là missing data ẩn → chuyển sang NaN để MICE xử lý sau
+chol_zero_mask = df1["Cholesterol"] == 0
+if chol_zero_mask.sum() > 0:
+    print(f"[Cholesterol] Phát hiện {chol_zero_mask.sum()} giá trị = 0 (missing ẩn) → thay bằng NaN")
+    df1.loc[chol_zero_mask, "Cholesterol"] = np.nan
+
+
+# --- BƯỚC 0.2: Phát hiện outlier bằng IQR và Winsorization ---
+# Chiến lược: KHÔNG xóa hàng (dataset nhỏ, 918 mẫu, dữ liệu y tế quý)
+# Thay vào đó: clip về fence [Q1 - 1.5*IQR, Q3 + 1.5*IQR] (Winsorization)
+
+outlier_summary = {}
+for col in numeric_outlier_cols:
+    col_data = df1[col].dropna()
+    Q1 = col_data.quantile(0.25)
+    Q3 = col_data.quantile(0.75)
+    IQR = Q3 - Q1
+    lower_fence = Q1 - 1.5 * IQR
+    upper_fence = Q3 + 1.5 * IQR
+
+    n_lower = (df1[col] < lower_fence).sum()
+    n_upper = (df1[col] > upper_fence).sum()
+    n_total = n_lower + n_upper
+
+    outlier_summary[col] = {
+        "Q1": Q1, "Q3": Q3, "IQR": IQR,
+        "Lower Fence": lower_fence, "Upper Fence": upper_fence,
+        "Outliers (dưới)": n_lower, "Outliers (trên)": n_upper, "Tổng outlier": n_total
+    }
+
+    if n_total > 0:
+        # Winsorization: clip về fence thay vì xóa
+        df1[col] = df1[col].clip(lower=lower_fence, upper=upper_fence)
+
+# In bảng tổng hợp kết quả IQR
+print("\n[IQR] Kết quả phát hiện outlier:")
+summary_df = pd.DataFrame(outlier_summary).T
+print(summary_df[["Q1", "Q3", "IQR", "Lower Fence", "Upper Fence",
+                   "Outliers (dưới)", "Outliers (trên)", "Tổng outlier"]].to_string())
+
+print("\n[IQR] Thống kê SAU khi xử lý (Winsorization):")
+print(df1[numeric_outlier_cols].describe().T[["min", "25%", "50%", "75%", "max"]])
+print("--- HOÀN THÀNH XỬ LÝ NGOẠI LAI ---\n")
+
+# ==========================================================
 # GIẢ LẬP DỮ LIỆU KHUYẾT CHO 2 CỘT: CHOLESTEROL (4% missing) & OLDPEAK (10% missing)
 # ==========================================================
 print("\n--- BẮT ĐẦU GIẢ LẬP DỮ LIỆU KHUYẾT (CHOLESTEROL & OLDPEAK) ---")
