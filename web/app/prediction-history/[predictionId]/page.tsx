@@ -10,8 +10,11 @@ import { PredictionHistoryDetail } from "@/types/prediction";
 import { useAuth } from "@/context/authcontext";
 import toast from "react-hot-toast";
 import ImageModal from "@/components/imageModal";
+import { useLocale, useTranslations } from "next-intl";
 
 export default function PredictionDetailPage() {
+    const t = useTranslations("predictionHistoryDetail");
+    const locale = useLocale();
     const params = useParams();
     const predictionId = params.predictionId;
     const [result, setResult] = useState<PredictionHistoryDetail | null>(null);
@@ -21,17 +24,17 @@ export default function PredictionDetailPage() {
     const [modalImageUrl, setModalImageUrl] = useState<string | null>(null);
 
     const GLOSSARY_DATA = [
-        { term: "Age", definition: "Patient's age." },
-        { term: "Sex", definition: "M: Male, F: Female." },
-        { term: "Chest Pain Type", definition: "TA: Typical Angina, ATA: Atypical Angina, NAP: Non-Anginal Pain, ASY: Asymptomatic." },
-        { term: "Resting BP", definition: "Resting blood pressure (in mmHg on admission to the hospital)." },
-        { term: "Cholesterol", definition: "Serum cholesterol in mm/dl." },
-        { term: "Fasting BS", definition: "Fasting blood sugar. 1 if > 120 mg/dl, 0 otherwise." },
-        { term: "Resting ECG", definition: "Resting electrocardiogram results: Normal, ST: ST-T wave abnormality, LVH: Left ventricular hypertrophy." },
-        { term: "Max HR", definition: "Maximum heart rate achieved." },
-        { term: "Exercise Angina", definition: "Exercise-induced angina. Y: Yes, N: No." },
-        { term: "Oldpeak", definition: "ST depression induced by exercise relative to rest." },
-        { term: "ST Slope", definition: "The slope of the peak exercise ST segment: Up, Flat, Down." },
+        { term: t("patientFields.age"), definition: t("glossary.age") },
+        { term: t("patientFields.sex"), definition: t("glossary.sex") },
+        { term: t("patientFields.chestPain"), definition: t("glossary.chestPainType") },
+        { term: t("patientFields.restingBp"), definition: t("glossary.restingBp") },
+        { term: t("patientFields.cholesterol"), definition: t("glossary.cholesterol") },
+        { term: t("patientFields.fastingBs"), definition: t("glossary.fastingBs") },
+        { term: t("patientFields.restingEcg"), definition: t("glossary.restingEcg") },
+        { term: t("patientFields.maxHr"), definition: t("glossary.maxHr") },
+        { term: t("patientFields.exerciseAngina"), definition: t("glossary.exerciseAngina") },
+        { term: t("patientFields.oldpeak"), definition: t("glossary.oldpeak") },
+        { term: t("patientFields.stSlope"), definition: t("glossary.stSlope") },
     ];
 
     useEffect(() => {
@@ -41,7 +44,7 @@ export default function PredictionDetailPage() {
                     const res = await api.get(`/predictions/${predictionId}`);
                     setResult(res.data);
                 } catch (error) {
-                    toast.error("Prediction data not found");
+                    toast.error(t("toast.notFound"));
                 } finally {
                     setLoadingPrediction(false);
                 }
@@ -50,12 +53,13 @@ export default function PredictionDetailPage() {
                 fetchDetail();
             }
         }
-    }, [predictionId, loading, user]);
+    }, [predictionId, loading, user, t]);
 
     const formatDateTime = (dateString: string) => {
         const date = new Date(dateString);
 
-        const parts = new Intl.DateTimeFormat('vi-VN', {
+        const localeTag = locale === "vi" ? "vi-VN" : "en-US";
+        const parts = new Intl.DateTimeFormat(localeTag, {
             hour: '2-digit',
             minute: '2-digit',
             day: '2-digit',
@@ -91,7 +95,7 @@ export default function PredictionDetailPage() {
                         priority
                     />
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 transition-opacity z-10">
-                        <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
+                        <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">{t("clickToExpand")}</span>
                     </div>
                 </div>
             </div>
@@ -103,7 +107,7 @@ export default function PredictionDetailPage() {
             <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
                 <div className="py-3 flex justify-center items-center">
                     <FiLoader className="h-8 w-8 animate-spin text-indigo-600 mr-2" />
-                    <p className="text-gray-500">Loading history...</p>
+                    <p className="text-gray-500">{t("loading")}</p>
                 </div>
             </div>
         </div>
@@ -112,14 +116,14 @@ export default function PredictionDetailPage() {
     if (!result) return (
         <div className="relative min-h-full">
             <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
-                <p>Patient data not found.</p>
+                <p>{t("patientNotFound")}</p>
             </div>
         </div>
     );
 
     return (
         <div className="min-h-screen p-4">
-            <h1 className="text-2xl mb-8 font-bold text-gray-900 dark:text-white">Analysis Report ({formatDateTime(result.created_at.toString())})</h1>
+            <h1 className="text-2xl mb-8 font-bold text-gray-900 dark:text-white">{t("title")} ({formatDateTime(result.created_at.toString())})</h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* LEFT COLUMN: Patient Info */}
@@ -127,27 +131,27 @@ export default function PredictionDetailPage() {
                     {/* 1. Patient Data Card */}
                     <div className="bg-white dark:bg-[#18181B] p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-[#FFFFFF1A]">
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                            <FaUser className="text-indigo-500" /> Patient info
+                            <FaUser className="text-indigo-500" /> {t("patientInfo")}
                         </h3>
                         <div className="grid grid-cols-2 gap-4 text-sm">
-                            <InfoItem label="Age" value={result.input_data.age} />
-                            <InfoItem label="Sex" value={result.input_data.sex} />
-                            <InfoItem label="Chest Pain" value={result.input_data.chest_pain_type} />
-                            <InfoItem label="Resting BP" value={`${result.input_data.resting_bp} mmHg`} />
-                            <InfoItem label="Cholesterol" value={`${result.input_data.cholesterol} mm/dl`} />
-                            <InfoItem label="Fasting BS" value={result.input_data.fasting_bs ? "> 120 mg/dl" : "< 120 mg/dl"} />
-                            <InfoItem label="Resting ECG" value={result.input_data.resting_ecg} />
-                            <InfoItem label="Max HR" value={result.input_data.max_hr} />
-                            <InfoItem label="Exercise Angina" value={result.input_data.exercise_angina} />
-                            <InfoItem label="Oldpeak" value={result.input_data.oldpeak} />
-                            <InfoItem label="ST Slope" value={result.input_data.st_slope} />
+                            <InfoItem label={t("patientFields.age")} value={result.input_data.age} />
+                            <InfoItem label={t("patientFields.sex")} value={result.input_data.sex} />
+                            <InfoItem label={t("patientFields.chestPain")} value={result.input_data.chest_pain_type} />
+                            <InfoItem label={t("patientFields.restingBp")} value={`${result.input_data.resting_bp} mmHg`} />
+                            <InfoItem label={t("patientFields.cholesterol")} value={`${result.input_data.cholesterol} mm/dl`} />
+                            <InfoItem label={t("patientFields.fastingBs")} value={result.input_data.fasting_bs ? "> 120 mg/dl" : "< 120 mg/dl"} />
+                            <InfoItem label={t("patientFields.restingEcg")} value={result.input_data.resting_ecg} />
+                            <InfoItem label={t("patientFields.maxHr")} value={result.input_data.max_hr} />
+                            <InfoItem label={t("patientFields.exerciseAngina")} value={result.input_data.exercise_angina} />
+                            <InfoItem label={t("patientFields.oldpeak")} value={result.input_data.oldpeak} />
+                            <InfoItem label={t("patientFields.stSlope")} value={result.input_data.st_slope} />
                         </div>
                     </div>
 
                     {/* 2. Medical Glossary Card */}
                     <div className="bg-indigo-50/50 dark:bg-[#18181B] p-6 rounded-2xl shadow-sm border border-indigo-100 dark:border-[#FFFFFF1A]">
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                            <FaNotesMedical className="text-indigo-500" /> Medical terms
+                            <FaNotesMedical className="text-indigo-500" /> {t("medicalTerms")}
                         </h3>
                         <div className="space-y-3 pr-2 custom-scrollbar">
                             {GLOSSARY_DATA.map((item, index) => (
@@ -170,22 +174,22 @@ export default function PredictionDetailPage() {
                         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                             <div>
                                 <h3 className="text-lg font-medium text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                                    <FaHeartbeat /> Diagnosis prediction:
+                                    <FaHeartbeat /> {t("diagnosisPrediction")}
                                 </h3>
                                 <p className={`text-4xl font-extrabold mt-2 tracking-tight 
                                             ${result.predicted_label === 1
                                         ? 'text-red-600 dark:text-red-500'
                                         : 'text-green-600 dark:text-green-500'
                                     }`}>
-                                    {result.predicted_label === 1 ? "HEART FAILURE RISK" : "NORMAL"}
+                                    {result.predicted_label === 1 ? t("heartFailureRisk") : t("normal")}
                                 </p>
                                 <p className="text-sm mt-2 text-gray-500 dark:text-gray-400">
-                                    Based on the provided clinical indicators.
+                                    {t("clinicalIndicators")}
                                 </p>
                             </div>
 
                             <div className="flex flex-col items-center justify-center bg-gray-50 dark:bg-black/20 p-4 rounded-xl">
-                                <span className="text-xs uppercase font-bold text-gray-400 mb-1">Confidence</span>
+                                <span className="text-xs uppercase font-bold text-gray-400 mb-1">{t("confidence")}</span>
                                 <div className="relative flex items-center justify-center">
                                     <span className={`text-3xl font-black`}>
                                         {(result.predicted_probability * 100).toFixed(1)}%
@@ -198,29 +202,29 @@ export default function PredictionDetailPage() {
                     {/* 2. Biểu đồ phân tích (XAI Charts) */}
                     <div className="mb-6">
                         <h3 className="text-xl font-bold mb-6 text-gray-900 dark:text-white flex items-center">
-                            <span className="mr-2 bg-indigo-100 text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-md dark:bg-indigo-500/20 dark:text-indigo-300">XAI MODEL</span>
-                            AI logic explanation
+                            <span className="mr-2 bg-indigo-100 text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-md dark:bg-indigo-500/20 dark:text-indigo-300">{t("xaiModel")}</span>
+                            {t("aiLogicExplanation")}
                         </h3>
 
                         <div className="grid grid-cols-1 gap-8">
                             <div>
-                                {renderChartImage(result.prediction_xai.shap_waterfall, "Feature Impact Analysis (SHAP Waterfall)")}
+                                {renderChartImage(result.prediction_xai.shap_waterfall, t("charts.shapWaterfallTitle"))}
                                 <p className="text-sm text-gray-500 mt-2 text-center italic dark:text-gray-200">
-                                    Visualizes how individual factors shift the prediction from the baseline.
-                                    <span className="font-bold text-red-500"> Red bars</span> indicate factors increasing heart failure risk,
-                                    while <span className="font-bold text-blue-500"> Blue bars</span> indicate factors decreasing the risk.
+                                    {t("charts.shapWaterfallDescription")}
+                                    <span className="font-bold text-red-500"> {t("charts.shapWaterfallRed")}</span> {t("charts.shapWaterfallMiddle")}
+                                    <span className="font-bold text-blue-500"> {t("charts.shapWaterfallBlue")}</span> {t("charts.shapWaterfallEnd")}
                                 </p>
                             </div>
                             <div>
-                                {renderChartImage(result.prediction_xai.shap_bar, "Global Feature Importance (SHAP Bar)")}
+                                {renderChartImage(result.prediction_xai.shap_bar, t("charts.shapBarTitle"))}
                                 <p className="text-sm text-gray-500 mt-2 text-center italic dark:text-gray-200">
-                                    Ranks the health indicators by their absolute impact on this prediction. Longer bars mean the AI considered these factors most critical for this patient.
+                                    {t("charts.shapBarDescription")}
                                 </p>
                             </div>
                             <div>
-                                {renderChartImage(result.prediction_xai.lime, "Local Interpretation (LIME)")}
+                                {renderChartImage(result.prediction_xai.lime, t("charts.limeTitle"))}
                                 <p className="text-sm text-gray-500 mt-2 text-center italic dark:text-gray-200">
-                                    Independent verification: Analyzing which specific features support a "High Risk" diagnosis versus those supporting a "Normal" diagnosis.
+                                    {t("charts.limeDescription")}
                                 </p>
                             </div>
                         </div>

@@ -123,5 +123,156 @@
         "description": "Tiền xử lý, phân tích khám phá (EDA) và lựa chọn đặc trưng từ tập dữ liệu."
       }
     }
+  },
+  "predictIndividual": {
+    "title": "Thông tin bệnh nhân",
+    "description": "Vui lòng cung cấp thông tin bệnh nhân chính xác để cải thiện kết quả dự đoán",
+    "buttons": {
+      "autoFillSample": "Ví dụ mẫu",
+      "loading": "Đang tải...",
+      "resetForm": "Đặt lại thông tin",
+      "analyzing": "Đang phân tích...",
+      "predict": "Dự đoán"
+    },
+    "toast": {
+      "signInRequired": "Vui lòng đăng nhập để tiếp tục.",
+      "sessionExpired": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+      "autoFillFailed": "Tự điền dữ liệu thất bại.",
+      "checkingAuth": "Đang kiểm tra xác thực, vui lòng thử lại sau ít phút.",
+      "predictionFailed": "Đã xảy ra lỗi trong quá trình dự đoán."
+    },
+    "sections": {
+      "demographic": "Dữ liệu nhân khẩu học",
+      "cardiovascular": "Chỉ số tim mạch",
+      "symptoms": "Triệu chứng và tiền sử lâm sàng"
+    },
+    "fields": {
+      "gender": {
+        "label": "Giới tính",
+        "male": "Nam",
+        "female": "Nữ",
+        "description": "Giới tính của bệnh nhân."
+      },
+      "age": {
+        "label": "Tuổi",
+        "placeholder": "vd: 45",
+        "description": "Khoảng cho phép: 1 - 120 tuổi."
+      },
+      "restingBp": {
+        "label": "Huyết áp lúc nghỉ",
+        "placeholder": "vd: 120",
+        "description": "Huyết áp tâm thu theo mmHg (Khoảng: 50 - 250)."
+      },
+      "cholesterol": {
+        "label": "Cholesterol huyết thanh",
+        "placeholder": "vd: 210",
+        "description": "Cholesterol huyết thanh theo mg/dl (Khoảng: 0 - 600)."
+      },
+      "maxHr": {
+        "label": "Nhịp tim tối đa",
+        "placeholder": "vd: 150",
+        "description": "Nhịp tim tối đa đạt được theo bpm (Khoảng: 60 - 220)."
+      },
+      "chestPainType": {
+        "label": "Loại đau ngực",
+        "placeholder": "Chọn loại đau ngực...",
+        "ta": "Typical angina",
+        "ata": "Atypical angina",
+        "nap": "Non-anginal pain",
+        "asy": "Asymptomatic",
+        "description": "Mô tả chủ quan về cơn đau do bệnh nhân báo cáo."
+      },
+      "fastingBs": {
+        "label": "Đường huyết lúc đói",
+        "placeholder": "Đường huyết lúc đói > 120 mg/dl?",
+        "yes": "Có (> 120 mg/dl)",
+        "no": "Không (<= 120 mg/dl)",
+        "description": "Được đo theo mg/dl sau khi nhịn ăn."
+      },
+      "restingEcg": {
+        "label": "Điện tâm đồ lúc nghỉ",
+        "placeholder": "Chọn kết quả...",
+        "normal": "Bình thường",
+        "st": "Bất thường sóng ST-T",
+        "lvh": "Phì đại thất trái",
+        "description": "Kết quả dựa trên sóng ST-T hoặc tiêu chí Estes."
+      },
+      "exerciseAngina": {
+        "label": "Đau thắt ngực do gắng sức",
+        "yes": "Có",
+        "no": "Không",
+        "description": "Cơn đau xuất hiện cụ thể khi gắng sức.",
+        "required": "Vui lòng chọn một tùy chọn."
+      },
+      "oldpeak": {
+        "label": "Oldpeak",
+        "placeholder": "vd: 1.5 hoặc -0.5",
+        "description": "Độ lệch ST do gắng sức gây ra (thường từ -5 đến 10; giá trị âm biểu thị ST chênh lên)."
+      },
+      "stSlope": {
+        "label": "Độ dốc ST",
+        "placeholder": "Chọn dạng đường dốc...",
+        "up": "Dốc lên",
+        "flat": "Phẳng",
+        "down": "Dốc xuống",
+        "description": "Độ dốc của đoạn ST tại thời điểm gắng sức đỉnh."
+      }
+    }
+  },
+  "predictionHistoryDetail": {
+    "toast": {
+      "notFound": "Không tìm thấy dữ liệu dự đoán"
+    },
+    "loading": "Đang tải lịch sử...",
+    "patientNotFound": "Không tìm thấy dữ liệu bệnh nhân.",
+    "title": "Báo cáo phân tích",
+    "patientInfo": "Thông tin bệnh nhân",
+    "medicalTerms": "Thuật ngữ y khoa",
+    "diagnosisPrediction": "Dự đoán chẩn đoán:",
+    "heartFailureRisk": "NGUY CƠ SUY TIM",
+    "normal": "BÌNH THƯỜNG",
+    "clinicalIndicators": "Dựa trên các chỉ số lâm sàng đã cung cấp.",
+    "confidence": "Độ tin cậy",
+    "xaiModel": "XAI MODEL",
+    "aiLogicExplanation": "Giải thích logic AI",
+    "clickToExpand": "Nhấn để phóng to",
+    "charts": {
+      "shapWaterfallTitle": "Mức độ tác động của các đặc trưng",
+      "shapWaterfallDescription": "Minh họa cách từng yếu tố riêng lẻ dịch chuyển dự đoán so với giá trị cơ sở.",
+      "shapWaterfallRed": "Thanh màu đỏ",
+      "shapWaterfallMiddle": "thể hiện các yếu tố làm tăng nguy cơ suy tim,",
+      "shapWaterfallBlue": "thanh màu xanh",
+      "shapWaterfallEnd": "thể hiện các yếu tố làm giảm nguy cơ.",
+      "shapBarTitle": "Tầm quan trọng của các đặc trưng",
+      "shapBarDescription": "Xếp hạng các chỉ số sức khỏe theo mức ảnh hưởng tuyệt đối lên dự đoán này. Giá trị càng cao thể hiện AI xem yếu tố đó càng quan trọng với bệnh nhân.",
+      "limeTitle": "Diễn giải cục bộ",
+      "limeDescription": "Đối chiếu độc lập: Phân tích các đặc trưng cụ thể đang ủng hộ chẩn đoán \"Nguy cơ cao\" so với các đặc trưng ủng hộ chẩn đoán \"Bình thường\"."
+    },
+    "patientFields": {
+      "age": "Age",
+      "sex": "Sex",
+      "chestPain": "Chest Pain",
+      "restingBp": "Resting BP",
+      "cholesterol": "Cholesterol",
+      "fastingBs": "Fasting BS",
+      "restingEcg": "Resting ECG",
+      "maxHr": "Max HR",
+      "exerciseAngina": "Exercise Angina",
+      "oldpeak": "Oldpeak",
+      "stSlope": "ST Slope"
+    },
+    "glossary": {
+      "age": "Tuổi của bệnh nhân.",
+      "sex": "M: Nam, F: Nữ.",
+      "chestPainType": "TA: Typical Angina, ATA: Atypical Angina, NAP: Non-Anginal Pain, ASY: Asymptomatic.",
+      "restingBp": "Huyết áp lúc nghỉ (mmHg).",
+      "cholesterol": "Cholesterol huyết thanh theo mm/dl.",
+      "fastingBs": "Đường huyết lúc đói. 1 nếu > 120 mg/dl, ngược lại là 0.",
+      "restingEcg": "Kết quả điện tâm đồ lúc nghỉ: Normal, ST: bất thường sóng ST-T, LVH: phì đại thất trái.",
+      "maxHr": "Nhịp tim tối đa đạt được.",
+      "exerciseAngina": "Đau thắt ngực do gắng sức (Y: Có, N: Không).",
+      "oldpeak": "Mức giảm đoạn ST do gắng sức so với khi nghỉ.",
+      "stSlope": "Độ dốc của đoạn ST ở đỉnh gắng sức: Up, Flat, Down."
+    }
   }
 }
