@@ -3,7 +3,7 @@ import { useState, ChangeEvent, DragEvent } from "react";
 import { useAuth } from "@/context/authcontext";
 import { useRouter } from "next/navigation";
 import { FaUpload } from "react-icons/fa6";
-import { FiFileText, FiLoader, FiChevronDown, FiChevronUp } from "react-icons/fi";
+import { FiFileText, FiChevronDown, FiChevronUp } from "react-icons/fi";
 import { IoMdClose } from "react-icons/io";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
@@ -253,7 +253,7 @@ export default function Upload() {
                         >
                             {isUploading ? (
                                 <>
-                                    <FiLoader className="w-5 h-5 animate-spin" />
+                                    <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"></div>
                                     Uploading...
                                 </>
                             ) : (

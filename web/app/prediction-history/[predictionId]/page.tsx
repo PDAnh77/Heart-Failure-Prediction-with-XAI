@@ -4,12 +4,11 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import Image from "next/image";
 import { FaUser, FaNotesMedical } from "react-icons/fa6";
-import { FiLoader } from "react-icons/fi";
 import { FaHeartbeat } from "react-icons/fa";
 import { PredictionHistoryDetail } from "@/types/prediction";
 import { useAuth } from "@/context/authcontext";
 import toast from "react-hot-toast";
-import ImageModal from "@/components/imageModal";
+import ImageModal from "@/components/modals/imageModal";
 import { useLocale, useTranslations } from "next-intl";
 
 export default function PredictionDetailPage() {
@@ -106,7 +105,7 @@ export default function PredictionDetailPage() {
         <div className="relative min-h-full">
             <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
                 <div className="py-3 flex justify-center items-center">
-                    <FiLoader className="h-8 w-8 animate-spin text-indigo-600 mr-2" />
+                    <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-gray-500">{t("loading")}</p>
                 </div>
             </div>

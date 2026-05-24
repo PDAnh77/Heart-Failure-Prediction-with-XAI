@@ -1,9 +1,9 @@
 "use client";
 import { useState, Suspense, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { FiBarChart2, FiCpu, FiLoader } from "react-icons/fi";
-import EDATab from "@/components/edaTab";
-import FeatureSelectionTab from "@/components/featureSelectionTab";
+import { FiBarChart2, FiCpu } from "react-icons/fi";
+import EDATab from "@/components/tabs/edaTab";
+import FeatureSelectionTab from "@/components/tabs/featureSelectionTab";
 import { useAuth } from "@/context/authcontext";
 
 function DashboardContent() {
@@ -36,7 +36,7 @@ function DashboardContent() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full min-h-[50vh]">
-                <FiLoader className="w-8 h-8 animate-spin text-[#4361EE]" />
+                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                 <span className="ml-3 text-gray-500 font-medium">Verifying access...</span>
             </div>
         );
@@ -126,7 +126,7 @@ export default function AnalysisDashboard() {
     return (
         <Suspense fallback={
             <div className="flex items-center justify-center h-full min-h-[50vh]">
-                <FiLoader className="w-8 h-8 animate-spin text-[#4361EE]" />
+                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
         }>
             <DashboardContent />

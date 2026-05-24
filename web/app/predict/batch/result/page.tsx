@@ -1,18 +1,13 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { FiDownload, FiUsers, FiAlertTriangle, FiCheckCircle, FiActivity, FiX } from "react-icons/fi";
+import { FiDownload, FiUsers, FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
 import { api } from "@/lib/api";
 import toast from "react-hot-toast";
 import { BatchResult } from "@/types/batch";
 import Image from "next/image";
-import ImageModal from "@/components/imageModal";
-
-interface PatientRow {
-    prediction_result?: number;
-    prediction_probability?: number;
-    [key: string]: any;
-}
+import ImageModal from "@/components/modals/imageModal";
+import PatientDetailModal, { PatientRow } from "@/components/modals/patientDetailModal";
 
 export default function BatchResultPage() {
     const router = useRouter();
@@ -161,7 +156,12 @@ export default function BatchResultPage() {
     };
 
     if (!resultData) {
-        return <div className="p-8 text-center text-gray-500">Loading results...</div>;
+        return (
+            <div className="flex items-center justify-center gap-2 py-4 text-gray-500">
+                <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <span>Loading results...</span>
+            </div>
+        );
     }
 
     const { summary, batch_shap_bar, batch_shap_beeswarm, file_id } = resultData;
@@ -237,30 +237,36 @@ export default function BatchResultPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
                 {/* SHAP Bar Chart */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">Feature Importance</h3>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">Feature importance</h3>
                     <div
                         className="relative w-full aspect-video flex-1 bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => setModalImageUrl(batch_shap_bar)}
                     >
-                        <Image src={batch_shap_bar} alt="SHAP Bar Chart" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-contain p-2 priority" />
+                        <Image src={batch_shap_bar} alt="SHAP Bar Chart" loading="eager" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-contain p-2 priority" />
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 transition-opacity">
                             <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
                         </div>
                     </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                        Displays the average magnitude of impact each feature has on the model's predictions across the entire patient data.
+                    </p>
                 </div>
 
                 {/* SHAP Beeswarm Chart */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">Feature Impact Distribution</h3>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">Feature impact distribution</h3>
                     <div
                         className="relative w-full aspect-video flex-1 bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => setModalImageUrl(batch_shap_beeswarm)}
                     >
-                        <Image src={batch_shap_beeswarm} alt="SHAP Beeswarm Chart" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-contain p-2" priority />
+                        <Image src={batch_shap_beeswarm} alt="SHAP Beeswarm Chart" loading="eager" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-contain p-2" priority />
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 transition-opacity">
                             <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
                         </div>
                     </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                        Illustrates the distribution of feature impacts, showing how specific feature values (high vs. low) affect the prediction outcomes.
+                    </p>
                 </div>
             </div>
 
@@ -309,153 +315,22 @@ export default function BatchResultPage() {
 
             {/* Trạng thái Loading */}
             {loadingMore && (
-                <div className="flex justify-center py-4">
+                <div className="flex justify-center gap-2 py-4 text-gray-500">
                     <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span>Loading...</span>
                 </div>
             )}
 
-            {/* --- MODAL CHI TIẾT BỆNH NHÂN & XAI --- */}
-            {selectedPatient && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col shadow-2xl relative">
-                        {(() => {
-                            const selectedResultValue = selectedPatient[resultKey] ?? selectedPatient.prediction_result;
-                            const selectedProbabilityValue = selectedPatient[probabilityKey] ?? selectedPatient.prediction_probability;
-                            const isSelectedHighRisk = Number(selectedResultValue) === 1;
-
-                            return (
-                                <>
-
-                                    {/* Header Modal */}
-                                    <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
-                                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                            <FiActivity className="text-blue-500" />
-                                            Patient analysis
-                                        </h2>
-                                        <button
-                                            onClick={() => setSelectedPatient(null)}
-                                            className="p-2 text-gray-400 hover:cursor-pointer hover:text-gray-700 hover:bg-gray-100 dark:hover:text-white dark:hover:bg-gray-700 rounded-full transition-colors"
-                                        >
-                                            <FiX className="w-6 h-6" />
-                                        </button>
-                                    </div>
-
-                                    {/* Body Modal */}
-                                    <div className="p-6 overflow-y-auto">
-                                        {/* Thanh tóm tắt kết quả */}
-                                        <div className={`p-5 rounded-xl mb-6 flex justify-between items-center border ${isSelectedHighRisk
-                                            ? 'bg-red-50 border-red-200 dark:bg-red-900/10 dark:border-red-800/50'
-                                            : 'bg-green-50 border-green-200 dark:bg-green-900/10 dark:border-green-800/50'
-                                            }`}>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">AI Prediction</p>
-                                                <p className={`text-2xl font-bold ${isSelectedHighRisk ? 'text-red-600 dark:text-red-500' : 'text-green-600 dark:text-green-500'}`}>
-                                                    {isSelectedHighRisk ? 'Heart Disease Detected' : 'Normal / Low risk'}
-                                                </p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Confidence Score</p>
-                                                <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                                                    {((selectedProbabilityValue || 0) * 100).toFixed(1)}%
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        {/* Thông tin bệnh nhân */}
-                                        <div className="mb-6 p-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Patient information</h3>
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-y-4 gap-x-4">
-                                                {Object.entries(selectedPatient)
-                                                    .filter(([key]) => !hiddenKeys.has(key))
-                                                    .map(([key, value]) => (
-                                                        <div key={key}>
-                                                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase wrap-break-word">
-                                                                {key.replace(/_/g, ' ')}
-                                                            </p>
-                                                            <p className="text-base font-semibold text-gray-900 dark:text-white truncate">
-                                                                {value !== null && value !== undefined && value !== '' ? String(value) : 'N/A'}
-                                                            </p>
-                                                        </div>
-                                                    ))}
-                                            </div>
-                                        </div>
-
-                                        {/* XAI */}
-                                        {loadingXAI ? (
-                                            <div className="flex flex-col items-center justify-center py-16 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
-                                                <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                                                <p className="text-gray-600 dark:text-gray-400 font-medium">Generating AI Explainability...</p>
-                                                <p className="text-sm text-gray-400 mt-2">This may take a few seconds as we analyze the features.</p>
-                                            </div>
-                                        ) : patientXAI ? (
-                                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-                                                {/* 1. SHAP Waterfall */}
-                                                {patientXAI.shap_waterfall && (
-                                                    <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-white dark:bg-gray-800">
-                                                        <div className="mb-2 text-center">
-                                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200">Risk factor breakdown</p>
-                                                        </div>
-                                                        <div
-                                                            className="relative w-full aspect-square bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90"
-                                                            onClick={() => setModalImageUrl(patientXAI.shap_waterfall)}
-                                                        >
-                                                            <Image src={patientXAI.shap_waterfall} loading="lazy" alt="SHAP Waterfall" fill sizes="(max-width: 1024px) 100vw, 33vw" className="object-contain p-2" />
-                                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 transition-opacity">
-                                                                <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* 2. SHAP Bar */}
-                                                {patientXAI.shap_bar && (
-                                                    <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-white dark:bg-gray-800">
-                                                        <div className="mb-2 text-center">
-                                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200">Top influencing factors</p>
-                                                        </div>
-                                                        <div
-                                                            className="relative w-full aspect-square bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90"
-                                                            onClick={() => setModalImageUrl(patientXAI.shap_bar)}
-                                                        >
-                                                            <Image src={patientXAI.shap_bar} loading="lazy" alt="SHAP Bar" fill sizes="(max-width: 1024px) 100vw, 33vw" className="object-contain p-2" />
-                                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 transition-opacity">
-                                                                <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* 3. LIME Analysis */}
-                                                {patientXAI.lime && (
-                                                    <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-white dark:bg-gray-800">
-                                                        <div className="mb-2 text-center">
-                                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200">Local feature impact</p>
-                                                        </div>
-                                                        <div
-                                                            className="relative w-full aspect-square bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90"
-                                                            onClick={() => setModalImageUrl(patientXAI.lime)}
-                                                        >
-                                                            <Image src={patientXAI.lime} loading="lazy" alt="LIME" fill sizes="(max-width: 1024px) 100vw, 33vw" className="object-contain p-2" />
-                                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 transition-opacity">
-                                                                <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ) : (
-                                            <div className="text-center py-12 text-gray-500">
-                                                Could not generate explainability charts for this patient.
-                                            </div>
-                                        )}
-                                    </div>
-                                </>
-                            );
-                        })()}
-                    </div>
-                </div>
-            )}
+            <PatientDetailModal
+                patient={selectedPatient}
+                onClose={() => setSelectedPatient(null)}
+                resultKey={resultKey}
+                probabilityKey={probabilityKey}
+                hiddenKeys={hiddenKeys}
+                loadingXAI={loadingXAI}
+                patientXAI={patientXAI}
+                onImageClick={(url: string) => setModalImageUrl(url)}
+            />
 
             <ImageModal
                 imageUrl={modalImageUrl}

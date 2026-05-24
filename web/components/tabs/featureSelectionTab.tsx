@@ -1,14 +1,14 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
-import { FiTrendingUp, FiInfo, FiDownload, FiPlay, FiLoader, FiBarChart2 } from "react-icons/fi";
+import { FiTrendingUp, FiInfo, FiDownload, FiPlay, FiBarChart2 } from "react-icons/fi";
 import { FaStar, FaCheckCircle, FaBalanceScale } from "react-icons/fa";
 import { FaFilter } from "react-icons/fa6";
 import { IoSettingsSharp } from "react-icons/io5";
 import { api } from "@/lib/api";
 import toast from "react-hot-toast";
 import { EvalResult, FSResult } from "@/types/feature_selection";
-import ImageModal from "./imageModal";
+import ImageModal from "../modals/imageModal";
 
 interface FeatureSelectionTabProps {
     targetColumn: string;
@@ -232,7 +232,7 @@ export default function FeatureSelectionTab({
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center min-h-[60vh]">
                         <div className="flex items-center gap-3 mb-6">
-                            <FiLoader className="w-8 h-8 text-[#4361EE] animate-spin" />
+                            <div className="w-8 h-8 border-2 border-[#4361EE] border-t-transparent rounded-full animate-spin"></div>
                             <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
                                 Running feature selection
                             </h3>
@@ -408,14 +408,15 @@ export default function FeatureSelectionTab({
                                 </div>
                                 {isEvalLoading && (
                                     <div className="flex items-center gap-2 text-sm text-[#4361EE] animate-pulse">
-                                        <FiLoader className="animate-spin" /> Generating interpretability charts...
+                                        <div className="w-5 h-5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
                                     </div>
                                 )}
                             </div>
 
                             <div className="p-6">
                                 {isEvalLoading ? (
-                                    <div className="h-64 flex items-center justify-center bg-gray-50 dark:bg-gray-900/20 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                                    <div className="h-64 flex items-center justify-center gap-2 bg-gray-50 dark:bg-gray-900/20 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
+                                        <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                                         <p className="text-gray-500">Please wait while we evaluate the selected features...</p>
                                     </div>
                                 ) : evalResult ? (

@@ -5,7 +5,7 @@ import { useAuth } from "@/context/authcontext";
 import { api } from "@/lib/api";
 import toast from "react-hot-toast";
 import { FaUpload } from "react-icons/fa6";
-import { FiFileText, FiLoader, FiInfo } from "react-icons/fi";
+import { FiFileText, FiInfo } from "react-icons/fi";
 import { IoMdClose } from "react-icons/io";
 
 export default function PredictBatch() {
@@ -260,7 +260,7 @@ export default function PredictBatch() {
                         >
                             {isUploading ? (
                                 <>
-                                    <FiLoader className="w-5 h-5 animate-spin" />
+                                    <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"></div>
                                     Loading...
                                 </>
                             ) : (
@@ -382,7 +382,7 @@ export default function PredictBatch() {
                             >
                                 {isPredicting ? (
                                     <>
-                                        <FiLoader className="w-5 h-5 animate-spin" />
+                                        <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"></div>
                                         Processing batch...
                                     </>
                                 ) : (

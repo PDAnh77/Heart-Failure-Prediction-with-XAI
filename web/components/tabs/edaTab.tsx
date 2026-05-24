@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useState, useRef, UIEvent } from "react";
-import { FiLoader, FiPieChart, FiAlertCircle, FiCheck, FiDatabase, FiDownload, FiGrid, FiLayers } from "react-icons/fi";
+import { FiPieChart, FiAlertCircle, FiCheck, FiDatabase, FiDownload, FiGrid, FiLayers } from "react-icons/fi";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { api } from "@/lib/api";
-import ImageModal from "@/components/imageModal";
+import ImageModal from "@/components/modals/imageModal";
 import { DatasetSummary } from "@/types/dataset_summary";
 
 interface EdaTabProps {
@@ -317,7 +317,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, onProcesse
                 </table>
                 {isLoadingMore && (
                     <div className="py-3 flex justify-center items-center bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700">
-                        <FiLoader className="w-5 h-5 animate-spin text-indigo-600 mr-2" />
+                        <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                         <span className="text-xs text-gray-500">Loading more rows...</span>
                     </div>
                 )}
@@ -358,7 +358,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, onProcesse
                 {/* --- Dataset Scale & Missing Values --- */}
                 {isLoadingSummary ? (
                     <div className="flex gap-2 items-center justify-center py-10 rounded-2xl border border-gray-100 dark:border-gray-700">
-                        <FiLoader className="w-8 h-8 animate-spin text-[#4361EE]" />
+                        <div className="w-8 h-8 border-2 border-[#4361EE] border-t-transparent rounded-full animate-spin"></div>
                         <p className="text-gray-500 font-medium animate-pulse">Analyzing data structure...</p>
                     </div>
                 ) : summary && (
@@ -522,7 +522,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, onProcesse
                 {/* --- DATA PREVIEW (TRƯỚC & SAU) --- */}
                 {isLoadingPreprocess ? (
                     <div className="flex gap-2 items-center justify-center py-12 rounded-2xl border border-gray-100 dark:border-gray-700">
-                        <FiLoader className="w-8 h-8 animate-spin text-[#2EC4B6]" />
+                        <div className="w-8 h-8 border-2 border-[#2EC4B6] border-t-transparent rounded-full animate-spin"></div>
                         <p className="text-gray-500 font-medium animate-pulse">Optimizing and preparing dataset...</p>
                     </div>
                 ) : processedId && (
@@ -633,7 +633,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, onProcesse
                 {/* SECTION EDA PLOTS */}
                 {isLoadingEda ? (
                     <div className="flex gap-2 items-center justify-center py-16 rounded-2xl border border-gray-100 dark:border-gray-700">
-                        <FiLoader className="w-8 h-8 animate-spin text-[#9B5DE5]" />
+                        <div className="w-8 h-8 border-2 border-[#9B5DE5] border-t-transparent rounded-full animate-spin"></div>
                         <p className="text-gray-500 font-medium animate-pulse">Generating analytical charts...</p>
                     </div>
                 ) : Object.keys(charts).length > 0 && (
