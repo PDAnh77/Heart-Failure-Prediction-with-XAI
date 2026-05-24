@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import Image from "next/image";
 import { FiTrendingUp, FiInfo, FiDownload, FiPlay, FiBarChart2 } from "react-icons/fi";
 import { FaStar, FaCheckCircle, FaBalanceScale } from "react-icons/fa";
@@ -226,6 +226,8 @@ export default function FeatureSelectionTab({
         );
     };
 
+    const timestamp = useMemo(() => Date.now(), [evalResult]);
+
     return (
         <div>
             <div className="flex-1 mt-6">
@@ -406,11 +408,6 @@ export default function FeatureSelectionTab({
                                     <FiBarChart2 className="text-[#4361EE] text-xl" />
                                     <h3 className="font-bold text-gray-800 dark:text-gray-200">Impact evaluation</h3>
                                 </div>
-                                {isEvalLoading && (
-                                    <div className="flex items-center gap-2 text-sm text-[#4361EE] animate-pulse">
-                                        <div className="w-5 h-5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
-                                    </div>
-                                )}
                             </div>
 
                             <div className="p-6">
@@ -420,52 +417,173 @@ export default function FeatureSelectionTab({
                                         <p className="text-gray-500">Please wait while we evaluate the selected features...</p>
                                     </div>
                                 ) : evalResult ? (
-                                    <div className="space-y-6">
-                                        {/* Metrics Table */}
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            <MetricCompare label="Accuracy" before={evalResult.metrics_before.accuracy} after={evalResult.metrics_after.accuracy} />
-                                            <MetricCompare label="Recall (Sensitivity)" before={evalResult.metrics_before.recall} after={evalResult.metrics_after.recall} />
-                                            <MetricCompare label="Precision" before={evalResult.metrics_before.precision} after={evalResult.metrics_after.precision} />
-                                            <MetricCompare label="F1-Score" before={evalResult.metrics_before.f1_score} after={evalResult.metrics_after.f1_score} />
+                                    <div className="space-y-12">
+                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                            {/* Cột trái: Metrics (Chiếm 1/3) */}
+                                            <div className="flex flex-col gap-4 lg:col-span-1">
+                                                <MetricCompare label="Accuracy" before={evalResult.metrics_before.accuracy} after={evalResult.metrics_after.accuracy} />
+                                                <MetricCompare label="Recall (Sensitivity)" before={evalResult.metrics_before.recall} after={evalResult.metrics_after.recall} />
+                                                <MetricCompare label="Precision" before={evalResult.metrics_before.precision} after={evalResult.metrics_after.precision} />
+                                                <MetricCompare label="F1-Score" before={evalResult.metrics_before.f1_score} after={evalResult.metrics_after.f1_score} />
+                                            </div>
+
+                                            {/* Cột phải: Confusion Matrix & ROC (Chiếm 2/3) */}
+                                            <div className="flex flex-col gap-6 lg:col-span-2">
+                                                {/* Confusion Matrix */}
+                                                {evalResult.confusion_matrix_chart_url && (
+                                                    <div
+                                                        className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white p-2"
+                                                        onClick={() => setSelectedImage(`${evalResult.confusion_matrix_chart_url}?t=${timestamp}`)}
+                                                    >
+                                                        <Image
+                                                            src={`${evalResult.confusion_matrix_chart_url}?t=${timestamp}`}
+                                                            alt="Confusion Matrix Comparison"
+                                                            width={800}
+                                                            height={350}
+                                                            className="w-full h-auto max-h-[350px] object-contain"
+                                                        />
+                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity">
+                                                            <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* ROC Curve */}
+                                                {evalResult.roc_chart_url && (
+                                                    <div
+                                                        className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white p-2"
+                                                        onClick={() => setSelectedImage(`${evalResult.roc_chart_url}?t=${timestamp}`)}
+                                                    >
+                                                        <Image
+                                                            src={`${evalResult.roc_chart_url}?t=${timestamp}`}
+                                                            alt="ROC Curve Comparison"
+                                                            width={800}
+                                                            height={500}
+                                                            className="w-full h-auto max-h-[450px] object-contain"
+                                                        />
+                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity">
+                                                            <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
 
-                                        {/* Charts - Hiển thị thành 2 cột cho gọn */}
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                            {evalResult.confusion_matrix_chart_url && (
-                                                <div
-                                                    className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white"
-                                                    onClick={() => setSelectedImage(evalResult.confusion_matrix_chart_url)}
-                                                >
-                                                    <Image
-                                                        src={evalResult.confusion_matrix_chart_url}
-                                                        alt="Confusion Matrix Comparison"
-                                                        width={600}
-                                                        height={400}
-                                                        className="w-full h-auto object-contain"
-                                                    />
-                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity">
-                                                        <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                        <div className="space-y-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                                            <h3 className="font-bold text-gray-800 dark:text-gray-200">Explainable AI (Before vs After)</h3>
+                                            {/* 2.1 SHAP Bar Chart */}
+                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                {evalResult.shap_chart_before_url && (
+                                                    <div
+                                                        className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white p-2"
+                                                        onClick={() => setSelectedImage(`${evalResult.shap_chart_before_url}?t=${timestamp}`)}
+                                                    >
+                                                        <Image
+                                                            src={`${evalResult.shap_chart_before_url}?t=${timestamp}`}
+                                                            alt="SHAP Importance Before"
+                                                            width={600}
+                                                            height={400}
+                                                            className="w-full h-auto object-contain"
+                                                        />
+                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-xl">
+                                                            <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                )}
+                                                {evalResult.shap_chart_after_url && (
+                                                    <div
+                                                        className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white p-2"
+                                                        onClick={() => setSelectedImage(`${evalResult.shap_chart_after_url}?t=${timestamp}`)}
+                                                    >
+                                                        <Image
+                                                            src={`${evalResult.shap_chart_after_url}?t=${timestamp}`}
+                                                            alt="SHAP Importance After"
+                                                            width={600}
+                                                            height={400}
+                                                            className="w-full h-auto object-contain"
+                                                        />
+                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-xl">
+                                                            <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
 
-                                            {evalResult.roc_chart_url && (
-                                                <div
-                                                    className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white"
-                                                    onClick={() => setSelectedImage(evalResult.roc_chart_url)}
-                                                >
-                                                    <Image
-                                                        src={evalResult.roc_chart_url}
-                                                        alt="ROC Curve Comparison"
-                                                        width={600}
-                                                        height={400}
-                                                        className="w-full h-auto object-contain"
-                                                    />
-                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity">
-                                                        <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                            {/* 2.2 SHAP Beeswarm Chart */}
+                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                {evalResult.shap_beeswarm_before_url && (
+                                                    <div
+                                                        className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white p-2"
+                                                        onClick={() => setSelectedImage(`${evalResult.shap_beeswarm_before_url}?t=${timestamp}`)}
+                                                    >
+                                                        <Image
+                                                            src={`${evalResult.shap_beeswarm_before_url}?t=${timestamp}`}
+                                                            alt="SHAP Beeswarm Before"
+                                                            width={600}
+                                                            height={400}
+                                                            className="w-full h-auto object-contain"
+                                                        />
+                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-xl">
+                                                            <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                )}
+                                                {evalResult.shap_beeswarm_after_url && (
+                                                    <div
+                                                        className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white p-2"
+                                                        onClick={() => setSelectedImage(`${evalResult.shap_beeswarm_after_url}?t=${timestamp}`)}
+                                                    >
+                                                        <Image
+                                                            src={`${evalResult.shap_beeswarm_after_url}?t=${timestamp}`}
+                                                            alt="SHAP Beeswarm After"
+                                                            width={600}
+                                                            height={400}
+                                                            className="w-full h-auto object-contain"
+                                                        />
+                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-xl">
+                                                            <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* 2.3 LIME Local Explanation */}
+                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                {evalResult.lime_chart_before_url && (
+                                                    <div
+                                                        className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white p-2"
+                                                        onClick={() => setSelectedImage(`${evalResult.lime_chart_before_url}?t=${timestamp}`)}
+                                                    >
+                                                        <Image
+                                                            src={`${evalResult.lime_chart_before_url}?t=${timestamp}`}
+                                                            alt="LIME Before"
+                                                            width={600}
+                                                            height={400}
+                                                            className="w-full h-auto object-contain"
+                                                        />
+                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-xl">
+                                                            <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {evalResult.lime_chart_after_url && (
+                                                    <div
+                                                        className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white p-2"
+                                                        onClick={() => setSelectedImage(`${evalResult.lime_chart_after_url}?t=${timestamp}`)}
+                                                    >
+                                                        <Image
+                                                            src={`${evalResult.lime_chart_after_url}?t=${timestamp}`}
+                                                            alt="LIME After"
+                                                            width={600}
+                                                            height={400}
+                                                            className="w-full h-auto object-contain"
+                                                        />
+                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-xl">
+                                                            <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ) : (

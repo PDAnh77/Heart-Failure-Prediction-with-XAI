@@ -35,10 +35,10 @@ export default function EDATab({ datasetId, targetColumn, imputation, onProcesse
     const [loadingMoreProc, setLoadingMoreProc] = useState(false);
 
     const [isDownloading, setIsDownloading] = useState(false);
-
     const [isLoadingSummary, setIsLoadingSummary] = useState(true);
     const [isLoadingPreprocess, setIsLoadingPreprocess] = useState(false);
     const [isLoadingEda, setIsLoadingEda] = useState(false);
+    const [imageTimestamp, setImageTimestamp] = useState<number>(Date.now());
 
     const extractRows = (data: any) => {
         if (Array.isArray(data)) return data;
@@ -97,6 +97,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, onProcesse
                 const edaRes = await api.get(`/datasets/${procId}/eda`, { params: { target_column: targetColumn } });
 
                 setCharts(edaRes.data.charts || {});
+                setImageTimestamp(Date.now());
                 setIsLoadingEda(false);
 
                 toast.success("Analysis completed successfully!");
@@ -222,7 +223,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, onProcesse
 
     const renderChartImage = (imageUrl: string, title: string, description: string, index: number) => {
         if (!imageUrl) return null;
-
+        const finalUrl = `${imageUrl}?t=${imageTimestamp}`;
         return (
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 dark:bg-gray-800 dark:border-gray-700 w-full flex flex-col md:flex-row items-center gap-6 overflow-hidden">
                 <div
@@ -230,7 +231,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, onProcesse
                     onClick={() => setSelectedImage(imageUrl)}
                 >
                     <Image
-                        src={imageUrl}
+                        src={finalUrl}
                         alt={title}
                         fill
                         sizes="(max-width: 768px) 100vw, 50vw"
