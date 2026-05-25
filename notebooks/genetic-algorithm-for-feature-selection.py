@@ -1,5 +1,6 @@
 import time
 import warnings
+import shap
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -32,7 +33,7 @@ classifiers = [
 ]
 
 models = [
-    SVC(kernel="linear", C=0.1),
+    SVC(kernel="linear", C=0.1, probability=True),
     LogisticRegression(random_state=0, C=10, penalty="l2"),
     RandomForestClassifier(max_depth=4, random_state=0),
     DecisionTreeClassifier(random_state=1000, max_depth=4, min_samples_leaf=1),
@@ -62,7 +63,7 @@ models = [
 ]
 
 def split(features, target):
-    X_train, X_test, Y_train, Y_test = train_test_split(features, target, test_size=0.2, random_state=42)
+    X_train, X_test, Y_train, Y_test = train_test_split(features, target, test_size=0.3, random_state=42)
     return X_train, X_test, Y_train, Y_test
 
 def acc_score(df, label):
@@ -286,3 +287,71 @@ df_final_comparison = pd.DataFrame(final_results).sort_values(by="Accuracy", asc
 print("\n--- COMPARISON TABLE AFTER GA ---")
 df_final_comparison.reset_index(drop=True, inplace=True)
 print(df_final_comparison.to_string())
+
+
+print("\n--- SHAP ANALYSIS FOR THE BEST MODEL ---")
+
+# Extract the top 1 model from the comparison table
+best_row = df_final_comparison.iloc[0]
+best_model_name = best_row["Classifier"]
+best_features_list = best_row["Selected_Features"]
+
+print(f"Top performing model: {best_model_name}")
+print(f"Using features: {best_features_list}")
+
+# Get the model instance and corresponding data
+best_model_idx = classifiers.index(best_model_name)
+best_model = models[best_model_idx]
+
+X_train_shap = X_train[best_features_list]
+X_test_shap = X_test[best_features_list]
+
+# Retrain the best model with the selected features
+best_model.fit(X_train_shap, Y_train)
+
+# Initialize the SHAP Explainer based on the model type
+if best_model_name in ["RandomForest", "DecisionTree", "XGBoost", "LightGBM"]:
+    explainer = shap.TreeExplainer(best_model)
+    shap_values = explainer.shap_values(X_test_shap)
+    
+    # Handle SHAP values shape for binary classification
+    if isinstance(shap_values, list):
+        shap_values = shap_values[1] # List format (older SHAP versions)
+    elif len(np.shape(shap_values)) == 3:
+        shap_values = shap_values[:, :, 1] # 3D Array format (newer SHAP versions): (samples, features, classes)
+
+elif best_model_name == "LogisticRegression":
+    explainer = shap.LinearExplainer(best_model, X_train_shap)
+    shap_values = explainer.shap_values(X_test_shap)
+else:
+    # KernelExplainer handles KNeighbors and SVC
+    X_train_summary = shap.kmeans(X_train_shap, 10)
+    predict_func = best_model.predict_proba if hasattr(best_model, 'predict_proba') else best_model.predict
+    explainer = shap.KernelExplainer(predict_func, X_train_summary)
+    shap_values = explainer.shap_values(X_test_shap)
+    
+    if isinstance(shap_values, list):
+        shap_values = shap_values[1]
+    elif len(np.shape(shap_values)) == 3:
+        shap_values = shap_values[:, :, 1]
+
+# ---------------------------------------------------------
+# GENERATE GLOBAL SHAP PLOTS
+# ---------------------------------------------------------
+
+print("\nGenerating SHAP Summary Plot...")
+plt.figure(figsize=(10, 6))
+# Render SHAP Beeswarm plot first
+shap.summary_plot(shap_values, X_test_shap, show=False)
+plt.title(f"SHAP Summary Plot - {best_model_name} (GA Selected Features)", fontsize=14, y=1.05)
+plt.tight_layout()
+plt.show()
+
+print("\nGenerating SHAP Bar Ranking Plot...")
+plt.figure(figsize=(10, 6))
+# Render SHAP bar plot first
+shap.summary_plot(shap_values, X_test_shap, plot_type="bar", show=False)
+# Set title AFTER calling shap.summary_plot
+plt.title(f"SHAP Feature Importance Ranking - {best_model_name}", fontsize=14, y=1.05)
+plt.tight_layout()
+plt.show()

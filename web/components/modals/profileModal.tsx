@@ -5,7 +5,7 @@ import { FaLock, FaRocket, FaUser, FaEnvelope, FaIdCard } from "react-icons/fa6"
 import { useAuth } from "@/context/authcontext";
 import { toast } from "react-hot-toast";
 import { api } from "@/lib/api";
-import UpdatePasswordModal from "@/components/updatePasswordModal";
+import UpdatePasswordModal from "@/components/modals/updatePasswordModal";
 import { useTranslations } from "next-intl";
 
 interface ProfileModalProps {

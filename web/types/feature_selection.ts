@@ -26,6 +26,12 @@ export interface EvalResult {
   model_evaluated: string;
   metrics_before: Metrics;
   metrics_after: Metrics;
-  confusion_matrix_chart_url: string;
+  confusion_matrix_chart_url: string | null;
   roc_chart_url: string | null;
+  shap_chart_before_url: string | null;
+  shap_chart_after_url: string | null;
+  shap_beeswarm_before_url: string | null;
+  shap_beeswarm_after_url: string | null;
+  lime_chart_before_url: string | null;
+  lime_chart_after_url: string | null;
 }

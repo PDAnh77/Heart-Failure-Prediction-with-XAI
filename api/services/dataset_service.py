@@ -924,9 +924,136 @@ def evaluate_feature_selection(
 
         plt.tight_layout()
         roc_chart_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/roc_comparison.png")
-
     except Exception as e:
         print(f"Error gen ROC plot: {e}")
+
+    # =================================================================
+    # VẼ BIỂU ĐỒ SHAP (BAR & BEESWARM) CHO TRƯỚC VÀ SAU
+    # =================================================================
+    shap_chart_before_url = None
+    shap_chart_after_url = None
+    shap_beeswarm_before_url = None
+    shap_beeswarm_after_url = None
+
+    try:
+        import shap
+
+        limit = 60
+        X_sample_orig = shap.utils.sample(X_test_orig, limit) if len(X_test_orig) > limit else X_test_orig
+        X_sample_sel = shap.utils.sample(X_test_sel, limit) if len(X_test_sel) > limit else X_test_sel
+
+        tree_models = ["xgboost", "lightgbm", "random_forest", "decision_tree"]
+
+        def _compute_shap_values(model, X_sample, X_train_full):
+            if final_model_name in tree_models:
+                explainer = shap.TreeExplainer(model)
+                sv = explainer.shap_values(X_sample)
+            elif final_model_name == "logistic_regression":
+                explainer = shap.LinearExplainer(model, X_train_full)
+                sv = explainer.shap_values(X_sample)
+            else:
+                background = shap.kmeans(X_train_full, 5)
+                explainer = shap.KernelExplainer(model.predict, background)
+                sv = explainer.shap_values(X_sample, silent=True)
+
+            if isinstance(sv, list):
+                sv = sv[1]
+            elif len(sv.shape) == 3:
+                sv = sv[:, :, 1]
+            return sv
+
+        # --- 1. TÍNH TOÁN & VẼ SHAP BEFORE ---
+        shap_values_before = _compute_shap_values(model_before, X_sample_orig, X_train_orig)
+
+        # Bar Chart Before
+        plt.figure(figsize=(8, 5))
+        shap.summary_plot(shap_values_before, X_sample_orig, plot_type="bar", show=False)
+        plt.title("SHAP Global Feature Importance (Before Feature Selection)", pad=15, fontsize=12)
+        plt.tight_layout()
+        shap_chart_before_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/shap_before.png")
+
+        # Beeswarm Chart Before (Tận dụng luôn shap_values_before đã tính)
+        plt.figure(figsize=(8, 5))
+        shap.summary_plot(shap_values_before, X_sample_orig, show=False)  # Mặc định là dot/beeswarm
+        plt.title("SHAP Beeswarm Distribution (Before Feature Selection)", pad=15, fontsize=12)
+        plt.tight_layout()
+        shap_beeswarm_before_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/shap_beeswarm_before.png")
+
+        # --- 2. TÍNH TOÁN & VẼ SHAP AFTER ---
+        shap_values_after = _compute_shap_values(model_after, X_sample_sel, X_train_sel)
+
+        # Bar Chart After
+        plt.figure(figsize=(8, 5))
+        shap.summary_plot(shap_values_after, X_sample_sel, plot_type="bar", show=False)
+        plt.title("SHAP Global Feature Importance (After Feature Selection)", pad=15, fontsize=12)
+        plt.tight_layout()
+        shap_chart_after_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/shap_after.png")
+
+        # Beeswarm Chart After
+        plt.figure(figsize=(8, 5))
+        shap.summary_plot(shap_values_after, X_sample_sel, show=False)
+        plt.title("SHAP Beeswarm Distribution (After Feature Selection)", pad=15, fontsize=12)
+        plt.tight_layout()
+        shap_beeswarm_after_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/shap_beeswarm_after.png")
+
+    except Exception as e:
+        print(f"Error generating SHAP plots: {e}")
+        plt.close("all")
+
+    # =================================================================
+    # VẼ BIỂU ĐỒ LIME LOCAL EXPLANATION
+    # =================================================================
+    lime_chart_before_url = None
+    lime_chart_after_url = None
+
+    try:
+        from lime import lime_tabular
+
+        # Chọn dòng đầu tiên của tập test để giải thích
+        instance_idx = 0
+
+        # LIME Before
+        explainer_before = lime_tabular.LimeTabularExplainer(
+            training_data=X_train_orig.values,
+            feature_names=X_train_orig.columns.tolist(),
+            class_names=["Class 0", "Class 1"],
+            mode="classification",
+            random_state=42,
+        )
+
+        exp_before = explainer_before.explain_instance(
+            data_row=X_test_orig.iloc[instance_idx].values,
+            predict_fn=model_before.predict_proba,
+            num_features=10,  # Top 10 feature quan trọng nhất cho mẫu này
+        )
+
+        # as_pyplot_figure() tự động tạo một matplotlib figure
+        fig_before = exp_before.as_pyplot_figure()
+        plt.title(f"LIME Local Explanation - Instance {instance_idx} (Before Feature Selection)", pad=15)
+        plt.tight_layout()
+        lime_chart_before_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/lime_before.png")
+
+        # LIME After
+        explainer_after = lime_tabular.LimeTabularExplainer(
+            training_data=X_train_sel.values,
+            feature_names=X_train_sel.columns.tolist(),
+            class_names=["Class 0", "Class 1"],
+            mode="classification",
+            random_state=42,
+        )
+
+        exp_after = explainer_after.explain_instance(
+            data_row=X_test_sel.iloc[instance_idx].values, predict_fn=model_after.predict_proba, num_features=10
+        )
+
+        fig_after = exp_after.as_pyplot_figure()
+        plt.title(f"LIME Local Explanation - Instance {instance_idx} (After Feature Selection)", pad=15)
+        plt.tight_layout()
+        lime_chart_after_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/lime_after.png")
+
+    except Exception as e:
+        print(f"Error generating LIME plots: {e}")
+        plt.close("all")
 
     return _sanitize(
         {
@@ -936,5 +1063,11 @@ def evaluate_feature_selection(
             "metrics_after": metrics_after,
             "confusion_matrix_chart_url": chart_url,
             "roc_chart_url": roc_chart_url,
+            "shap_chart_before_url": shap_chart_before_url,
+            "shap_chart_after_url": shap_chart_after_url,
+            "shap_beeswarm_before_url": shap_beeswarm_before_url,
+            "shap_beeswarm_after_url": shap_beeswarm_after_url,
+            "lime_chart_before_url": lime_chart_before_url,
+            "lime_chart_after_url": lime_chart_after_url,
         }
     )

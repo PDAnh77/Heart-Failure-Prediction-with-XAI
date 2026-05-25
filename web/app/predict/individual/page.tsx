@@ -8,8 +8,10 @@ import { useAuth } from "@/context/authcontext";
 import { api } from "@/lib/api";
 import toast from "react-hot-toast";
 import { FaHeartbeat, FaUserAlt, FaNotesMedical } from "react-icons/fa";
+import { useTranslations } from "next-intl";
 
 export default function Predict() {
+    const t = useTranslations("predictIndividual");
     const router = useRouter();
     const [submitting, setSubmitting] = useState(false);
     const [invalidFields, setInvalidFields] = useState<string[]>([]);
@@ -76,7 +78,7 @@ export default function Predict() {
         toast.dismiss();
         setInvalidFields([]);
         if (!user) {
-            toast.error("Please sign in to continue.");
+            toast.error(t("toast.signInRequired"));
             router.push("/login");
             return;
         }
@@ -85,7 +87,7 @@ export default function Predict() {
 
         try {
             if (autoFillBtnRef.current) {
-                autoFillBtnRef.current.innerText = "Loading...";
+                autoFillBtnRef.current.innerText = t("buttons.loading");
                 autoFillBtnRef.current.disabled = true;
             }
 
@@ -120,15 +122,15 @@ export default function Predict() {
         } catch (error: any) {
             if (error.response?.status === 401) {
                 logout();
-                toast.error("Session expired. Please sign in again.");
+                toast.error(t("toast.sessionExpired"));
                 router.push("/login");
                 return;
             }
             console.error(error.message);
-            toast.error("Failed to auto-fill form.");
+            toast.error(t("toast.autoFillFailed"));
         } finally {
             if (autoFillBtnRef.current) {
-                autoFillBtnRef.current.innerText = "Auto-fill sample";
+                autoFillBtnRef.current.innerText = t("buttons.autoFillSample");
                 autoFillBtnRef.current.disabled = false;
             }
         }
@@ -151,12 +153,12 @@ export default function Predict() {
         toast.dismiss();
 
         if (authLoading) {
-            toast.error("Checking authentication, try again in a moment.");
+            toast.error(t("toast.checkingAuth"));
             return;
         }
 
         if (!user) {
-            toast.error("Please sign in to continue.");
+            toast.error(t("toast.signInRequired"));
             router.push("/login");
             return;
         }
@@ -192,13 +194,13 @@ export default function Predict() {
             router.push(`/prediction-history/${data.prediction_history.id}`)
         } catch (error: any) {
             if (error.response?.status === 401) {
-                toast.error("Session expired. Please sign in again.");
+                toast.error(t("toast.sessionExpired"));
                 logout();
                 router.push("/login");
                 return;
             }
             console.error(error);
-            toast.error("An error occurred during prediction.");
+            toast.error(t("toast.predictionFailed"));
         } finally {
             setSubmitting(false);
         }
@@ -206,8 +208,8 @@ export default function Predict() {
 
     return (
         <div className="p-4 mx-auto">
-            <h1 ref={topRef} className="text-2xl font-bold text-gray-900 dark:text-white">Patient Information</h1>
-            <p className="mt-1 text-gray-600 dark:text-gray-400">Please provide accurate patient information for better prediction results</p>
+            <h1 ref={topRef} className="text-2xl font-bold text-gray-900 dark:text-white">{t("title")}</h1>
+            <p className="mt-1 text-gray-600 dark:text-gray-400">{t("description")}</p>
             <div className="mt-5">
                 <button
                     type="button"
@@ -215,7 +217,7 @@ export default function Predict() {
                     ref={autoFillBtnRef}
                     className="rounded-lg px-5 py-2.5 bg-gray-100 border border-gray-200 text-base font-semibold text-gray-700 hover:bg-gray-200 cursor-pointer transition-colors dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
-                    Auto-fill sample
+                    {t("buttons.autoFillSample")}
                 </button>
             </div>
 
@@ -223,23 +225,23 @@ export default function Predict() {
                 {/* CARD 1: Demographic Data */}
                 <div className="bg-white dark:bg-gray-800/60 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
                     <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-                        <FaUserAlt className="text-indigo-600 dark:text-indigo-400" /> Demographic data
+                        <FaUserAlt className="text-indigo-600 dark:text-indigo-400" /> {t("sections.demographic")}
                     </h3>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         {/* Gender */}
                         <div>
-                            <label htmlFor="gender" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Gender <RequiredMark /></label>
+                            <label htmlFor="gender" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">{t("fields.gender.label")} <RequiredMark /></label>
                             <select id="gender" name="gender" defaultValue="M" onChange={handleInputChange} className={getInputClass("gender")}>
-                                <option value="M">Male</option>
-                                <option value="F">Female</option>
+                                <option value="M">{t("fields.gender.male")}</option>
+                                <option value="F">{t("fields.gender.female")}</option>
                             </select>
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Patient's gender.</p>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("fields.gender.description")}</p>
                         </div>
                         {/* Age */}
                         <div>
-                            <label htmlFor="age" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Age <RequiredMark /></label>
-                            <input id="age" type="number" name="age" placeholder="e.g. 45" onChange={handleInputChange} className={getInputClass("age")} />
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Allowed range: <strong>1 - 120</strong> years.</p>
+                            <label htmlFor="age" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">{t("fields.age.label")} <RequiredMark /></label>
+                            <input id="age" type="number" name="age" placeholder={t("fields.age.placeholder")} onChange={handleInputChange} className={getInputClass("age")} />
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("fields.age.description")}</p>
                         </div>
                     </div>
                 </div>
@@ -247,41 +249,41 @@ export default function Predict() {
                 {/* CARD 2: Cardiovascular Metrics */}
                 <div className="bg-white dark:bg-gray-800/60 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
                     <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-                        <FaHeartbeat className="text-indigo-600 dark:text-indigo-400" /> Cardiovascular metrics
+                        <FaHeartbeat className="text-indigo-600 dark:text-indigo-400" /> {t("sections.cardiovascular")}
                     </h3>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         {/* Resting BP */}
                         <div>
-                            <label htmlFor="resting-bp" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Resting blood pressure <RequiredMark /></label>
+                            <label htmlFor="resting-bp" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">{t("fields.restingBp.label")} <RequiredMark /></label>
                             <div className="relative">
-                                <input id="resting-bp" type="number" name="resting-bp" placeholder="e.g. 120" onChange={handleInputChange} className={getInputClass("resting-bp", true)} />
+                                <input id="resting-bp" type="number" name="resting-bp" placeholder={t("fields.restingBp.placeholder")} onChange={handleInputChange} className={getInputClass("resting-bp", true)} />
                                 <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
                                     <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">MMHG</span>
                                 </div>
                             </div>
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Systolic BP in <strong>mmHg</strong> (Range: 50 - 250).</p>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("fields.restingBp.description")}</p>
                         </div>
                         {/* Cholesterol */}
                         <div>
-                            <label htmlFor="cholesterol" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Serum cholesterol <RequiredMark /></label>
+                            <label htmlFor="cholesterol" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">{t("fields.cholesterol.label")} <RequiredMark /></label>
                             <div className="relative">
-                                <input id="cholesterol" type="number" name="cholesterol" placeholder="e.g. 210" onChange={handleInputChange} className={getInputClass("cholesterol", true)} />
+                                <input id="cholesterol" type="number" name="cholesterol" placeholder={t("fields.cholesterol.placeholder")} onChange={handleInputChange} className={getInputClass("cholesterol", true)} />
                                 <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
                                     <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">MG/DL</span>
                                 </div>
                             </div>
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Serum cholesterol in <strong>mg/dl</strong> (Range: 0 - 600).</p>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("fields.cholesterol.description")}</p>
                         </div>
                         {/* Max HR */}
                         <div>
-                            <label htmlFor="max-hr" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Max heart rate <RequiredMark /></label>
+                            <label htmlFor="max-hr" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">{t("fields.maxHr.label")} <RequiredMark /></label>
                             <div className="relative">
-                                <input id="max-hr" type="number" name="max-hr" placeholder="e.g. 150" onChange={handleInputChange} className={getInputClass("max-hr", true)} />
+                                <input id="max-hr" type="number" name="max-hr" placeholder={t("fields.maxHr.placeholder")} onChange={handleInputChange} className={getInputClass("max-hr", true)} />
                                 <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
                                     <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">BPM</span>
                                 </div>
                             </div>
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Max HR achieved in <strong>bpm</strong> (Range: 60 - 220).</p>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("fields.maxHr.description")}</p>
                         </div>
                     </div>
                 </div>
@@ -289,76 +291,76 @@ export default function Predict() {
                 {/* CARD 3: Symptoms & Clinical History */}
                 <div className="bg-white dark:bg-gray-800/60 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
                     <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
-                        <FaNotesMedical className="text-indigo-600 dark:text-indigo-400" /> Symptoms & Clinical history
+                        <FaNotesMedical className="text-indigo-600 dark:text-indigo-400" /> {t("sections.symptoms")}
                     </h3>
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         {/* Chest Pain Type */}
                         <div>
-                            <label htmlFor="chest-pain-type" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Chest pain type <RequiredMark /></label>
+                            <label htmlFor="chest-pain-type" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">{t("fields.chestPainType.label")} <RequiredMark /></label>
                             <select id="chest-pain-type" defaultValue="" name="chest-pain-type" onChange={handleInputChange} className={getInputClass("chest-pain-type")}>
-                                <option value="" disabled>Select the type of chest pain...</option>
-                                <option value="TA">Typical angina</option>
-                                <option value="ATA">Atypical angina</option>
-                                <option value="NAP">Non-anginal pain</option>
-                                <option value="ASY">Asymptomatic</option>
+                                <option value="" disabled>{t("fields.chestPainType.placeholder")}</option>
+                                <option value="TA">{t("fields.chestPainType.ta")}</option>
+                                <option value="ATA">{t("fields.chestPainType.ata")}</option>
+                                <option value="NAP">{t("fields.chestPainType.nap")}</option>
+                                <option value="ASY">{t("fields.chestPainType.asy")}</option>
                             </select>
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Subjective description of pain reported by patient.</p>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("fields.chestPainType.description")}</p>
                         </div>
                         {/* Fasting BS */}
                         <div>
-                            <label htmlFor="fasting-bs" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Fasting blood sugar <RequiredMark /></label>
+                            <label htmlFor="fasting-bs" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">{t("fields.fastingBs.label")} <RequiredMark /></label>
                             <select id="fasting-bs" name="fasting-bs" defaultValue="" onChange={handleInputChange} className={getInputClass("fasting-bs")}>
-                                <option value="" disabled>Is fasting blood sugar &gt; 120 mg/dl?</option>
-                                <option value="1">Yes (&gt; 120 mg/dl)</option>
-                                <option value="0">No (≤ 120 mg/dl)</option>
+                                <option value="" disabled>{t("fields.fastingBs.placeholder")}</option>
+                                <option value="1">{t("fields.fastingBs.yes")}</option>
+                                <option value="0">{t("fields.fastingBs.no")}</option>
                             </select>
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Measured in <strong>mg/dl</strong> after fasting.</p>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("fields.fastingBs.description")}</p>
                         </div>
                         {/* Resting ECG */}
                         <div>
-                            <label htmlFor="resting-ecg" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Resting ECG <RequiredMark /></label>
+                            <label htmlFor="resting-ecg" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">{t("fields.restingEcg.label")} <RequiredMark /></label>
                             <select id="resting-ecg" defaultValue="" name="resting-ecg" onChange={handleInputChange} className={getInputClass("resting-ecg")}>
-                                <option value="" disabled>Select result...</option>
-                                <option value="Normal">Normal</option>
-                                <option value="ST">ST-T wave abnormality</option>
-                                <option value="LVH">Left ventricular hypertrophy</option>
+                                <option value="" disabled>{t("fields.restingEcg.placeholder")}</option>
+                                <option value="Normal">{t("fields.restingEcg.normal")}</option>
+                                <option value="ST">{t("fields.restingEcg.st")}</option>
+                                <option value="LVH">{t("fields.restingEcg.lvh")}</option>
                             </select>
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Result based on ST-T wave or Estes criteria.</p>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("fields.restingEcg.description")}</p>
                         </div>
                         {/* Exercise Angina */}
                         <div>
-                            <label className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">Exercise induced angina <RequiredMark /></label>
+                            <label className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-3">{t("fields.exerciseAngina.label")} <RequiredMark /></label>
                             <div className="flex items-center gap-8 h-10">
                                 <label className="flex items-center gap-2 cursor-pointer group">
                                     <input type="radio" name="exercise-angina" value="Y" className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 focus:ring-indigo-500 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" onChange={handleInputChange} />
-                                    <span className="text-base font-medium text-gray-700 group-hover:text-indigo-600 dark:text-gray-300">Yes</span>
+                                    <span className="text-base font-medium text-gray-700 group-hover:text-indigo-600 dark:text-gray-300">{t("fields.exerciseAngina.yes")}</span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer group">
                                     <input type="radio" name="exercise-angina" value="N" className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 focus:ring-indigo-500 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600" onChange={handleInputChange} />
-                                    <span className="text-base font-medium text-gray-700 group-hover:text-indigo-600 dark:text-gray-300">No</span>
+                                    <span className="text-base font-medium text-gray-700 group-hover:text-indigo-600 dark:text-gray-300">{t("fields.exerciseAngina.no")}</span>
                                 </label>
                             </div>
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Pain specifically caused by exercise.</p>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("fields.exerciseAngina.description")}</p>
                             {invalidFields.includes("exercise-angina") && (
-                                <p className="mt-1 text-sm text-red-500">Please select an option.</p>
+                                <p className="mt-1 text-sm text-red-500">{t("fields.exerciseAngina.required")}</p>
                             )}
                         </div>
                         {/* Oldpeak */}
                         <div>
-                            <label htmlFor="oldpeak" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">Oldpeak <RequiredMark /></label>
-                            <input id="oldpeak" type="number" name="oldpeak" step="0.1" min="-5" max="10" placeholder="e.g. 1.5 or -0.5" onChange={handleInputChange} className={getInputClass("oldpeak")} />
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">ST deviation induced by exercise (typically -5 to 10; negative values indicate ST elevation).</p>
+                            <label htmlFor="oldpeak" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">{t("fields.oldpeak.label")} <RequiredMark /></label>
+                            <input id="oldpeak" type="number" name="oldpeak" step="0.1" min="-5" max="10" placeholder={t("fields.oldpeak.placeholder")} onChange={handleInputChange} className={getInputClass("oldpeak")} />
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("fields.oldpeak.description")}</p>
                         </div>
                         {/* ST Slope */}
                         <div>
-                            <label htmlFor="st-slope" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">ST slope <RequiredMark /></label>
+                            <label htmlFor="st-slope" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">{t("fields.stSlope.label")} <RequiredMark /></label>
                             <select id="st-slope" defaultValue="" name="st-slope" onChange={handleInputChange} className={getInputClass("st-slope")}>
-                                <option value="" disabled>Select the slope curve...</option>
-                                <option value="Up">Upsloping</option>
-                                <option value="Flat">Flat</option>
-                                <option value="Down">Downsloping</option>
+                                <option value="" disabled>{t("fields.stSlope.placeholder")}</option>
+                                <option value="Up">{t("fields.stSlope.up")}</option>
+                                <option value="Flat">{t("fields.stSlope.flat")}</option>
+                                <option value="Down">{t("fields.stSlope.down")}</option>
                             </select>
-                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">Slope of the peak exercise ST segment.</p>
+                            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("fields.stSlope.description")}</p>
                         </div>
                     </div>
                 </div>
@@ -371,14 +373,14 @@ export default function Predict() {
                         disabled={submitting}
                         className="rounded-xl px-8 py-3 text-base font-semibold text-gray-700 bg-white border border-gray-200 cursor-pointer hover:bg-gray-50 hover:text-indigo-600 transition-colors shadow-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        Reset Form
+                        {t("buttons.resetForm")}
                     </button>
                     <button
                         type="submit"
                         disabled={submitting}
                         className="rounded-xl bg-indigo-600 px-8 py-3 text-base font-semibold text-white shadow-sm cursor-pointer hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                        {submitting ? "Analyzing..." : "Predict"}
+                        {submitting ? t("buttons.analyzing") : t("buttons.predict")}
                     </button>
                 </div>
             </form>

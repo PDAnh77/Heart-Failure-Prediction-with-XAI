@@ -4,10 +4,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { toast } from 'react-hot-toast';
 import { useLocale, useTranslations } from "next-intl";
-import LogoutModal from "@/components/logoutModal";
-import DeleteModal from "@/components/deletePredictionModal";
-import SettingsModal from "@/components/settingsModal";
-import ProfileModal from "@/components/profileModal";
+import LogoutModal from "@/components/modals/logoutModal";
+import DeleteModal from "@/components/modals/deletePredictionModal";
+import SettingsModal from "@/components/modals/settingsModal";
+import ProfileModal from "@/components/modals/profileModal";
 import { useAuth } from "@/context/authcontext"
 import { TbLayoutSidebarFilled } from "react-icons/tb";
 import { FaRocket, FaRegTrashCan } from "react-icons/fa6";

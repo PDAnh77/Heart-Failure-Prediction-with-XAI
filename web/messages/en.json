@@ -123,5 +123,156 @@
         "description": "Preprocessing, exploratory data analysis (EDA), and feature selection for the selected dataset."
       }
     }
+  },
+  "predictIndividual": {
+    "title": "Patient Information",
+    "description": "Please provide accurate patient information for better prediction results",
+    "buttons": {
+      "autoFillSample": "Auto-fill sample",
+      "loading": "Loading...",
+      "resetForm": "Reset Form",
+      "analyzing": "Analyzing...",
+      "predict": "Predict"
+    },
+    "toast": {
+      "signInRequired": "Please sign in to continue.",
+      "sessionExpired": "Session expired. Please sign in again.",
+      "autoFillFailed": "Failed to auto-fill form.",
+      "checkingAuth": "Checking authentication, try again in a moment.",
+      "predictionFailed": "An error occurred during prediction."
+    },
+    "sections": {
+      "demographic": "Demographic data",
+      "cardiovascular": "Cardiovascular metrics",
+      "symptoms": "Symptoms & Clinical history"
+    },
+    "fields": {
+      "gender": {
+        "label": "Gender",
+        "male": "Male",
+        "female": "Female",
+        "description": "Patient's gender."
+      },
+      "age": {
+        "label": "Age",
+        "placeholder": "e.g. 45",
+        "description": "Allowed range: 1 - 120 years."
+      },
+      "restingBp": {
+        "label": "Resting blood pressure",
+        "placeholder": "e.g. 120",
+        "description": "Systolic BP in mmHg (Range: 50 - 250)."
+      },
+      "cholesterol": {
+        "label": "Serum cholesterol",
+        "placeholder": "e.g. 210",
+        "description": "Serum cholesterol in mg/dl (Range: 0 - 600)."
+      },
+      "maxHr": {
+        "label": "Max heart rate",
+        "placeholder": "e.g. 150",
+        "description": "Max HR achieved in bpm (Range: 60 - 220)."
+      },
+      "chestPainType": {
+        "label": "Chest pain type",
+        "placeholder": "Select the type of chest pain...",
+        "ta": "Typical angina",
+        "ata": "Atypical angina",
+        "nap": "Non-anginal pain",
+        "asy": "Asymptomatic",
+        "description": "Subjective description of pain reported by patient."
+      },
+      "fastingBs": {
+        "label": "Fasting blood sugar",
+        "placeholder": "Is fasting blood sugar > 120 mg/dl?",
+        "yes": "Yes (> 120 mg/dl)",
+        "no": "No (<= 120 mg/dl)",
+        "description": "Measured in mg/dl after fasting."
+      },
+      "restingEcg": {
+        "label": "Resting ECG",
+        "placeholder": "Select result...",
+        "normal": "Normal",
+        "st": "ST-T wave abnormality",
+        "lvh": "Left ventricular hypertrophy",
+        "description": "Result based on ST-T wave or Estes criteria."
+      },
+      "exerciseAngina": {
+        "label": "Exercise induced angina",
+        "yes": "Yes",
+        "no": "No",
+        "description": "Pain specifically caused by exercise.",
+        "required": "Please select an option."
+      },
+      "oldpeak": {
+        "label": "Oldpeak",
+        "placeholder": "e.g. 1.5 or -0.5",
+        "description": "ST deviation induced by exercise (typically -5 to 10; negative values indicate ST elevation)."
+      },
+      "stSlope": {
+        "label": "ST slope",
+        "placeholder": "Select the slope curve...",
+        "up": "Upsloping",
+        "flat": "Flat",
+        "down": "Downsloping",
+        "description": "Slope of the peak exercise ST segment."
+      }
+    }
+  },
+  "predictionHistoryDetail": {
+    "toast": {
+      "notFound": "Prediction data not found"
+    },
+    "loading": "Loading history...",
+    "patientNotFound": "Patient data not found.",
+    "title": "Analysis Report",
+    "patientInfo": "Patient info",
+    "medicalTerms": "Medical terms",
+    "diagnosisPrediction": "Diagnosis prediction:",
+    "heartFailureRisk": "HEART FAILURE RISK",
+    "normal": "NORMAL",
+    "clinicalIndicators": "Based on the provided clinical indicators.",
+    "confidence": "Confidence",
+    "xaiModel": "XAI MODEL",
+    "aiLogicExplanation": "AI logic explanation",
+    "clickToExpand": "Click to expand",
+    "charts": {
+      "shapWaterfallTitle": "Feature impact analysis",
+      "shapWaterfallDescription": "Visualizes how individual factors shift the prediction from the baseline.",
+      "shapWaterfallRed": "Red bars",
+      "shapWaterfallMiddle": "indicate factors increasing heart failure risk,",
+      "shapWaterfallBlue": "Blue bars",
+      "shapWaterfallEnd": "indicate factors decreasing the risk.",
+      "shapBarTitle": "Top influencing features",
+      "shapBarDescription": "Ranks health indicators by their absolute impact on the prediction. Longer bars indicate features that contributed most strongly to the model's decision for this patient.",
+      "limeTitle": "Local interpretation",
+      "limeDescription": "Shows local feature impacts by analyzing the specific data ranges that influenced this exact prediction."
+    },
+    "patientFields": {
+      "age": "Age",
+      "sex": "Sex",
+      "chestPain": "Chest Pain",
+      "restingBp": "Resting BP",
+      "cholesterol": "Cholesterol",
+      "fastingBs": "Fasting BS",
+      "restingEcg": "Resting ECG",
+      "maxHr": "Max HR",
+      "exerciseAngina": "Exercise Angina",
+      "oldpeak": "Oldpeak",
+      "stSlope": "ST Slope"
+    },
+    "glossary": {
+      "age": "Patient's age.",
+      "sex": "M: Male, F: Female.",
+      "chestPainType": "TA: Typical Angina, ATA: Atypical Angina, NAP: Non-Anginal Pain, ASY: Asymptomatic.",
+      "restingBp": "Resting blood pressure (mmHg).",
+      "cholesterol": "Serum cholesterol in mm/dl.",
+      "fastingBs": "Fasting blood sugar. 1 if > 120 mg/dl, 0 otherwise.",
+      "restingEcg": "Resting electrocardiogram results: Normal, ST: ST-T wave abnormality, LVH: Left ventricular hypertrophy.",
+      "maxHr": "Maximum heart rate achieved.",
+      "exerciseAngina": "Exercise-induced angina (Y: Yes, N: No).",
+      "oldpeak": "ST depression induced by exercise relative to rest.",
+      "stSlope": "The slope of the peak exercise ST segment: Up, Flat, Down."
+    }
   }
 }

@@ -1,5 +1,5 @@
 "use client";
-import SettingRow from "@/components/settingRow";
+import SettingRow from "@/components/settings/settingRow";
 import { useSettings } from "@/context/settingscontext";
 import { useTheme } from "next-themes";
 import { IoMdClose } from "react-icons/io";
