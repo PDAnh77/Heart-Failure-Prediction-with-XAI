@@ -822,6 +822,23 @@ def evaluate_feature_selection(
     model_before = copy.deepcopy(AVAILABLE_MODELS[final_model_name])
     model_after = copy.deepcopy(AVAILABLE_MODELS[final_model_name])
 
+    def _to_frame(data, columns):
+        if isinstance(data, pd.DataFrame):
+            return data
+        return pd.DataFrame(data, columns=columns)
+
+    def _predict_with_columns(model, columns):
+        def _predict(data):
+            return model.predict(_to_frame(data, columns))
+
+        return _predict
+
+    def _predict_proba_with_columns(model, columns):
+        def _predict_proba(data):
+            return model.predict_proba(_to_frame(data, columns))
+
+        return _predict_proba
+
     # =================================================================
     # ĐÁNH GIÁ MÔ HÌNH TRƯỚC (BASELINE)
     # =================================================================
@@ -938,7 +955,7 @@ def evaluate_feature_selection(
     try:
         import shap
 
-        limit = 60
+        limit = 50
         X_sample_orig = shap.utils.sample(X_test_orig, limit) if len(X_test_orig) > limit else X_test_orig
         X_sample_sel = shap.utils.sample(X_test_sel, limit) if len(X_test_sel) > limit else X_test_sel
 
@@ -952,8 +969,11 @@ def evaluate_feature_selection(
                 explainer = shap.LinearExplainer(model, X_train_full)
                 sv = explainer.shap_values(X_sample)
             else:
-                background = shap.kmeans(X_train_full, 5)
-                explainer = shap.KernelExplainer(model.predict, background)
+                background = shap.kmeans(X_train_full, 3)
+                explainer = shap.KernelExplainer(
+                    _predict_with_columns(model, X_train_full.columns),
+                    background,
+                )
                 sv = explainer.shap_values(X_sample, silent=True)
 
             if isinstance(sv, list):
@@ -1023,7 +1043,7 @@ def evaluate_feature_selection(
 
         exp_before = explainer_before.explain_instance(
             data_row=X_test_orig.iloc[instance_idx].values,
-            predict_fn=model_before.predict_proba,
+            predict_fn=_predict_proba_with_columns(model_before, X_train_orig.columns),
             num_features=10,  # Top 10 feature quan trọng nhất cho mẫu này
         )
 
@@ -1043,7 +1063,9 @@ def evaluate_feature_selection(
         )
 
         exp_after = explainer_after.explain_instance(
-            data_row=X_test_sel.iloc[instance_idx].values, predict_fn=model_after.predict_proba, num_features=10
+            data_row=X_test_sel.iloc[instance_idx].values,
+            predict_fn=_predict_proba_with_columns(model_after, X_train_sel.columns),
+            num_features=10,
         )
 
         fig_after = exp_after.as_pyplot_figure()

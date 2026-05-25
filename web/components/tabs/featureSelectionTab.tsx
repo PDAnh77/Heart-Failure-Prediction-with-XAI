@@ -613,7 +613,7 @@ export default function FeatureSelectionTab({
                                         onChange={(e) => setLocalBalancing(e.target.value)}
                                         className={inputClass}
                                     >
-                                        <option value="none">None (No balancing)</option>
+                                        <option value="none">None</option>
                                         <option value="adasyn">ADASYN</option>
                                         <option value="smote">SMOTE</option>
                                     </select>

@@ -359,7 +359,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, onProcesse
                 {/* --- Dataset Scale & Missing Values --- */}
                 {isLoadingSummary ? (
                     <div className="flex gap-2 items-center justify-center py-10 rounded-2xl border border-gray-100 dark:border-gray-700">
-                        <div className="w-8 h-8 border-2 border-[#4361EE] border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-6 h-6 border-2 border-[#4361EE] border-t-transparent rounded-full animate-spin"></div>
                         <p className="text-gray-500 font-medium animate-pulse">Analyzing data structure...</p>
                     </div>
                 ) : summary && (
@@ -523,7 +523,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, onProcesse
                 {/* --- DATA PREVIEW (TRƯỚC & SAU) --- */}
                 {isLoadingPreprocess ? (
                     <div className="flex gap-2 items-center justify-center py-12 rounded-2xl border border-gray-100 dark:border-gray-700">
-                        <div className="w-8 h-8 border-2 border-[#2EC4B6] border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-6 h-6 border-2 border-[#2EC4B6] border-t-transparent rounded-full animate-spin"></div>
                         <p className="text-gray-500 font-medium animate-pulse">Optimizing and preparing dataset...</p>
                     </div>
                 ) : processedId && (
@@ -634,7 +634,7 @@ export default function EDATab({ datasetId, targetColumn, imputation, onProcesse
                 {/* SECTION EDA PLOTS */}
                 {isLoadingEda ? (
                     <div className="flex gap-2 items-center justify-center py-16 rounded-2xl border border-gray-100 dark:border-gray-700">
-                        <div className="w-8 h-8 border-2 border-[#9B5DE5] border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-6 h-6 border-2 border-[#9B5DE5] border-t-transparent rounded-full animate-spin"></div>
                         <p className="text-gray-500 font-medium animate-pulse">Generating analytical charts...</p>
                     </div>
                 ) : Object.keys(charts).length > 0 && (
