@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from sqlalchemy import delete, insert, select
 from models.user_model import User
 from models.prediction_model import Prediction
+from models.batch_prediction_model import BatchPrediction
 from schemas.patient_schema import PatientPredict
 from sqlalchemy.orm import Session
 from core.model_loader import get_pipeline
@@ -215,7 +216,7 @@ def predict_batch(patients: List[PatientPredict]):
     }
 
 
-def predict_dataframe(dataset_id: str, user_id: str, target_column: str):
+def predict_dataframe(db: Session, dataset_id: str, user_id: str, target_column: str):
     try:
         df = load_dataset(dataset_id, user_id)
     except Exception as e:
@@ -294,11 +295,29 @@ def predict_dataframe(dataset_id: str, user_id: str, target_column: str):
             detail=f"Prediction completed, but failed to save result file: {str(e)}",
         )
 
+    batch_xai_data = {k: v for k, v in batch_result.items() if k not in ["summary", "predictions"]}
+
+    new_batch_pred = db.execute(
+        insert(BatchPrediction)
+        .values(
+            user_id=check_uuid(user_id),
+            source_dataset_id=dataset_id,
+            result_file_id=pred_dataset_id,
+            summary=batch_result["summary"],
+            batch_xai=batch_xai_data,
+        )
+        .returning(BatchPrediction.id, BatchPrediction.created_at)
+    )
+
+    new_row = new_batch_pred.one()
+    db.commit()
+
     # Remove 'predictions' array from the final response
     batch_result.pop("predictions", None)
 
-    # Append the download ID to the response
     batch_result["file_id"] = pred_dataset_id
+    batch_result["batch_prediction_id"] = new_row.id
+    batch_result["created_at"] = new_row.created_at
     return batch_result
 
 
@@ -340,6 +359,41 @@ def get_prediction_by_id(db: Session, prediction_id: str, user: dict):
 
     if not result:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Prediction not found")
+    return result
+
+
+def get_batch_predictions_by_user(db: Session, user_id: str, limit: int, offset: int):
+    user_uuid = check_uuid(user_id)
+    result = (
+        db.execute(
+            select(BatchPrediction)
+            .where(BatchPrediction.user_id == user_uuid)
+            .order_by(BatchPrediction.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+        .scalars()
+        .all()
+    )
+    if not result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch predictions not found")
+    return result
+
+
+def get_batch_prediction_by_id(db: Session, batch_id: str, user: dict):
+    batch_uuid = check_uuid(batch_id)
+
+    if user["role"] == "admin":
+        result = db.execute(select(BatchPrediction).where(BatchPrediction.id == batch_uuid)).scalar_one_or_none()
+    else:
+        result = db.execute(
+            select(BatchPrediction)
+            .where(BatchPrediction.id == batch_uuid)
+            .where(BatchPrediction.user_id == check_uuid(user["user_id"]))
+        ).scalar_one_or_none()
+
+    if not result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch prediction not found")
     return result
 
 
