@@ -945,7 +945,7 @@ def evaluate_feature_selection(
         print(f"Error gen ROC plot: {e}")
 
     # =================================================================
-    # VẼ BIỂU ĐỒ SHAP (BAR & BEESWARM) CHO TRƯỚC VÀ SAU
+    # VẼ BIỂU ĐỒ SHAP (BAR & BEESWARM) TRƯỚC VÀ SAU
     # =================================================================
     shap_chart_before_url = None
     shap_chart_after_url = None
@@ -953,9 +953,7 @@ def evaluate_feature_selection(
     shap_beeswarm_after_url = None
 
     try:
-        import shap
-
-        limit = 50
+        limit = 25
         X_sample_orig = shap.utils.sample(X_test_orig, limit) if len(X_test_orig) > limit else X_test_orig
         X_sample_sel = shap.utils.sample(X_test_sel, limit) if len(X_test_sel) > limit else X_test_sel
 
@@ -969,7 +967,7 @@ def evaluate_feature_selection(
                 explainer = shap.LinearExplainer(model, X_train_full)
                 sv = explainer.shap_values(X_sample)
             else:
-                background = shap.kmeans(X_train_full, 3)
+                background = shap.kmeans(X_train_full, 2)
                 explainer = shap.KernelExplainer(
                     _predict_with_columns(model, X_train_full.columns),
                     background,

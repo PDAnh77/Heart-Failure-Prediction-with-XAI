@@ -5,7 +5,7 @@ from uuid import UUID
 
 class BatchPredictionBase(BaseModel):
     source_dataset_id: Optional[str] = None
-    result_file_id: str
+    result_dataset_id: str
     summary: Dict[str, Any]
 
 class BatchPredictionList(BatchPredictionBase):

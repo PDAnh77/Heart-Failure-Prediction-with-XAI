@@ -9,7 +9,7 @@ export interface PredictionResult {
 
 export interface PredictionHistoryBase {
   id: string;
-  created_at: Date;
+  created_at: string;
 }
 
 export interface PredictionHistoryDetail {
@@ -33,5 +33,11 @@ export interface PredictionHistoryDetail {
     shap_bar: string;
     shap_waterfall: string;
   };
+  created_at: string;
+}
+
+export interface UnifiedHistoryItem {
+  id: string;
+  type: "single" | "batch";
   created_at: string;
 }

@@ -104,21 +104,23 @@ export default function PredictionDetailPage() {
     if (loadingPrediction) return (
         <div className="relative min-h-full">
             <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
-                <div className="py-3 flex justify-center items-center">
-                    <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                <div className="py-3 flex justify-center gap-2 items-center">
+                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-gray-500">{t("loading")}</p>
                 </div>
             </div>
         </div>
     );
 
-    if (!result) return (
-        <div className="relative min-h-full">
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
-                <p>{t("patientNotFound")}</p>
+    if (!result) {
+        return (
+            <div className="relative min-h-full">
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
+                    <p>{t("patientNotFound")}</p>
+                </div>
             </div>
-        </div>
-    );
+        );
+    }
 
     return (
         <div className="min-h-screen p-4">

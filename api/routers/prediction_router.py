@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, Query
-from schemas.prediction_schema import PredictionBase, PredictionGet
+from schemas.prediction_schema import PredictionBase, PredictionGet, UnifiedHistoryItem
 from schemas.batch_prediction_schema import BatchPredictionList, BatchPredictionDetail
 from services.auth_service import require_roles
 from dependencies import get_db
@@ -11,15 +11,27 @@ from services.prediction_service import (
     get_prediction_by_id,
     get_batch_predictions_by_user,
     get_batch_prediction_by_id,
-    delete_prediction_by_id,
-    delete_predictions_by_user,
+    get_unified_prediction_history,
     predict_dataframe,
     predict_single,
     predict_batch,
     generate_single_xai,
+    delete_prediction_by_id,
+    delete_predictions_by_user,
+    delete_batch_prediction_by_id,
 )
 
 router = APIRouter()
+
+
+@router.get("/history/me", response_model=List[UnifiedHistoryItem])
+def get_user_mixed_history(
+    limit: int = Query(10, ge=1, le=50),
+    offset: int = Query(0, ge=0),
+    user=Depends(require_roles(["admin", "user"])),
+    db: Session = Depends(get_db),
+):
+    return get_unified_prediction_history(db, user["user_id"], limit, offset)
 
 
 @router.get("/me", response_model=List[PredictionBase])
@@ -94,6 +106,13 @@ def delete_user_predictions_me(user=Depends(require_roles(["admin", "user"])), d
 @router.delete("/users/{user_id}", dependencies=[Depends(require_roles(["admin"]))])
 def delete_user_predictions_admin(user_id: str, db: Session = Depends(get_db)):
     return delete_predictions_by_user(db, user_id)
+
+
+@router.delete("/batch/{batch_id}")
+def delete_batch_prediction(
+    batch_id: str, user=Depends(require_roles(["admin", "user"])), db: Session = Depends(get_db)
+):
+    return delete_batch_prediction_by_id(db, batch_id, user)
 
 
 @router.delete("/{prediction_id}")

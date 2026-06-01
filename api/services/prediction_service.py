@@ -6,7 +6,7 @@ import numpy as np
 from datetime import datetime
 from fastapi import HTTPException, status
 from pydantic import ValidationError
-from sqlalchemy import delete, insert, select
+from sqlalchemy import delete, insert, select, literal, union_all
 from models.user_model import User
 from models.prediction_model import Prediction
 from models.batch_prediction_model import BatchPrediction
@@ -302,7 +302,7 @@ def predict_dataframe(db: Session, dataset_id: str, user_id: str, target_column:
         .values(
             user_id=check_uuid(user_id),
             source_dataset_id=dataset_id,
-            result_file_id=pred_dataset_id,
+            result_dataset_id=pred_dataset_id,
             summary=batch_result["summary"],
             batch_xai=batch_xai_data,
         )
@@ -327,6 +327,34 @@ def check_uuid(id: str):
     except ValueError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid UUID format")
     return validated_uuid
+
+
+def get_unified_prediction_history(db: Session, user_id: str, limit: int, offset: int):
+    user_uuid = check_uuid(user_id)
+
+    # Query từ bảng Single Prediction
+    stmt_single = select(Prediction.id, literal("single").label("type"), Prediction.created_at).where(
+        Prediction.user_id == user_uuid
+    )
+
+    # Query từ bảng Batch Prediction
+    stmt_batch = select(BatchPrediction.id, literal("batch").label("type"), BatchPrediction.created_at).where(
+        BatchPrediction.user_id == user_uuid
+    )
+
+    # Gộp 2 query lại bằng UNION ALL
+    union_stmt = union_all(stmt_single, stmt_batch).subquery()
+
+    # Truy vấn trên bảng ảo vừa gộp, sắp xếp và phân trang
+    final_stmt = (
+        select(union_stmt.c.id, union_stmt.c.type, union_stmt.c.created_at)
+        .order_by(union_stmt.c.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+
+    results = db.execute(final_stmt).mappings().all()
+    return results
 
 
 def get_predictions_by_user(db: Session, user_id: str, limit: int, offset: int):
@@ -478,3 +506,20 @@ def delete_predictions_by_user(db: Session, user_id: str):
     db.execute(delete(Prediction).where(Prediction.user_id == user_uuid))
     db.commit()
     return {"detail": "User predictions deleted successfully"}
+
+
+def delete_batch_prediction_by_id(db: Session, batch_id: str, user: dict):
+    batch_uuid = check_uuid(batch_id)
+
+    stmt = delete(BatchPrediction).where(BatchPrediction.id == batch_uuid)
+
+    if user["role"] != "admin":
+        stmt = stmt.where(BatchPrediction.user_id == user["user_id"])
+
+    result = db.execute(stmt)
+    db.commit()
+
+    if result.rowcount <= 0:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch prediction not found")
+
+    return {"detail": "Delete batch prediction successfully"}

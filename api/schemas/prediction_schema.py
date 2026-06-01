@@ -16,3 +16,9 @@ class PredictionGet(BaseModel):
     predicted_probability: float
     prediction_xai: Dict[str, Any]
     created_at: datetime
+
+
+class UnifiedHistoryItem(BaseModel):
+    id: UUID
+    type: str
+    created_at: datetime
