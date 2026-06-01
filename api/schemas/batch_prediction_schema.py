@@ -6,6 +6,7 @@ from uuid import UUID
 class BatchPredictionBase(BaseModel):
     source_dataset_id: Optional[str] = None
     result_dataset_id: str
+    target_column: Optional[str] = None
     summary: Dict[str, Any]
 
 class BatchPredictionList(BatchPredictionBase):

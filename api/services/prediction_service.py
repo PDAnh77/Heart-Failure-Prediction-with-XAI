@@ -303,6 +303,7 @@ def predict_dataframe(db: Session, dataset_id: str, user_id: str, target_column:
             user_id=check_uuid(user_id),
             source_dataset_id=dataset_id,
             result_dataset_id=pred_dataset_id,
+            target_column=target_column,
             summary=batch_result["summary"],
             batch_xai=batch_xai_data,
         )
@@ -316,6 +317,7 @@ def predict_dataframe(db: Session, dataset_id: str, user_id: str, target_column:
     batch_result.pop("predictions", None)
 
     batch_result["file_id"] = pred_dataset_id
+    batch_result["target_column"] = target_column
     batch_result["batch_prediction_id"] = new_row.id
     batch_result["created_at"] = new_row.created_at
     return batch_result

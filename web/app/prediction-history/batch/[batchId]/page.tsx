@@ -18,6 +18,7 @@ export default function BatchHistoryDetailPage() {
     const [originalFileType, setOriginalFileType] = useState<string>("csv");
     const [isDownloading, setIsDownloading] = useState(false);
     const [createdAt, setCreatedAt] = useState<string | null>(null);
+    const [targetColumn, setTargetColumn] = useState<string | null>(null);
 
     // States cho Infinite Scroll
     const [patients, setPatients] = useState<PatientRow[]>([]);
@@ -61,12 +62,15 @@ export default function BatchHistoryDetailPage() {
                     setCreatedAt(data.created_at);
                 }
 
+                setTargetColumn(data.target_column ?? null);
+
                 // Map dữ liệu từ database model sang format UI của bạn
                 const formattedData: BatchResult = {
                     file_id: data.result_dataset_id,
                     summary: data.summary,
                     batch_shap_bar: data.batch_xai.batch_shap_bar,
-                    batch_shap_beeswarm: data.batch_xai.batch_shap_beeswarm
+                    batch_shap_beeswarm: data.batch_xai.batch_shap_beeswarm,
+                    target_column: data.target_column ?? null
                 };
 
                 setResultData(formattedData);
@@ -200,8 +204,10 @@ export default function BatchHistoryDetailPage() {
 
     // Tìm column name linh hoạt dựa trên dữ liệu thật trả về từ dòng đầu tiên
     const samplePatient = patients[0] || {};
-    const resultKey = Object.keys(samplePatient).find(k => k.includes('prediction_result')) || "prediction_result";
-    const probabilityKey = Object.keys(samplePatient).find(k => k.includes('prediction_probability')) || "prediction_probability";
+    const inferredResultKey = Object.keys(samplePatient).find(k => k.includes('prediction_result')) || "prediction_result";
+    const inferredProbabilityKey = Object.keys(samplePatient).find(k => k.includes('prediction_probability')) || "prediction_probability";
+    const resultKey = targetColumn || inferredResultKey;
+    const probabilityKey = targetColumn ? `${targetColumn}_prediction_probability` : inferredProbabilityKey;
     const hiddenKeys = new Set([resultKey, probabilityKey, "prediction_result", "prediction_probability"]);
 
     const formatDateTime = (dateString: string | null) => {
