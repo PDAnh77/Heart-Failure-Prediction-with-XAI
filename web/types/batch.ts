@@ -5,4 +5,5 @@ export interface BatchResult {
   batch_shap_bar: string;
   batch_shap_beeswarm: string;
   file_id: string;
+  target_column?: string | null;
 }

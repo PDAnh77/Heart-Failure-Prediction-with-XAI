@@ -190,7 +190,11 @@ export default function Predict() {
         try {
             const res = await api.post("/predictions", payload);
             const data: PredictionResult = res.data;
-            pushNewHistoryItem(data.prediction_history);
+            pushNewHistoryItem({
+                id: data.prediction_history.id,
+                type: "single",
+                created_at: data.prediction_history.created_at || new Date().toISOString()
+            });
             router.push(`/prediction-history/${data.prediction_history.id}`)
         } catch (error: any) {
             if (error.response?.status === 401) {

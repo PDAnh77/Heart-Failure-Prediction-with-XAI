@@ -22,7 +22,7 @@ export default function PredictBatch() {
     const [columns, setColumns] = useState<string[]>([]);
     const [selectedTarget, setSelectedTarget] = useState<string>("");
 
-    const { user, loading: authLoading, logout } = useAuth();
+    const { user, loading: authLoading, logout, pushNewHistoryItem } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -134,14 +134,15 @@ export default function PredictBatch() {
                 params: { target_column: selectedTarget }
             });
 
-            const { predictions, ...dataToSave } = res.data;
-            sessionStorage.setItem('batchPredictionResult', JSON.stringify(dataToSave));
-            if (selectedTarget) {
-                sessionStorage.setItem('batchPredictionTargetColumn', selectedTarget);
-            } else {
-                sessionStorage.removeItem('batchPredictionTargetColumn');
-            }
-            router.push("/predict/batch/result");
+            const historyId = res.data.batch_prediction_id;
+
+            pushNewHistoryItem({
+                id: historyId,
+                type: "batch",
+                created_at: res.data.created_at || new Date().toISOString()
+            });
+            
+            router.push(`/prediction-history/batch/${historyId}`);
         } catch (error: any) {
             if (error.response) {
                 const status = error.response.status;

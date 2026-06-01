@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { FiDownload, FiUsers, FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
 import { api } from "@/lib/api";
 import toast from "react-hot-toast";
@@ -9,32 +9,34 @@ import Image from "next/image";
 import ImageModal from "@/components/modals/imageModal";
 import PatientDetailModal, { PatientRow } from "@/components/modals/patientDetailModal";
 
-export default function BatchResultPage() {
+export default function BatchHistoryDetailPage() {
+    const params = useParams();
     const router = useRouter();
+    const batchId = params.batchId as string;
+
     const [resultData, setResultData] = useState<BatchResult | null>(null);
     const [originalFileType, setOriginalFileType] = useState<string>("csv");
     const [isDownloading, setIsDownloading] = useState(false);
-    const [targetColumn, setTargetColumn] = useState<string>("");
-    const hasInitializedRef = useRef(false);
-    const loadedPagesRef = useRef<Set<number>>(new Set());
+    const [createdAt, setCreatedAt] = useState<string | null>(null);
+    const [targetColumn, setTargetColumn] = useState<string | null>(null);
 
-    // State quản lý Modal ảnh (toàn cục)
-    const [modalImageUrl, setModalImageUrl] = useState<string | null>(null);
-
-    // --- STATES CHO INFINITE SCROLL ---
+    // States cho Infinite Scroll
     const [patients, setPatients] = useState<PatientRow[]>([]);
     const [page, setPage] = useState(0);
     const [loadingMore, setLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const limit = 12;
 
-    // --- STATES CHO BỆNH NHÂN DETAIL MODAL & XAI ---
+    // States cho Modals & XAI
+    const [modalImageUrl, setModalImageUrl] = useState<string | null>(null);
     const [selectedPatient, setSelectedPatient] = useState<PatientRow | null>(null);
     const [patientXAI, setPatientXAI] = useState<any>(null);
     const [loadingXAI, setLoadingXAI] = useState(false);
+    const [isLoadingInitial, setIsLoadingInitial] = useState(true);
 
-    // Xử lý Intersection Observer để kích hoạt infinite scroll
+    const loadedPagesRef = useRef<Set<number>>(new Set());
     const observer = useRef<IntersectionObserver | null>(null);
+
     const lastElementRef = useCallback((node: HTMLDivElement) => {
         if (loadingMore) return;
         if (observer.current) observer.current.disconnect();
@@ -46,46 +48,62 @@ export default function BatchResultPage() {
         if (node) observer.current.observe(node);
     }, [loadingMore, hasMore]);
 
-    // Khởi tạo data từ Session Storage
+    // Fetch thông tin lịch sử Batch từ API
     useEffect(() => {
-        if (hasInitializedRef.current) return;
-        hasInitializedRef.current = true;
-        const storedData = sessionStorage.getItem('batchPredictionResult');
-        const storedFileType = sessionStorage.getItem('uploadFileType');
-        const storedTargetColumn = sessionStorage.getItem('batchPredictionTargetColumn');
+        const fetchBatchHistory = async () => {
+            if (!batchId) return;
 
-        if (storedData) {
-            const parsedData = JSON.parse(storedData);
-            setResultData(parsedData);
-            setPatients([]);
-            setPage(0);
-            setHasMore(true);
-            loadedPagesRef.current = new Set();
-            if (storedFileType) {
-                setOriginalFileType(storedFileType);
-            }
-            if (storedTargetColumn) {
-                setTargetColumn(storedTargetColumn);
-            }
-            // Gọi fetch trang đầu tiên
-            fetchPatients(parsedData.file_id, 0);
-        } else {
-            toast.error("No prediction data found.");
-            router.push("/predict/batch");
-        }
-    }, [router]);
+            try {
+                setIsLoadingInitial(true);
+                const res = await api.get(`/predictions/batch/${batchId}`);
+                const data = res.data;
 
-    // Lắng nghe thay đổi của page để load thêm data
+                if (data.created_at) {
+                    setCreatedAt(data.created_at);
+                }
+
+                setTargetColumn(data.target_column ?? null);
+
+                // Map dữ liệu từ database model sang format UI của bạn
+                const formattedData: BatchResult = {
+                    file_id: data.result_dataset_id,
+                    summary: data.summary,
+                    batch_shap_bar: data.batch_xai.batch_shap_bar,
+                    batch_shap_beeswarm: data.batch_xai.batch_shap_beeswarm,
+                    target_column: data.target_column ?? null
+                };
+
+                setResultData(formattedData);
+
+                // Nếu backend có trả về file type gốc, bạn set ở đây, nếu không mặc định csv
+                setOriginalFileType("csv");
+
+                // Reset states danh sách
+                setPatients([]);
+                loadedPagesRef.current = new Set();
+
+                // Bắt đầu fetch trang dữ liệu đầu tiên
+                fetchPatients(data.result_dataset_id, 0);
+            } catch (error) {
+                toast.error("Prediction data not found");
+            } finally {
+                setIsLoadingInitial(false);
+            }
+        };
+
+        fetchBatchHistory();
+    }, [batchId, router]);
+
     useEffect(() => {
         if (page > 0 && resultData?.file_id) {
             fetchPatients(resultData.file_id, page);
         }
-    }, [page]);
+    }, [page, resultData?.file_id]);
 
-    // Hàm gọi API lấy dữ liệu dòng
     const fetchPatients = async (fileId: string, currentPage: number) => {
         if (loadedPagesRef.current.has(currentPage)) return;
         loadedPagesRef.current.add(currentPage);
+
         try {
             setLoadingMore(true);
             const offset = currentPage * limit;
@@ -93,9 +111,17 @@ export default function BatchResultPage() {
                 params: { limit, offset }
             });
 
-            const newData = res.data.data;
+            const newData: PatientRow[] = res.data.data;
+
             setPatients(prev => {
-                const merged = [...prev, ...newData];
+                const prevStrings = new Set(prev.map(item => JSON.stringify(item)));
+                const uniqueNewData = newData.filter(
+                    item => !prevStrings.has(JSON.stringify(item))
+                );
+
+                // Chỉ merge những data mới
+                const merged = [...prev, ...uniqueNewData];
+
                 if (newData.length < limit || merged.length >= res.data.total_rows) {
                     setHasMore(false);
                 }
@@ -109,7 +135,6 @@ export default function BatchResultPage() {
         }
     };
 
-    // Hàm gọi API tải dataset
     const handleDownloadProcessed = async () => {
         const processedId = resultData?.file_id;
         if (!processedId) return;
@@ -121,28 +146,25 @@ export default function BatchResultPage() {
                 params: { file_type: originalFileType }
             });
 
-            // Lấy đuôi file động dựa vào originalFileType (mặc định fallback về csv)
             const fileExtension = originalFileType.includes('xls') ? 'xlsx' : 'csv';
-
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.download = `prediction_data.${fileExtension}`;
+            link.download = `result.${fileExtension}`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
         } catch (error) {
-            toast.error("Failed to download the dataset.");
+            toast.error("Failed to download the dataset");
         } finally {
             setIsDownloading(false);
         }
     };
 
-    // Hàm xử lý khi click vào Card bệnh nhân
     const handleViewPatientDetail = async (patient: PatientRow) => {
         setSelectedPatient(patient);
-        setPatientXAI(null); // Clear data XAI cũ
+        setPatientXAI(null);
 
         try {
             setLoadingXAI(true);
@@ -155,35 +177,61 @@ export default function BatchResultPage() {
         }
     };
 
+    if (isLoadingInitial) {
+        return (
+            <div className="relative min-h-full">
+                <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
+                    <div className="py-3 flex justify-center gap-2 items-center">
+                        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-gray-500">Loading history...</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     if (!resultData) {
         return (
-            <div className="flex items-center justify-center gap-2 py-4 text-gray-500">
-                <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                <span>Loading results...</span>
+            <div className="relative min-h-full">
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
+                    <p>Prediction data not found.</p>
+                </div>
             </div>
         );
     }
 
     const { summary, batch_shap_bar, batch_shap_beeswarm, file_id } = resultData;
-    const resultKey = targetColumn || "prediction_result";
-    const probabilityKey = targetColumn ? `${targetColumn}_prediction_probability` : "prediction_probability";
+
+    // Tìm column name linh hoạt dựa trên dữ liệu thật trả về từ dòng đầu tiên
+    const samplePatient = patients[0] || {};
+    const inferredResultKey = Object.keys(samplePatient).find(k => k.includes('prediction_result')) || "prediction_result";
+    const inferredProbabilityKey = Object.keys(samplePatient).find(k => k.includes('prediction_probability')) || "prediction_probability";
+    const resultKey = targetColumn || inferredResultKey;
+    const probabilityKey = targetColumn ? `${targetColumn}_prediction_probability` : inferredProbabilityKey;
     const hiddenKeys = new Set([resultKey, probabilityKey, "prediction_result", "prediction_probability"]);
+
+    const formatDateTime = (dateString: string | null) => {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        return `(${hours}:${minutes} - ${day}/${month}/${year})`;
+    };
 
     return (
         <div className="p-4 min-h-screen flex flex-col">
             {/* Header & Controls */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-8 pb-4 gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Prediction Results</h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        Overview of AI analysis results based on the uploaded patient data.
-                    </p>
-                </div>
-
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 pb-4 gap-4">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    Analysis Report {formatDateTime(createdAt)}
+                </h1>
                 <button
                     onClick={handleDownloadProcessed}
                     disabled={isDownloading || !file_id}
-                    className="flex items-center hover:cursor-pointer justify-center shrink-0 min-w-[200px] gap-2 px-5 py-2.5 bg-linear-to-r from-[#4361EE] to-[#3a52d5] text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:from-[#3a52d5] hover:to-[#2e41b0] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center hover:cursor-pointer justify-center shrink-0 min-w-[200px] gap-2 px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl shadow-md hover:bg-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <FiDownload className="text-lg" />
                     {isDownloading ? "Downloading..." : "Download data"}
@@ -203,9 +251,7 @@ export default function BatchResultPage() {
 
                 {/* High Risk */}
                 <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-red-200 dark:border-red-900/50 shadow-sm flex flex-col justify-between relative overflow-hidden">
-                    {/* Left Border */}
                     <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#B91C1C] dark:text-red-500"></div>
-
                     <div className="flex justify-between items-center text-[#8B7E74] dark:text-gray-400 pl-2">
                         <p className="text-xs font-bold tracking-wider uppercase">High Risk (Disease)</p>
                         <FiAlertTriangle className="w-5 h-5 text-[#B91C1C] dark:text-red-500" />
@@ -218,9 +264,7 @@ export default function BatchResultPage() {
 
                 {/* Low Risk */}
                 <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-green-200 dark:border-green-900/50 shadow-sm flex flex-col justify-between relative overflow-hidden">
-                    {/* Left Border */}
                     <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#047857] dark:text-green-500"></div>
-
                     <div className="flex justify-between items-center text-[#8B7E74] dark:text-gray-400 pl-2">
                         <p className="text-xs font-bold tracking-wider uppercase">Low Risk (Normal)</p>
                         <FiCheckCircle className="w-5 h-5 text-[#047857] dark:text-green-500" />
@@ -235,20 +279,21 @@ export default function BatchResultPage() {
             {/* Global XAI Charts */}
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 mt-4">Batch explainability analysis</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+
                 {/* SHAP Bar Chart */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
                     <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">Feature importance</h3>
                     <div
-                        className="relative w-full aspect-video flex-1 bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                        className="relative w-full aspect-video bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => setModalImageUrl(batch_shap_bar)}
                     >
-                        <Image src={batch_shap_bar} alt="SHAP Bar Chart" loading="eager" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-contain p-2 priority" />
+                        <Image src={batch_shap_bar} alt="SHAP Bar Chart" priority fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-contain p-2" />
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 transition-opacity">
                             <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
                         </div>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                        Displays the average magnitude of impact each feature has on the model's predictions across the entire patient data.
+                    <p className="text-sm text-gray-500 mt-4 text-center dark:text-gray-400">
+                        Displays the global importance of each feature across all patients. Longer bars indicate features that had the most significant impact on the model's overall predictions.
                     </p>
                 </div>
 
@@ -256,27 +301,26 @@ export default function BatchResultPage() {
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
                     <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">Feature impact distribution</h3>
                     <div
-                        className="relative w-full aspect-video flex-1 bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                        className="relative w-full aspect-video bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => setModalImageUrl(batch_shap_beeswarm)}
                     >
-                        <Image src={batch_shap_beeswarm} alt="SHAP Beeswarm Chart" loading="eager" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-contain p-2" priority />
+                        <Image src={batch_shap_beeswarm} alt="SHAP Beeswarm Chart" priority fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-contain p-2" />
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 transition-opacity">
                             <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
                         </div>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                        Illustrates the distribution of feature impacts, showing how specific feature values (high vs. low) affect the prediction outcomes.
+                    <p className="text-sm text-gray-500 mt-4 text-center dark:text-gray-400">
+                        Visualizes how feature values across all patients influence the model's output. Each dot represents a single patient; its horizontal position indicates whether it increases (right) or decreases (left) the prediction risk. Color represents the feature value: <span className="font-bold text-red-500">Red</span> for high values, <span className="font-bold text-blue-500">Blue</span> for low values.
                     </p>
                 </div>
             </div>
 
-            {/* --- DANH SÁCH BỆNH NHÂN --- */}
+            {/* Patient List */}
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Patient detail list</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4">
                 {patients.map((patient, index) => {
                     const resultValue = patient[resultKey] ?? patient.prediction_result;
                     const isHighRisk = Number(resultValue) === 1;
-
                     const displayAge = patient.Age || patient.age || patient.age_years || 'N/A';
                     const displaySex = patient.Sex || patient.sex || patient.gender || 'N/A';
                     const prob = patient[probabilityKey] ?? patient.prediction_probability ?? 0;
@@ -287,16 +331,15 @@ export default function BatchResultPage() {
                             ref={index === patients.length - 1 ? lastElementRef : null}
                             onClick={() => handleViewPatientDetail(patient)}
                             className={`p-4 rounded-xl border cursor-pointer transition-all duration-300 hover:shadow-md dark:hover:shadow-lg ${isHighRisk
-                                ? "border-red-200 dark:border-red-800 dark:hover:bg-red-950/20 dark:hover:border-red-700 dark:hover:shadow-red-900/30"
-                                : "border-green-200 dark:border-green-800 dark:hover:bg-green-950/20 dark:hover:border-green-700 dark:hover:shadow-green-900/30"
+                                ? "border-red-200 dark:border-red-800 dark:hover:bg-red-950/20"
+                                : "border-green-200 dark:border-green-800 dark:hover:bg-green-950/20"
                                 }`}
                         >
                             <div className="flex justify-between items-start mb-3">
                                 <span className="font-semibold text-gray-700 dark:text-gray-200">
                                     Patient #{index + 1}
                                 </span>
-                                <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider ${isHighRisk ? "bg-red-200 text-red-800" : "bg-green-200 text-green-800"
-                                    }`}>
+                                <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider ${isHighRisk ? "bg-red-200 text-red-800" : "bg-green-200 text-green-800"}`}>
                                     {isHighRisk ? "High Risk" : "Normal"}
                                 </span>
                             </div>
@@ -313,10 +356,9 @@ export default function BatchResultPage() {
                 })}
             </div>
 
-            {/* Trạng thái Loading */}
             {loadingMore && (
                 <div className="flex justify-center gap-2 py-4 text-gray-500">
-                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                     <span>Loading...</span>
                 </div>
             )}

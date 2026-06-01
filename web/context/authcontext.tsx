@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { User } from "@/types/user";
 import { AuthContextType } from "@/types/auth_context";
 import { api, setAccessToken, setOnAuthFailure } from "@/lib/api";
-import { PredictionHistoryBase } from "@/types/prediction";
+import { UnifiedHistoryItem } from "@/types/prediction";
 import axios from "axios";
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -11,9 +11,9 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [newHistoryItem, setNewHistoryItem] = useState<PredictionHistoryBase | null>(null);
+  const [newHistoryItem, setNewHistoryItem] = useState<UnifiedHistoryItem | null>(null);
 
-  const pushNewHistoryItem = (item: PredictionHistoryBase) => {
+  const pushNewHistoryItem = (item: UnifiedHistoryItem) => {
     setNewHistoryItem(item);
   };
 

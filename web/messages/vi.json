@@ -224,7 +224,7 @@
       "notFound": "Không tìm thấy dữ liệu dự đoán"
     },
     "loading": "Đang tải lịch sử...",
-    "patientNotFound": "Không tìm thấy dữ liệu bệnh nhân.",
+    "patientNotFound": "Không tìm thấy dữ liệu dự đoán.",
     "title": "Báo cáo phân tích",
     "patientInfo": "Thông tin bệnh nhân",
     "medicalTerms": "Thuật ngữ y khoa",

@@ -36,9 +36,7 @@ async def lifespan(app: FastAPI):
     task.cancel()  # Hủy task khi API tắt
 
 
-app = FastAPI(
-    title="Heart Failure Analytics API", openapi_url="/api/openapi.json", docs_url="/docs", lifespan=lifespan
-)
+app = FastAPI(title="Heart Failure Analytics API", openapi_url="/api/openapi.json", docs_url="/docs", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
