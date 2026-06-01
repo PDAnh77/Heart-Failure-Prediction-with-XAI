@@ -81,7 +81,7 @@ export default function BatchHistoryDetailPage() {
                 // Bắt đầu fetch trang dữ liệu đầu tiên
                 fetchPatients(data.result_dataset_id, 0);
             } catch (error) {
-                toast.error("Failed to load batch history details.");
+                toast.error("Prediction data not found");
             } finally {
                 setIsLoadingInitial(false);
             }
@@ -107,9 +107,17 @@ export default function BatchHistoryDetailPage() {
                 params: { limit, offset }
             });
 
-            const newData = res.data.data;
+            const newData: PatientRow[] = res.data.data;
+
             setPatients(prev => {
-                const merged = [...prev, ...newData];
+                const prevStrings = new Set(prev.map(item => JSON.stringify(item)));
+                const uniqueNewData = newData.filter(
+                    item => !prevStrings.has(JSON.stringify(item))
+                );
+
+                // Chỉ merge những data mới
+                const merged = [...prev, ...uniqueNewData];
+
                 if (newData.length < limit || merged.length >= res.data.total_rows) {
                     setHasMore(false);
                 }
@@ -144,7 +152,7 @@ export default function BatchHistoryDetailPage() {
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
         } catch (error) {
-            toast.error("Failed to download the dataset.");
+            toast.error("Failed to download the dataset");
         } finally {
             setIsDownloading(false);
         }
@@ -165,14 +173,24 @@ export default function BatchHistoryDetailPage() {
         }
     };
 
-    if (isLoadingInitial || !resultData) {
+    if (isLoadingInitial) {
         return (
             <div className="relative min-h-full">
                 <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
                     <div className="py-3 flex justify-center gap-2 items-center">
-                        <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                         <p className="text-gray-500">Loading history...</p>
                     </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!resultData) {
+        return (
+            <div className="relative min-h-full">
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
+                    <p>Prediction data not found.</p>
                 </div>
             </div>
         );
@@ -255,11 +273,12 @@ export default function BatchHistoryDetailPage() {
             {/* Global XAI Charts */}
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 mt-4">Batch explainability analysis</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+
                 {/* SHAP Bar Chart */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
                     <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">Feature importance</h3>
                     <div
-                        className="relative w-full aspect-video flex-1 bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                        className="relative w-full aspect-video bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => setModalImageUrl(batch_shap_bar)}
                     >
                         <Image src={batch_shap_bar} alt="SHAP Bar Chart" priority fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-contain p-2" />
@@ -267,13 +286,16 @@ export default function BatchHistoryDetailPage() {
                             <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
                         </div>
                     </div>
+                    <p className="text-sm text-gray-500 mt-4 text-center dark:text-gray-400">
+                        Displays the global importance of each feature across all patients. Longer bars indicate features that had the most significant impact on the model's overall predictions.
+                    </p>
                 </div>
 
                 {/* SHAP Beeswarm Chart */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
                     <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">Feature impact distribution</h3>
                     <div
-                        className="relative w-full aspect-video flex-1 bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                        className="relative w-full aspect-video bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => setModalImageUrl(batch_shap_beeswarm)}
                     >
                         <Image src={batch_shap_beeswarm} alt="SHAP Beeswarm Chart" priority fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-contain p-2" />
@@ -281,6 +303,9 @@ export default function BatchHistoryDetailPage() {
                             <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
                         </div>
                     </div>
+                    <p className="text-sm text-gray-500 mt-4 text-center dark:text-gray-400">
+                        Visualizes how feature values across all patients influence the model's output. Each dot represents a single patient; its horizontal position indicates whether it increases (right) or decreases (left) the prediction risk. Color represents the feature value: <span className="font-bold text-red-500">Red</span> for high values, <span className="font-bold text-blue-500">Blue</span> for low values.
+                    </p>
                 </div>
             </div>
 

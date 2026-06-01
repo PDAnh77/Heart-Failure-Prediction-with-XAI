@@ -224,7 +224,7 @@
       "notFound": "Prediction data not found"
     },
     "loading": "Loading history...",
-    "patientNotFound": "Patient data not found.",
+    "patientNotFound": "Prediction data not found.",
     "title": "Analysis Report",
     "patientInfo": "Patient info",
     "medicalTerms": "Medical terms",

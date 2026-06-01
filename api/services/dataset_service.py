@@ -65,7 +65,9 @@ AVAILABLE_MODELS = {
 
 
 def _sanitize(obj):
-    """Recursively replace nan/inf float values with None for JSON safety."""
+    """
+    Recursively replace nan/inf float values with None for JSON safety.
+    """
     if isinstance(obj, float) and (obj != obj or obj == float("inf") or obj == float("-inf")):
         return None
     if isinstance(obj, dict):

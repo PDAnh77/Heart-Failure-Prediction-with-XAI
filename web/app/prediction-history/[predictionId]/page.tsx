@@ -16,6 +16,7 @@ export default function PredictionDetailPage() {
     const locale = useLocale();
     const params = useParams();
     const predictionId = params.predictionId;
+    
     const [result, setResult] = useState<PredictionHistoryDetail | null>(null);
     const [loadingPrediction, setLoadingPrediction] = useState(true);
     const { loading, user } = useAuth();
