@@ -1,5 +1,6 @@
 import { FiActivity, FiX } from "react-icons/fi";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 
 export interface PatientRow {
     prediction_result?: number;
@@ -19,6 +20,8 @@ interface PatientDetailModalProps {
 }
 
 export default function PatientDetailModal({ patient, onClose, resultKey, probabilityKey, hiddenKeys, loadingXAI, patientXAI, onImageClick }: PatientDetailModalProps) {
+    const t = useTranslations("predictionBatchHistoryDetail");
+
     if (!patient) return null;
 
     const selectedResultValue = patient[resultKey] ?? patient.prediction_result;
@@ -32,7 +35,7 @@ export default function PatientDetailModal({ patient, onClose, resultKey, probab
                 <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <FiActivity className="text-blue-500" />
-                        Patient analysis
+                        {t("modal.title")}
                     </h2>
                     <button
                         onClick={onClose}
@@ -44,19 +47,19 @@ export default function PatientDetailModal({ patient, onClose, resultKey, probab
 
                 {/* Body Modal */}
                 <div className="p-6 overflow-y-auto">
-                    {/* Thanh tóm tắt kết quả */}
+                    {/* Kết quả tóm tắt */}
                     <div className={`p-5 rounded-xl mb-6 flex justify-between items-center border ${isSelectedHighRisk
                         ? 'bg-red-50 border-red-200 dark:bg-red-900/10 dark:border-red-800/50'
                         : 'bg-green-50 border-green-200 dark:bg-green-900/10 dark:border-green-800/50'
                         }`}>
                         <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">AI Prediction</p>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t("modal.aiPrediction")}</p>
                             <p className={`text-2xl font-bold ${isSelectedHighRisk ? 'text-red-600 dark:text-red-500' : 'text-green-600 dark:text-green-500'}`}>
-                                {isSelectedHighRisk ? 'Heart Failure Risk' : 'Normal / Low risk'}
+                                {isSelectedHighRisk ? t("modal.highRisk") : t("modal.lowRisk")}
                             </p>
                         </div>
                         <div className="text-right">
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Confidence Score</p>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{t("modal.confidenceScore")}</p>
                             <p className="text-3xl font-bold text-gray-900 dark:text-white">
                                 {((selectedProbabilityValue || 0) * 100).toFixed(1)}%
                             </p>
@@ -65,7 +68,7 @@ export default function PatientDetailModal({ patient, onClose, resultKey, probab
 
                     {/* Thông tin bệnh nhân */}
                     <div className="mb-6 p-5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Patient information</h3>
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{t("modal.patientInfo")}</h3>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-y-4 gap-x-4">
                             {Object.entries(patient)
                                 .filter(([key]) => !hiddenKeys.has(key))
@@ -75,7 +78,7 @@ export default function PatientDetailModal({ patient, onClose, resultKey, probab
                                             {key.replace(/_/g, ' ')}
                                         </p>
                                         <p className="text-base font-semibold text-gray-900 dark:text-white truncate">
-                                            {value !== null && value !== undefined && value !== '' ? String(value) : 'N/A'}
+                                            {value !== null && value !== undefined && value !== '' ? String(value) : t("patientList.na")}
                                         </p>
                                     </div>
                                 ))}
@@ -86,8 +89,8 @@ export default function PatientDetailModal({ patient, onClose, resultKey, probab
                     {loadingXAI ? (
                         <div className="flex flex-col items-center justify-center py-16 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
                             <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                            <p className="text-gray-600 dark:text-gray-400 font-medium">Generating AI Explainability...</p>
-                            <p className="text-sm text-gray-400 mt-2">This may take a few seconds as we analyze the features.</p>
+                            <p className="text-gray-600 dark:text-gray-400 font-medium">{t("state.generatingXai")}</p>
+                            <p className="text-sm text-gray-400 mt-2">{t("state.generatingXaiDesc")}</p>
                         </div>
                     ) : patientXAI ? (
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -95,7 +98,7 @@ export default function PatientDetailModal({ patient, onClose, resultKey, probab
                             {patientXAI.shap_waterfall && (
                                 <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-white dark:bg-gray-800">
                                     <div className="mb-2 text-center">
-                                        <p className="text-sm font-bold text-gray-800 dark:text-gray-200">Feature impact analysis</p>
+                                        <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{t("modal.charts.shapWaterfallTitle")}</p>
                                     </div>
                                     <div
                                         className="relative w-full aspect-square bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90"
@@ -103,11 +106,11 @@ export default function PatientDetailModal({ patient, onClose, resultKey, probab
                                     >
                                         <Image src={patientXAI.shap_waterfall} loading="lazy" alt="SHAP Waterfall" fill sizes="(max-width: 1024px) 100vw, 33vw" className="object-contain p-2" />
                                         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 transition-opacity">
-                                            <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
+                                            <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">{t("xai.clickToExpand")}</span>
                                         </div>
                                     </div>
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                        Visualizes how individual factors shift the prediction from the baseline. Red bars indicate factors increasing risk, while blue bars indicate factors decreasing risk.
+                                        {t("modal.charts.shapWaterfallDesc")}
                                     </p>
                                 </div>
                             )}
@@ -116,7 +119,7 @@ export default function PatientDetailModal({ patient, onClose, resultKey, probab
                             {patientXAI.shap_bar && (
                                 <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-white dark:bg-gray-800">
                                     <div className="mb-2 text-center">
-                                        <p className="text-sm font-bold text-gray-800 dark:text-gray-200">Top influencing factors</p>
+                                        <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{t("modal.charts.shapBarTitle")}</p>
                                     </div>
                                     <div
                                         className="relative w-full aspect-square bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90"
@@ -124,11 +127,11 @@ export default function PatientDetailModal({ patient, onClose, resultKey, probab
                                     >
                                         <Image src={patientXAI.shap_bar} loading="lazy" alt="SHAP Bar" fill sizes="(max-width: 1024px) 100vw, 33vw" className="object-contain p-2" />
                                         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 transition-opacity">
-                                            <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
+                                            <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">{t("xai.clickToExpand")}</span>
                                         </div>
                                     </div>
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                        Ranks health indicators by their absolute impact on the prediction. Longer bars indicate features that contributed most strongly to the model's decision for this patient.
+                                        {t("modal.charts.shapBarDesc")}
                                     </p>
                                 </div>
                             )}
@@ -137,7 +140,7 @@ export default function PatientDetailModal({ patient, onClose, resultKey, probab
                             {patientXAI.lime && (
                                 <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-3 bg-white dark:bg-gray-800">
                                     <div className="mb-2 text-center">
-                                        <p className="text-sm font-bold text-gray-800 dark:text-gray-200">Local interpretation</p>
+                                        <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{t("modal.charts.limeTitle")}</p>
                                     </div>
                                     <div
                                         className="relative w-full aspect-square bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90"
@@ -145,18 +148,18 @@ export default function PatientDetailModal({ patient, onClose, resultKey, probab
                                     >
                                         <Image src={patientXAI.lime} loading="lazy" alt="LIME" fill sizes="(max-width: 1024px) 100vw, 33vw" className="object-contain p-2" />
                                         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 transition-opacity">
-                                            <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
+                                            <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">{t("xai.clickToExpand")}</span>
                                         </div>
                                     </div>
                                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                        Shows local feature impacts by analyzing the specific data ranges that influenced this exact prediction.
+                                        {t("modal.charts.limeDesc")}
                                     </p>
                                 </div>
                             )}
                         </div>
                     ) : (
                         <div className="text-center py-12 text-gray-500">
-                            Could not generate explainability charts for this patient.
+                            {t("state.xaiError")}
                         </div>
                     )}
                 </div>

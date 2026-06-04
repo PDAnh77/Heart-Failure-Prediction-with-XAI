@@ -7,9 +7,12 @@ import toast from "react-hot-toast";
 import { FaUpload } from "react-icons/fa6";
 import { FiFileText, FiInfo } from "react-icons/fi";
 import { IoMdClose } from "react-icons/io";
+import { useTranslations } from "next-intl";
 
 export default function PredictBatch() {
     const router = useRouter();
+    const t = useTranslations("predictBatch");
+    const tCommon = useTranslations("common");
 
     // File states
     const [file, setFile] = useState<File | null>(null);
@@ -40,7 +43,7 @@ export default function PredictBatch() {
     const validateAndSetFile = (selectedFile: File | undefined) => {
         if (selectedFile) {
             if (!selectedFile.name.endsWith('.csv') && !selectedFile.name.match(/\.xlsx?$/)) {
-                toast.error("Please upload a valid CSV or Excel file.");
+                toast.error(t("toast.invalidFile"));
                 return;
             }
 
@@ -48,7 +51,7 @@ export default function PredictBatch() {
             const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
             if (selectedFile.size > MAX_SIZE_BYTES) {
-                toast.error(`File size exceeds the ${MAX_SIZE_MB}MB limit.`);
+                toast.error(t("toast.fileTooLarge"));
                 return;
             }
 
@@ -83,13 +86,13 @@ export default function PredictBatch() {
         if (authLoading) return;
 
         if (!user) {
-            toast.error("Please sign in to continue.");
+            toast.error(tCommon("signInRequired")); 
             router.push("/login");
             return;
         }
 
         if (!file) {
-            toast.error("Please select a file to upload.");
+            toast.error(t("toast.noFile"));
             return;
         }
 
@@ -115,7 +118,7 @@ export default function PredictBatch() {
                 router.push("/login");
                 return;
             }
-            toast.error("An error occurred during upload. Please try again.");
+            toast.error(t("toast.uploadError"));
         } finally {
             setIsUploading(false);
         }
@@ -157,18 +160,17 @@ export default function PredictBatch() {
 
                 if (status === 400 && detail?.missing_columns) {
                     const missing = detail.missing_columns.join(', ');
-                    toast.error(`Your data is missing required columns: ${missing}.`);
+                    toast.error(`${t("toast.missingColumns")} ${missing}.`);
                     return;
                 }
 
                 if (status === 422) {
-                    toast.error("Your data contains missing or invalid values.");
+                    toast.error(t("toast.invalidData"));
                     return;
                 }
             }
 
-            // Fallback error
-            toast.error("An error occurred during batch prediction.");
+            toast.error(t("toast.predictError"));
         } finally {
             setIsPredicting(false);
         }
@@ -180,9 +182,9 @@ export default function PredictBatch() {
         <div className="p-4 h-full flex flex-col">
             <div className="flex justify-between items-start md:items-center flex-col md:flex-row gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Batch Prediction</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t("title")}</h1>
                     <p className="mt-1 text-gray-600 dark:text-gray-400">
-                        Upload a preprocessed CSV or Excel file containing multiple patient records.
+                        {t("subtitle")}
                     </p>
                 </div>
             </div>
@@ -206,10 +208,10 @@ export default function PredictBatch() {
                                     <FaUpload className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
                                 </div>
                                 <p className="text-lg font-medium text-gray-700 dark:text-gray-300 text-center">
-                                    Drag and drop your data here
+                                    {t("dropzone.dragDrop")}
                                 </p>
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 text-center">
-                                    CSV or Excel (Max: 10MB)
+                                    {t("dropzone.formatLimit")}
                                 </p>
                                 <input
                                     type="file"
@@ -220,7 +222,7 @@ export default function PredictBatch() {
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
                                 />
                                 <span className="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-semibold shadow-sm pointer-events-none">
-                                    Choose file
+                                    {t("dropzone.chooseFile")}
                                 </span>
                             </>
                         ) : (
@@ -262,10 +264,10 @@ export default function PredictBatch() {
                             {isUploading ? (
                                 <>
                                     <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"></div>
-                                    Loading...
+                                    {t("uploadBtn.uploading")}
                                 </>
                             ) : (
-                                "Upload data"
+                                t("uploadBtn.upload")
                             )}
                         </button>
                     )}
@@ -276,55 +278,27 @@ export default function PredictBatch() {
                             <div className="flex items-center gap-2 mb-3">
                                 <FiInfo className="text-blue-600 dark:text-blue-400 w-5 h-5" />
                                 <h3 className="font-semibold text-blue-900 dark:text-blue-300 text-lg">
-                                    Dataset requirements
+                                    {t("requirements.title")}
                                 </h3>
                             </div>
                             <p className="text-sm text-blue-800 dark:text-blue-200 mb-4">
-                                Please ensure your data follows the format below. Invalid values may cause prediction errors.
+                                {t("requirements.description")}
                             </p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-700 dark:text-gray-300">
                                 <ul className="space-y-2 list-disc list-inside">
-                                    <li><strong>Age:</strong> 1 - 120</li>
-                                    <li>
-                                        <strong>Sex:</strong>
-                                        <code className="bg-white dark:bg-gray-800 px-1 rounded">M</code> (Male) or
-                                        <code className="bg-white dark:bg-gray-800 px-1 rounded">F</code> (Female)
-                                    </li>
-                                    <li>
-                                        <strong>Chest pain type:</strong>
-                                        <code className="bg-white dark:bg-gray-800 px-1 rounded">TA</code> (Typical),
-                                        <code className="bg-white dark:bg-gray-800 px-1 rounded">ATA</code> (Atypical),
-                                        <code className="bg-white dark:bg-gray-800 px-1 rounded">NAP</code> (Non-anginal),
-                                        <code className="bg-white dark:bg-gray-800 px-1 rounded">ASY</code> (No symptoms)
-                                    </li>
-                                    <li><strong>Resting blood pressure:</strong> ≥ 0 (mmHg)</li>
-                                    <li><strong>Cholesterol:</strong> ≥ 0 (mg/dl)</li>
-                                    <li>
-                                        <strong>Fasting blood sugar:</strong>
-                                        <code className="bg-white dark:bg-gray-800 px-1 rounded">1</code> (High &gt; 120 mg/dl) or
-                                        <code className="bg-white dark:bg-gray-800 px-1 rounded">0</code> (Normal)
-                                    </li>
+                                    <li>{t("requirements.fields.age")}</li>
+                                    <li>{t("requirements.fields.sex")}</li>
+                                    <li>{t("requirements.fields.chestPainType")}</li>
+                                    <li>{t("requirements.fields.restingBp")}</li>
+                                    <li>{t("requirements.fields.cholesterol")}</li>
+                                    <li>{t("requirements.fields.fastingBs")}</li>
                                 </ul>
                                 <ul className="space-y-2 list-disc list-inside">
-                                    <li>
-                                        <strong>Resting ECG:</strong>
-                                        <code className="bg-white dark:bg-gray-800 px-1 rounded">Normal</code>,
-                                        <code className="bg-white dark:bg-gray-800 px-1 rounded">ST</code> (Abnormal),
-                                        <code className="bg-white dark:bg-gray-800 px-1 rounded">LVH</code> (Heart thickening)
-                                    </li>
-                                    <li><strong>Max heart rate:</strong> &gt; 0</li>
-                                    <li>
-                                        <strong>Exercise angina:</strong>
-                                        <code className="bg-white dark:bg-gray-800 px-1 rounded">Y</code> (Yes) or
-                                        <code className="bg-white dark:bg-gray-800 px-1 rounded">N</code> (No)
-                                    </li>
-                                    <li><strong>Oldpeak:</strong> Numeric value (ST depression)</li>
-                                    <li>
-                                        <strong>ST slope:</strong>
-                                        <code className="bg-white dark:bg-gray-800 px-1 rounded">Up</code>,
-                                        <code className="bg-white dark:bg-gray-800 px-1 rounded">Flat</code>,
-                                        <code className="bg-white dark:bg-gray-800 px-1 rounded">Down</code>
-                                    </li>
+                                    <li>{t("requirements.fields.restingEcg")}</li>
+                                    <li>{t("requirements.fields.maxHr")}</li>
+                                    <li>{t("requirements.fields.exerciseAngina")}</li>
+                                    <li>{t("requirements.fields.oldpeak")}</li>
+                                    <li>{t("requirements.fields.stSlope")}</li>
                                 </ul>
                             </div>
                         </div>
@@ -337,13 +311,13 @@ export default function PredictBatch() {
                             {/* Configuration Box */}
                             <div className="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl mb-6 shadow-sm">
                                 <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6 pb-2 border-b border-gray-200 dark:border-gray-700">
-                                    Prediction configuration
+                                    {t("configuration.title")}
                                 </h3>
 
                                 {/* Target Selection (Optional) */}
                                 <div className="mb-6">
                                     <label htmlFor="target-column" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                                        Result column <span className="text-gray-400 text-sm font-normal ml-1">(Optional)</span>
+                                        {t("configuration.resultColumn")} <span className="text-gray-400 text-sm font-normal ml-1">({t("configuration.optional")})</span>
                                     </label>
                                     <select
                                         id="target-column"
@@ -351,13 +325,13 @@ export default function PredictBatch() {
                                         onChange={(e) => setSelectedTarget(e.target.value)}
                                         className={inputClass}
                                     >
-                                        <option value="">None</option>
+                                        <option value="">{t("configuration.none")}</option>
                                         {columns.map((col, index) => (
                                             <option key={index} value={col}>{col}</option>
                                         ))}
                                     </select>
                                     <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                                        Select a column to write the prediction results into. If left empty, the system will automatically append a new column to your file.
+                                        {t("configuration.description")}
                                     </p>
                                 </div>
 
@@ -366,11 +340,11 @@ export default function PredictBatch() {
                                     <div className="flex items-center gap-2 mb-2">
                                         <FiInfo className="text-amber-600 dark:text-amber-400 w-5 h-5" />
                                         <p className="font-semibold text-amber-900 dark:text-amber-300">
-                                            System notice
+                                            {t("configuration.systemNotice")}
                                         </p>
                                     </div>
                                     <p className="text-sm text-amber-800 dark:text-amber-200">
-                                        Columns not supported by the clinical model schema (unrecognized feature headers) will be automatically ignored during the prediction process to prevent noise.
+                                        {t("configuration.noticeDescription")}
                                     </p>
                                 </div>
                             </div>
@@ -384,10 +358,10 @@ export default function PredictBatch() {
                                 {isPredicting ? (
                                     <>
                                         <div className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin"></div>
-                                        Processing batch...
+                                        {t("predictBtn.processing")}
                                     </>
                                 ) : (
-                                    "Run prediction"
+                                    t("predictBtn.run")
                                 )}
                             </button>
                         </div>
