@@ -8,11 +8,13 @@ import { BatchResult } from "@/types/batch";
 import Image from "next/image";
 import ImageModal from "@/components/modals/imageModal";
 import PatientDetailModal, { PatientRow } from "@/components/modals/patientDetailModal";
+import { useTranslations } from "next-intl";
 
 export default function BatchHistoryDetailPage() {
     const params = useParams();
     const router = useRouter();
     const batchId = params.batchId as string;
+    const t = useTranslations("predictionBatchHistoryDetail");
 
     const [resultData, setResultData] = useState<BatchResult | null>(null);
     const [originalFileType, setOriginalFileType] = useState<string>("csv");
@@ -20,14 +22,14 @@ export default function BatchHistoryDetailPage() {
     const [createdAt, setCreatedAt] = useState<string | null>(null);
     const [targetColumn, setTargetColumn] = useState<string | null>(null);
 
-    // States cho Infinite Scroll
+    // States for Infinite Scroll
     const [patients, setPatients] = useState<PatientRow[]>([]);
     const [page, setPage] = useState(0);
     const [loadingMore, setLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const limit = 12;
 
-    // States cho Modals & XAI
+    // States for Modals & XAI
     const [modalImageUrl, setModalImageUrl] = useState<string | null>(null);
     const [selectedPatient, setSelectedPatient] = useState<PatientRow | null>(null);
     const [patientXAI, setPatientXAI] = useState<any>(null);
@@ -48,7 +50,7 @@ export default function BatchHistoryDetailPage() {
         if (node) observer.current.observe(node);
     }, [loadingMore, hasMore]);
 
-    // Fetch thông tin lịch sử Batch từ API
+    // Fetch Batch History
     useEffect(() => {
         const fetchBatchHistory = async () => {
             if (!batchId) return;
@@ -64,7 +66,6 @@ export default function BatchHistoryDetailPage() {
 
                 setTargetColumn(data.target_column ?? null);
 
-                // Map dữ liệu từ database model sang format UI của bạn
                 const formattedData: BatchResult = {
                     file_id: data.result_dataset_id,
                     summary: data.summary,
@@ -85,7 +86,7 @@ export default function BatchHistoryDetailPage() {
                 // Bắt đầu fetch trang dữ liệu đầu tiên
                 fetchPatients(data.result_dataset_id, 0);
             } catch (error) {
-                toast.error("Prediction data not found");
+                toast.error(t("toast.notFound"));
             } finally {
                 setIsLoadingInitial(false);
             }
@@ -129,7 +130,7 @@ export default function BatchHistoryDetailPage() {
             });
         } catch (error) {
             loadedPagesRef.current.delete(currentPage);
-            toast.error("Failed to load patient list");
+            toast.error(t("toast.loadPatientsFailed"));
         } finally {
             setLoadingMore(false);
         }
@@ -156,7 +157,7 @@ export default function BatchHistoryDetailPage() {
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
         } catch (error) {
-            toast.error("Failed to download the dataset");
+            toast.error(t("toast.downloadFailed"));
         } finally {
             setIsDownloading(false);
         }
@@ -171,7 +172,7 @@ export default function BatchHistoryDetailPage() {
             const res = await api.post(`/predictions/xai/on-demand`, patient);
             setPatientXAI(res.data);
         } catch (error) {
-            toast.error("Failed to generate Explainable AI for this patient.");
+            toast.error(t("toast.generateXAIFailed"));
         } finally {
             setLoadingXAI(false);
         }
@@ -183,7 +184,7 @@ export default function BatchHistoryDetailPage() {
                 <div className="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
                     <div className="py-3 flex justify-center gap-2 items-center">
                         <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-gray-500">Loading history...</p>
+                        <p className="text-gray-500">{t("state.loading")}</p>
                     </div>
                 </div>
             </div>
@@ -194,7 +195,7 @@ export default function BatchHistoryDetailPage() {
         return (
             <div className="relative min-h-full">
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-500 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
-                    <p>Prediction data not found.</p>
+                    <p>{t("state.notFound")}</p>
                 </div>
             </div>
         );
@@ -202,7 +203,6 @@ export default function BatchHistoryDetailPage() {
 
     const { summary, batch_shap_bar, batch_shap_beeswarm, file_id } = resultData;
 
-    // Tìm column name linh hoạt dựa trên dữ liệu thật trả về từ dòng đầu tiên
     const samplePatient = patients[0] || {};
     const inferredResultKey = Object.keys(samplePatient).find(k => k.includes('prediction_result')) || "prediction_result";
     const inferredProbabilityKey = Object.keys(samplePatient).find(k => k.includes('prediction_probability')) || "prediction_probability";
@@ -226,7 +226,7 @@ export default function BatchHistoryDetailPage() {
             {/* Header & Controls */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-4 pb-4 gap-4">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    Analysis Report {formatDateTime(createdAt)}
+                    {t("header.title")} {formatDateTime(createdAt)}
                 </h1>
                 <button
                     onClick={handleDownloadProcessed}
@@ -234,7 +234,7 @@ export default function BatchHistoryDetailPage() {
                     className="flex items-center hover:cursor-pointer justify-center shrink-0 min-w-[200px] gap-2 px-5 py-2.5 bg-indigo-600 text-white font-semibold rounded-xl shadow-md hover:bg-indigo-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <FiDownload className="text-lg" />
-                    {isDownloading ? "Downloading..." : "Download data"}
+                    {isDownloading ? t("header.downloading") : t("header.downloadData")}
                 </button>
             </div>
 
@@ -243,7 +243,7 @@ export default function BatchHistoryDetailPage() {
                 {/* Total Patients */}
                 <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between relative overflow-hidden">
                     <div className="flex justify-between items-center text-[#8B7E74] dark:text-gray-400">
-                        <p className="text-xs font-bold tracking-wider uppercase">Total Patients</p>
+                        <p className="text-xs font-bold tracking-wider uppercase">{t("summary.totalPatients")}</p>
                         <FiUsers className="w-5 h-5 text-[#8B7E74]/70 dark:text-gray-500" />
                     </div>
                     <p className="text-4xl font-bold text-[#111827] dark:text-white mt-2">{summary.total}</p>
@@ -253,7 +253,7 @@ export default function BatchHistoryDetailPage() {
                 <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-red-200 dark:border-red-900/50 shadow-sm flex flex-col justify-between relative overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#B91C1C] dark:text-red-500"></div>
                     <div className="flex justify-between items-center text-[#8B7E74] dark:text-gray-400 pl-2">
-                        <p className="text-xs font-bold tracking-wider uppercase">High Risk (Disease)</p>
+                        <p className="text-xs font-bold tracking-wider uppercase">{t("summary.highRisk")}</p>
                         <FiAlertTriangle className="w-5 h-5 text-[#B91C1C] dark:text-red-500" />
                     </div>
                     <p className="text-4xl font-bold text-[#B91C1C] dark:text-red-500 mt-2 pl-2 flex items-baseline gap-2">
@@ -266,7 +266,7 @@ export default function BatchHistoryDetailPage() {
                 <div className="bg-white dark:bg-gray-800 p-5 rounded-xl border border-green-200 dark:border-green-900/50 shadow-sm flex flex-col justify-between relative overflow-hidden">
                     <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#047857] dark:text-green-500"></div>
                     <div className="flex justify-between items-center text-[#8B7E74] dark:text-gray-400 pl-2">
-                        <p className="text-xs font-bold tracking-wider uppercase">Low Risk (Normal)</p>
+                        <p className="text-xs font-bold tracking-wider uppercase">{t("summary.lowRisk")}</p>
                         <FiCheckCircle className="w-5 h-5 text-[#047857] dark:text-green-500" />
                     </div>
                     <p className="text-4xl font-bold text-[#047857] dark:text-green-500 mt-2 pl-2 flex items-baseline gap-2">
@@ -276,53 +276,55 @@ export default function BatchHistoryDetailPage() {
                 </div>
             </div>
 
-            {/* Global XAI Charts */}
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 mt-4">Batch explainability analysis</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 mt-4">{t("xai.title")}</h2>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
 
                 {/* SHAP Bar Chart */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">Feature importance</h3>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">{t("xai.shapBarTitle")}</h3>
                     <div
                         className="relative w-full aspect-video bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => setModalImageUrl(batch_shap_bar)}
                     >
                         <Image src={batch_shap_bar} alt="SHAP Bar Chart" priority fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-contain p-2" />
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 transition-opacity">
-                            <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
+                            <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">{t("xai.clickToExpand")}</span>
                         </div>
                     </div>
                     <p className="text-sm text-gray-500 mt-4 text-center dark:text-gray-400">
-                        Displays the global importance of each feature across all patients. Longer bars indicate features that had the most significant impact on the model's overall predictions.
+                        {t("xai.shapBarDesc")}
                     </p>
                 </div>
 
                 {/* SHAP Beeswarm Chart */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col">
-                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">Feature impact distribution</h3>
+                    <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-4">{t("xai.shapBeeswarmTitle")}</h3>
                     <div
                         className="relative w-full aspect-video bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => setModalImageUrl(batch_shap_beeswarm)}
                     >
                         <Image src={batch_shap_beeswarm} alt="SHAP Beeswarm Chart" priority fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-contain p-2" />
                         <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black/10 transition-opacity">
-                            <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">Click to expand</span>
+                            <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-md">{t("xai.clickToExpand")}</span>
                         </div>
                     </div>
                     <p className="text-sm text-gray-500 mt-4 text-center dark:text-gray-400">
-                        Visualizes how feature values across all patients influence the model's output. Each dot represents a single patient; its horizontal position indicates whether it increases (right) or decreases (left) the prediction risk. Color represents the feature value: <span className="font-bold text-red-500">Red</span> for high values, <span className="font-bold text-blue-500">Blue</span> for low values.
+                        {t("xai.shapBeeswarmDesc1")}
+                        <span className="font-bold text-red-500">{t("xai.shapBeeswarmRed")}</span>
+                        {t("xai.shapBeeswarmMiddle")}
+                        <span className="font-bold text-blue-500">{t("xai.shapBeeswarmBlue")}</span>
+                        {t("xai.shapBeeswarmEnd")}
                     </p>
                 </div>
             </div>
 
-            {/* Patient List */}
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Patient detail list</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t("patientList.title")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-4">
                 {patients.map((patient, index) => {
                     const resultValue = patient[resultKey] ?? patient.prediction_result;
                     const isHighRisk = Number(resultValue) === 1;
-                    const displayAge = patient.Age || patient.age || patient.age_years || 'N/A';
-                    const displaySex = patient.Sex || patient.sex || patient.gender || 'N/A';
+                    const displayAge = patient.Age || patient.age || patient.age_years || t("patientList.na");
+                    const displaySex = patient.Sex || patient.sex || patient.gender || t("patientList.na");
                     const prob = patient[probabilityKey] ?? patient.prediction_probability ?? 0;
 
                     return (
@@ -337,17 +339,17 @@ export default function BatchHistoryDetailPage() {
                         >
                             <div className="flex justify-between items-start mb-3">
                                 <span className="font-semibold text-gray-700 dark:text-gray-200">
-                                    Patient #{index + 1}
+                                    {t("patientList.patientNum")} #{index + 1}
                                 </span>
                                 <span className={`px-2.5 py-1 text-[10px] font-bold rounded-full uppercase tracking-wider ${isHighRisk ? "bg-red-200 text-red-800" : "bg-green-200 text-green-800"}`}>
-                                    {isHighRisk ? "High Risk" : "Normal"}
+                                    {isHighRisk ? t("patientList.highRisk") : t("patientList.normal")}
                                 </span>
                             </div>
                             <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1.5">
-                                <p className="flex justify-between"><span>Age:</span> <span className="font-medium text-gray-800 dark:text-gray-300">{displayAge}</span></p>
-                                <p className="flex justify-between"><span>Sex:</span> <span className="font-medium text-gray-800 dark:text-gray-300">{displaySex}</span></p>
+                                <p className="flex justify-between"><span>{t("patientList.age")}</span> <span className="font-medium text-gray-800 dark:text-gray-300">{displayAge}</span></p>
+                                <p className="flex justify-between"><span>{t("patientList.sex")}</span> <span className="font-medium text-gray-800 dark:text-gray-300">{displaySex}</span></p>
                                 <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700/50 flex justify-between">
-                                    <span>Confidence:</span>
+                                    <span>{t("patientList.confidence")}</span>
                                     <span className="font-bold text-gray-900 dark:text-white">{(prob * 100).toFixed(1)}%</span>
                                 </div>
                             </div>
@@ -359,7 +361,7 @@ export default function BatchHistoryDetailPage() {
             {loadingMore && (
                 <div className="flex justify-center gap-2 py-4 text-gray-500">
                     <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                    <span>Loading...</span>
+                    <span>{t("state.loadingMore")}</span>
                 </div>
             )}
 

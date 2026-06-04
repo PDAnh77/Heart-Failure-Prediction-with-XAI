@@ -219,6 +219,58 @@
       }
     }
   },
+  "predictBatch": {
+    "title": "Dự đoán hàng loạt",
+    "subtitle": "Tải lên tệp CSV hoặc Excel thông tin của nhiều bệnh nhân.",
+    "dropzone": {
+      "dragDrop": "Kéo thả tệp của bạn vào đây",
+      "formatLimit": "CSV hoặc Excel (Tối đa: 10MB)",
+      "chooseFile": "Chọn tệp"
+    },
+    "uploadBtn": {
+      "uploading": "Đang tải...",
+      "upload": "Tải dữ liệu lên"
+    },
+    "requirements": {
+      "title": "Yêu cầu về tập dữ liệu",
+      "description": "Vui lòng đảm bảo dữ liệu của bạn tuân thủ định dạng dưới đây. Các giá trị không hợp lệ có thể gây ra lỗi dự đoán.",
+      "fields": {
+        "age": "Tuổi: 1 - 120",
+        "sex": "Giới tính: M (Nam) hoặc F (Nữ)",
+        "chestPainType": "Loại đau ngực: TA (Typical), ATA (Atypical), NAP (Non-anginal), ASY (No symptoms)",
+        "restingBp": "Huyết áp lúc nghỉ: ≥ 0 (mmHg)",
+        "cholesterol": "Cholesterol: ≥ 0 (mg/dl)",
+        "fastingBs": "Đường huyết lúc đói: 1 (Cao > 120 mg/dl) hoặc 0 (Bình thường)",
+        "restingEcg": "Điện tâm đồ lúc nghỉ: Normal (Bình thường), ST (Bất thường), LVH (Phì đại thất trái)",
+        "maxHr": "Nhịp tim tối đa: > 0",
+        "exerciseAngina": "Đau thắt ngực do gắng sức: Y (Có) hoặc N (Không)",
+        "oldpeak": "Oldpeak: Giá trị số (Mức giảm ST)",
+        "stSlope": "Độ dốc ST: Up (Dốc lên), Flat (Phẳng), Down (Dốc xuống)"
+      }
+    },
+    "configuration": {
+      "title": "Cấu hình dự đoán",
+      "resultColumn": "Cột lưu kết quả",
+      "optional": "Không bắt buộc",
+      "none": "Không",
+      "description": "Chọn một cột để ghi kết quả dự đoán vào. Nếu để trống, hệ thống sẽ tự động thêm một cột mới vào tệp của bạn.",
+      "systemNotice": "Lưu ý từ hệ thống",
+      "noticeDescription": "Các cột không được hỗ trợ bởi lược đồ mô hình lâm sàng (tiêu đề đặc trưng không nhận dạng được) sẽ tự động bị bỏ qua trong quá trình dự đoán để tránh nhiễu dữ liệu."
+    },
+    "predictBtn": {
+      "processing": "Đang xử lý...",
+      "run": "Chạy dự đoán"
+    },
+    "toast": {
+      "invalidFile": "Vui lòng tải lên tệp CSV hoặc Excel hợp lệ.",
+      "fileTooLarge": "Kích thước tệp vượt quá giới hạn 10MB.",
+      "noFile": "Vui lòng chọn một tệp để tải lên.",
+      "uploadError": "Đã xảy ra lỗi trong quá trình tải lên. Vui lòng thử lại.",
+      "missingColumns": "Dữ liệu của bạn thiếu các cột bắt buộc:",
+      "invalidData": "Dữ liệu của bạn chứa các giá trị bị thiếu hoặc không hợp lệ.",
+      "predictError": "Đã xảy ra lỗi trong quá trình dự đoán hàng loạt."
+    }
+  },
   "predictionHistoryDetail": {
     "toast": {
       "notFound": "Không tìm thấy dữ liệu dự đoán"
@@ -273,6 +325,143 @@
       "exerciseAngina": "Đau thắt ngực do gắng sức (Y: Có, N: Không).",
       "oldpeak": "Mức giảm đoạn ST do gắng sức so với khi nghỉ.",
       "stSlope": "Độ dốc của đoạn ST ở đỉnh gắng sức: Up, Flat, Down."
+    }
+  },
+  "predictionBatchHistoryDetail": {
+    "state": {
+      "loading": "Đang tải lịch sử...",
+      "loadingMore": "Đang tải...",
+      "notFound": "Không tìm thấy dữ liệu dự đoán.",
+      "generatingXai": "Đang tạo giải thích AI...",
+      "generatingXaiDesc": "Quá trình này có thể mất vài giây để phân tích các đặc trưng.",
+      "xaiError": "Không thể tạo biểu đồ giải thích cho bệnh nhân này."
+    },
+    "toast": {
+      "notFound": "Không tìm thấy dữ liệu dự đoán",
+      "loadPatientsFailed": "Tải danh sách bệnh nhân thất bại",
+      "downloadFailed": "Tải xuống tập dữ liệu thất bại",
+      "generateXAIFailed": "Tạo giải thích AI cho bệnh nhân này thất bại."
+    },
+    "header": {
+      "title": "Báo cáo phân tích",
+      "downloading": "Đang tải xuống...",
+      "downloadData": "Tải dữ liệu"
+    },
+    "summary": {
+      "totalPatients": "Tổng số bệnh nhân",
+      "highRisk": "Nguy cơ cao (Mắc bệnh)",
+      "lowRisk": "Nguy cơ thấp (Bình thường)"
+    },
+    "xai": {
+      "title": "Phân tích giải thích hàng loạt",
+      "clickToExpand": "Nhấn để phóng to",
+      "shapBarTitle": "Mức độ quan trọng của đặc trưng",
+      "shapBarDesc": "Hiển thị mức độ quan trọng tổng thể của từng đặc trưng trên tất cả bệnh nhân. Thanh càng dài thể hiện đặc trưng đó càng có tác động lớn đến dự đoán tổng thể của mô hình.",
+      "shapBeeswarmTitle": "Phân bố tác động của đặc trưng",
+      "shapBeeswarmDesc1": "Trực quan hóa cách các giá trị đặc trưng của tất cả bệnh nhân ảnh hưởng đến kết quả mô hình. Mỗi điểm đại diện cho một bệnh nhân; vị trí nằm ngang biểu thị việc tăng (phải) hoặc giảm (trái) nguy cơ dự đoán. Màu sắc đại diện cho giá trị của đặc trưng: ",
+      "shapBeeswarmRed": "Màu đỏ",
+      "shapBeeswarmMiddle": " cho giá trị cao, ",
+      "shapBeeswarmBlue": "Màu xanh",
+      "shapBeeswarmEnd": " cho giá trị thấp."
+    },
+    "patientList": {
+      "title": "Danh sách chi tiết bệnh nhân",
+      "patientNum": "Bệnh nhân",
+      "highRisk": "Nguy Cơ Cao",
+      "normal": "Bình Thường",
+      "age": "Tuổi:",
+      "sex": "Giới tính:",
+      "confidence": "Độ tin cậy:",
+      "na": "K/XĐ"
+    },
+    "modal": {
+      "title": "Phân tích bệnh nhân",
+      "aiPrediction": "Dự đoán của AI",
+      "highRisk": "Nguy cơ suy tim",
+      "lowRisk": "Bình thường / Nguy cơ thấp",
+      "confidenceScore": "Độ tin cậy",
+      "patientInfo": "Thông tin bệnh nhân",
+      "charts": {
+        "shapWaterfallTitle": "Mức độ tác động của các đặc trưng",
+        "shapWaterfallDesc": "Minh họa cách từng yếu tố riêng lẻ dịch chuyển dự đoán so với giá trị cơ sở. Thanh màu đỏ thể hiện các yếu tố làm tăng nguy cơ, trong khi thanh màu xanh thể hiện các yếu tố làm giảm nguy cơ.",
+        "shapBarTitle": "Tầm quan trọng của các đặc trưng",
+        "shapBarDesc": "Xếp hạng các chỉ số sức khỏe theo mức ảnh hưởng tuyệt đối lên dự đoán này. Giá trị càng cao thể hiện yếu tố đó càng đóng góp mạnh vào quyết định của mô hình cho bệnh nhân này.",
+        "limeTitle": "Diễn giải cục bộ",
+        "limeDesc": "Hiển thị tác động của đặc trưng cục bộ bằng cách phân tích các phạm vi dữ liệu cụ thể đã ảnh hưởng đến dự đoán chính xác này."
+      }
+    }
+  },
+  "analyzeUpload": {
+    "title": "Phân tích dữ liệu & Lựa chọn đặc trưng",
+    "subtitle": "Tải tập dữ liệu của bạn lên để quan sát thông tin chi tiết và xác định các đặc trưng quan trọng nhất",
+    "dropzone": {
+      "dragDrop": "Kéo thả tập dữ liệu của bạn vào đây",
+      "clickUpload": "Hoặc nhấp để tải lên từ máy tính",
+      "chooseFile": "Chọn tệp .CSV"
+    },
+    "uploadBtn": {
+      "uploading": "Đang tải lên...",
+      "upload": "Tải lên & Phân tích"
+    },
+    "configuration": {
+      "title": "Cấu hình quy trình xử lý",
+      "targetColumn": {
+        "label": "Cột mục tiêu (Target)",
+        "placeholder": "-- Chọn một cột để dự đoán --",
+        "desc": "Biến mục tiêu mà mô hình học máy sẽ cố gắng dự đoán."
+      },
+      "preprocessing": {
+        "title": "Tiền xử lý & Cân bằng dữ liệu",
+        "imputation": {
+          "label": "Phương pháp điền khuyết (Imputation)",
+          "default": "Mặc định",
+          "knn": "KNN imputer",
+          "mice": "MICE imputer",
+          "mean": "Trung bình / Yếu vị (Mean / Mode)",
+          "desc": "Phương pháp xử lý các giá trị bị thiếu trong tập dữ liệu."
+        },
+        "balancing": {
+          "label": "Cân bằng dữ liệu (Balancing)",
+          "none": "Không",
+          "adasyn": "ADASYN",
+          "smote": "SMOTE",
+          "note": "Lưu ý:",
+          "desc": "Hệ thống sẽ chỉ áp dụng phương pháp này nếu phát hiện sự mất cân bằng lớp nghiêm trọng."
+        }
+      },
+      "featureSelection": {
+        "title": "Lựa chọn đặc trưng (Thuật toán di truyền)",
+        "size": {
+          "label": "Kích thước quần thể (Population size)",
+          "desc": "Số lượng cá thể trong mỗi thế hệ. (Khoảng: 10 - 200)."
+        },
+        "mutationRate": {
+          "label": "Tỷ lệ đột biến (Mutation rate)",
+          "desc": "Xác suất một đặc trưng bị đảo lộn trạng thái. (Khoảng: 0.01 - 0.5)."
+        },
+        "nParents": {
+          "label": "Số lượng cha mẹ (Number of parents)",
+          "placeholder": "Để trống nếu dùng mặc định",
+          "desc": "Số lượng cá thể tốt nhất được giữ lại để lai tạo. Phải nhỏ hơn Kích thước quần thể."
+        },
+        "testSize": {
+          "label": "Tỷ lệ tập kiểm tra (Test size)",
+          "desc": "Tỷ lệ dữ liệu được sử dụng để đánh giá. (Khoảng: 0.1 - 0.5)."
+        }
+      },
+      "confirmBtn": "Xác nhận & Tiếp tục"
+    },
+    "toast": {
+      "invalidFile": "Vui lòng chỉ chọn tệp .csv",
+      "fileTooLarge": "Kích thước tệp vượt quá giới hạn 10MB.",
+      "signInRequired": "Vui lòng đăng nhập để tiếp tục.",
+      "uploadError": "Đã xảy ra lỗi trong quá trình tải lên. Vui lòng thử lại.",
+      "targetRequired": "Vui lòng chọn một cột mục tiêu!",
+      "invalidSize": "Kích thước quần thể phải từ 10 đến 200.",
+      "invalidMutationRate": "Tỷ lệ đột biến phải từ 0.01 đến 0.5.",
+      "invalidTestSize": "Tỷ lệ tập kiểm tra phải từ 0.1 đến 0.5.",
+      "invalidNParentsMin": "Số lượng cha mẹ phải lớn hơn 0.",
+      "invalidNParentsMax": "Số lượng cha mẹ phải nhỏ hơn Kích thước quần thể."
     }
   }
 }

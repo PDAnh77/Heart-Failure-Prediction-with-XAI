@@ -219,6 +219,58 @@
       }
     }
   },
+  "predictBatch": {
+    "title": "Batch Prediction",
+    "subtitle": "Upload a raw CSV or Excel file containing multiple patient records.",
+    "dropzone": {
+      "dragDrop": "Drag and drop your file here",
+      "formatLimit": "CSV or Excel (Max: 10MB)",
+      "chooseFile": "Choose file"
+    },
+    "uploadBtn": {
+      "uploading": "Loading...",
+      "upload": "Upload data"
+    },
+    "requirements": {
+      "title": "Dataset requirements",
+      "description": "Please ensure your data follows the format below. Invalid values may cause prediction errors.",
+      "fields": {
+        "age": "Age: 1 - 120",
+        "sex": "Sex: M (Male) or F (Female)",
+        "chestPainType": "Chest pain type: TA (Typical), ATA (Atypical), NAP (Non-anginal), ASY (No symptoms)",
+        "restingBp": "Resting blood pressure: ≥ 0 (mmHg)",
+        "cholesterol": "Cholesterol: ≥ 0 (mg/dl)",
+        "fastingBs": "Fasting blood sugar: 1 (High > 120 mg/dl) or 0 (Normal)",
+        "restingEcg": "Resting ECG: Normal, ST (Abnormal), LVH (Heart thickening)",
+        "maxHr": "Max heart rate: > 0",
+        "exerciseAngina": "Exercise angina: Y (Yes) or N (No)",
+        "oldpeak": "Oldpeak: Numeric value (ST depression)",
+        "stSlope": "ST slope: Up, Flat, Down"
+      }
+    },
+    "configuration": {
+      "title": "Prediction configuration",
+      "resultColumn": "Save result to column",
+      "optional": "Optional",
+      "none": "No",
+      "description": "Select a column to write the prediction results into. If left empty, the system will automatically append a new column to your file.",
+      "systemNotice": "System notice",
+      "noticeDescription": "Columns not supported by the clinical model schema (unrecognized feature headers) will be automatically ignored during the prediction process to prevent noise."
+    },
+    "predictBtn": {
+      "processing": "Processing batch...",
+      "run": "Run prediction"
+    },
+    "toast": {
+      "invalidFile": "Please upload a valid CSV or Excel file.",
+      "fileTooLarge": "File size exceeds the 10MB limit.",
+      "noFile": "Please select a file to upload.",
+      "uploadError": "An error occurred during upload. Please try again.",
+      "missingColumns": "Your data is missing required columns: ",
+      "invalidData": "Your data contains missing or invalid values.",
+      "predictError": "An error occurred during batch prediction."
+    }
+  },
   "predictionHistoryDetail": {
     "toast": {
       "notFound": "Prediction data not found"
@@ -273,6 +325,143 @@
       "exerciseAngina": "Exercise-induced angina (Y: Yes, N: No).",
       "oldpeak": "ST depression induced by exercise relative to rest.",
       "stSlope": "The slope of the peak exercise ST segment: Up, Flat, Down."
+    }
+  },
+  "predictionBatchHistoryDetail": {
+    "state": {
+      "loading": "Loading history...",
+      "loadingMore": "Loading...",
+      "notFound": "Prediction data not found.",
+      "generatingXai": "Generating AI Explainability...",
+      "generatingXaiDesc": "This may take a few seconds as we analyze the features.",
+      "xaiError": "Could not generate explainability charts for this patient."
+    },
+    "toast": {
+      "notFound": "Prediction data not found",
+      "loadPatientsFailed": "Failed to load patient list",
+      "downloadFailed": "Failed to download the dataset",
+      "generateXAIFailed": "Failed to generate Explainable AI for this patient."
+    },
+    "header": {
+      "title": "Analysis Report",
+      "downloading": "Downloading...",
+      "downloadData": "Download data"
+    },
+    "summary": {
+      "totalPatients": "Total Patients",
+      "highRisk": "High Risk (Disease)",
+      "lowRisk": "Low Risk (Normal)"
+    },
+    "xai": {
+      "title": "Batch explainability analysis",
+      "clickToExpand": "Click to expand",
+      "shapBarTitle": "Feature importance",
+      "shapBarDesc": "Displays the global importance of each feature across all patients. Longer bars indicate features that had the most significant impact on the model's overall predictions.",
+      "shapBeeswarmTitle": "Feature impact distribution",
+      "shapBeeswarmDesc1": "Visualizes how feature values across all patients influence the model's output. Each dot represents a single patient; its horizontal position indicates whether it increases (right) or decreases (left) the prediction risk. Color represents the feature value: ",
+      "shapBeeswarmRed": "Red",
+      "shapBeeswarmMiddle": " for high values, ",
+      "shapBeeswarmBlue": "Blue",
+      "shapBeeswarmEnd": " for low values."
+    },
+    "patientList": {
+      "title": "Patient detail list",
+      "patientNum": "Patient",
+      "highRisk": "High Risk",
+      "normal": "Normal",
+      "age": "Age:",
+      "sex": "Sex:",
+      "confidence": "Confidence:",
+      "na": "N/A"
+    },
+    "modal": {
+      "title": "Patient analysis",
+      "aiPrediction": "AI Prediction",
+      "highRisk": "Heart Failure Risk",
+      "lowRisk": "Normal / Low risk",
+      "confidenceScore": "Confidence Score",
+      "patientInfo": "Patient information",
+      "charts": {
+        "shapWaterfallTitle": "Feature impact analysis",
+        "shapWaterfallDesc": "Visualizes how individual factors shift the prediction from the baseline. Red bars indicate factors increasing risk, while blue bars indicate factors decreasing risk.",
+        "shapBarTitle": "Top influencing factors",
+        "shapBarDesc": "Ranks health indicators by their absolute impact on the prediction. Longer bars indicate features that contributed most strongly to the model's decision for this patient.",
+        "limeTitle": "Local interpretation",
+        "limeDesc": "Shows local feature impacts by analyzing the specific data ranges that influenced this exact prediction."
+      }
+    }
+  },
+  "analyzeUpload": {
+    "title": "Dataset Analysis & Feature Selection",
+    "subtitle": "Upload your dataset to generate insights and identify the most important features",
+    "dropzone": {
+      "dragDrop": "Drag and drop your dataset here",
+      "clickUpload": "Or click to upload from your computer",
+      "chooseFile": "Choose .CSV File"
+    },
+    "uploadBtn": {
+      "uploading": "Uploading...",
+      "upload": "Upload & Analyze data"
+    },
+    "configuration": {
+      "title": "Pipeline configuration",
+      "targetColumn": {
+        "label": "Target column",
+        "placeholder": "-- Select a column to predict --",
+        "desc": "The target variable that the machine learning model will attempt to predict."
+      },
+      "preprocessing": {
+        "title": "Preprocessing & Resampling",
+        "imputation": {
+          "label": "Imputation method",
+          "default": "Default",
+          "knn": "KNN imputer",
+          "mice": "MICE imputer",
+          "mean": "Mean / Mode",
+          "desc": "Method to handle missing values in the dataset."
+        },
+        "balancing": {
+          "label": "Data balancing",
+          "none": "None",
+          "adasyn": "ADASYN",
+          "smote": "SMOTE",
+          "note": "Note:",
+          "desc": "The system will only apply this if severe class imbalance is detected."
+        }
+      },
+      "featureSelection": {
+        "title": "Feature selection (Genetic algorithm)",
+        "size": {
+          "label": "Population size",
+          "desc": "Number of individuals in each generation. (Range: 10 - 200)."
+        },
+        "mutationRate": {
+          "label": "Mutation rate",
+          "desc": "Probability of a feature flipping its state. (Range: 0.01 - 0.5)."
+        },
+        "nParents": {
+          "label": "Number of parents",
+          "placeholder": "Leave empty for default",
+          "desc": "Best individuals kept for breeding. Must be less than Population size."
+        },
+        "testSize": {
+          "label": "Test size",
+          "desc": "Proportion of data used for evaluation. (Range: 0.1 - 0.5)."
+        }
+      },
+      "confirmBtn": "Confirm & Proceed"
+    },
+    "toast": {
+      "invalidFile": "Please select a .csv file only",
+      "fileTooLarge": "File size exceeds the 10MB limit.",
+      "signInRequired": "Please sign in to continue.",
+      "uploadError": "An error occurred during upload. Please try again.",
+      "targetRequired": "Please select a target column!",
+      "invalidSize": "Population size must be between 10 and 200.",
+      "invalidMutationRate": "Mutation rate must be between 0.01 and 0.5.",
+      "invalidTestSize": "Test size must be between 0.1 and 0.5.",
+      "invalidNParentsMin": "Number of parents must be greater than 0.",
+      "invalidNParentsMax": "Number of parents must be less than Population size."
     }
   }
 }
