@@ -28,6 +28,19 @@ const LOADING_MESSAGES = [
     "Finalizing the most impactful feature set..."
 ];
 
+const formatModelName = (modelKey: string) => {
+    const modelMap: Record<string, string> = {
+        "svm": "SVM",
+        "logistic_regression": "Logistic Regression",
+        "random_forest": "Random Forest",
+        "decision_tree": "Decision Tree",
+        "knn": "K-Nearest Neighbors",
+        "xgboost": "XGBoost",
+        "lightgbm": "LightGBM"
+    };
+    return modelMap[modelKey] || modelKey;
+};
+
 export default function FeatureSelectionTab({
     targetColumn,
     processedId,
@@ -42,7 +55,7 @@ export default function FeatureSelectionTab({
     const [loadingMessageIdx, setLoadingMessageIdx] = useState(0);
     const [result, setResult] = useState<FSResult | null>(null);
     const [isDownloading, setIsDownloading] = useState(false);
-    const [selectedImage, setSelectedImage] = useState<string | null>(null); // State cho Modal
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const hasFetched = useRef(false);
 
     // Local states for parameter configuration
@@ -55,7 +68,11 @@ export default function FeatureSelectionTab({
     const [evalResult, setEvalResult] = useState<EvalResult | null>(null);
     const [isEvalLoading, setIsEvalLoading] = useState(false);
 
-    // Thêm State để dễ dàng cấu hình phương pháp Balancing (ADASYN, SMOTE, none)
+    // State for LIME UI
+    const [limeRowIndex, setLimeRowIndex] = useState<number>(0);
+    const [isLimeLoading, setIsLimeLoading] = useState(false);
+
+    // State for Data Balancing configuration
     const [localBalancing, setLocalBalancing] = useState<string>(
         balancing.toLowerCase() === "yes" ? "adasyn" : (balancing.toLowerCase() || "none")
     );
@@ -82,10 +99,39 @@ export default function FeatureSelectionTab({
                 }
             });
             setEvalResult(res.data);
+            setLimeRowIndex(0);
+            await fetchLime(fsDatasetId, 0);
         } catch (error) {
             toast.error("Could not load deep evaluation metrics.");
         } finally {
             setIsEvalLoading(false);
+        }
+    };
+
+    const fetchLime = async (fsDatasetId: string, rowIndex: number) => {
+        setIsLimeLoading(true);
+        try {
+            const res = await api.get(`/datasets/${processedId}/feature-selection-evaluation/lime`, {
+                params: {
+                    fs_dataset_id: fsDatasetId,
+                    target_column: targetColumn,
+                    instance_idx: rowIndex,
+                    test_size: localTestSize
+                }
+            });
+            setEvalResult(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    lime_chart_before_url: res.data.lime_chart_before_url,
+                    lime_chart_after_url: res.data.lime_chart_after_url,
+                };
+            });
+            toast.success(`Generated LIME explanation for row ${rowIndex}`);
+        } catch (error: any) {
+            toast.error(error.response?.data?.detail || "Failed to generate LIME explanations.");
+        } finally {
+            setIsLimeLoading(false);
         }
     };
 
@@ -202,6 +248,18 @@ export default function FeatureSelectionTab({
         } finally {
             setIsDownloading(false);
         }
+    };
+
+    const handleGenerateLime = async () => {
+        if (!result?.fs_dataset_id || !processedId || !targetColumn) {
+            toast.error("Evaluation data not ready.");
+            return;
+        }
+        if (limeRowIndex < 0) {
+            toast.error("Row index must be 0 or greater.");
+            return;
+        }
+        await fetchLime(result.fs_dataset_id, limeRowIndex);
     };
 
     const inputClass = "w-full p-2 mt-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#4361EE] outline-none transition-shadow";
@@ -417,10 +475,18 @@ export default function FeatureSelectionTab({
                                         <p className="text-gray-500">Please wait while we evaluate the selected features...</p>
                                     </div>
                                 ) : evalResult ? (
-                                    <div className="space-y-12">
+                                    <div className="space-y-4">
                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                                             {/* Cột trái: Metrics (Chiếm 1/3) */}
                                             <div className="flex flex-col gap-4 lg:col-span-1">
+                                                {/* Model Evaluated Box */}
+                                                <div className="flex flex-col items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800/30">
+                                                    <span className="text-xs font-bold text-blue-500 dark:text-blue-400 uppercase tracking-wider">Evaluated Model</span>
+                                                    <span className="mt-2 text-lg font-bold text-gray-800 dark:text-gray-200">
+                                                        {formatModelName(evalResult.model_evaluated)}
+                                                    </span>
+                                                </div>
+
                                                 <MetricCompare label="Accuracy" before={evalResult.metrics_before.accuracy} after={evalResult.metrics_after.accuracy} />
                                                 <MetricCompare label="Recall (Sensitivity)" before={evalResult.metrics_before.recall} after={evalResult.metrics_after.recall} />
                                                 <MetricCompare label="Precision" before={evalResult.metrics_before.precision} after={evalResult.metrics_after.precision} />
@@ -469,121 +535,189 @@ export default function FeatureSelectionTab({
                                             </div>
                                         </div>
 
-                                        <div className="space-y-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-                                            <h3 className="font-bold text-gray-800 dark:text-gray-200">Explainable AI (Before vs After)</h3>
-                                            {/* 2.1 SHAP Bar Chart */}
-                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                                {evalResult.shap_chart_before_url && (
-                                                    <div
-                                                        className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white p-2"
-                                                        onClick={() => setSelectedImage(`${evalResult.shap_chart_before_url}?t=${timestamp}`)}
-                                                    >
-                                                        <Image
-                                                            src={`${evalResult.shap_chart_before_url}?t=${timestamp}`}
-                                                            alt="SHAP Importance Before"
-                                                            width={600}
-                                                            height={400}
-                                                            className="w-full h-auto object-contain"
-                                                        />
-                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-xl">
-                                                            <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
-                                                        </div>
+                                        <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+
+                                            {/* SHAP GLOBAL IMPORTANCE SECTION */}
+                                            <div className="space-y-6">
+                                                <h3 className="font-bold text-gray-800 dark:text-gray-200">Global importance (SHAP)</h3>
+
+                                                {/* 2.1 SHAP Bar Chart */}
+                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                    <div className="bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col items-center">
+                                                        <span className="font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide text-sm">Before Feature Selection</span>
+                                                        {evalResult.shap_chart_before_url && (
+                                                            <div
+                                                                className="relative group cursor-pointer w-full rounded-lg overflow-hidden bg-white border border-gray-100 dark:border-gray-600 p-2"
+                                                                onClick={() => setSelectedImage(`${evalResult.shap_chart_before_url}?t=${timestamp}`)}
+                                                            >
+                                                                <Image
+                                                                    src={`${evalResult.shap_chart_before_url}?t=${timestamp}`}
+                                                                    alt="SHAP Importance Before"
+                                                                    width={600}
+                                                                    height={400}
+                                                                    className="w-full h-auto max-h-[300px] object-contain"
+                                                                />
+                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-lg">
+                                                                    <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                )}
-                                                {evalResult.shap_chart_after_url && (
-                                                    <div
-                                                        className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white p-2"
-                                                        onClick={() => setSelectedImage(`${evalResult.shap_chart_after_url}?t=${timestamp}`)}
-                                                    >
-                                                        <Image
-                                                            src={`${evalResult.shap_chart_after_url}?t=${timestamp}`}
-                                                            alt="SHAP Importance After"
-                                                            width={600}
-                                                            height={400}
-                                                            className="w-full h-auto object-contain"
-                                                        />
-                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-xl">
-                                                            <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
-                                                        </div>
+
+                                                    <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30 rounded-xl p-4 flex flex-col items-center">
+                                                        <span className="font-semibold text-blue-700 dark:text-blue-300 mb-3 uppercase tracking-wide text-sm">After Feature Selection</span>
+                                                        {evalResult.shap_chart_after_url && (
+                                                            <div
+                                                                className="relative group cursor-pointer w-full rounded-lg overflow-hidden bg-white border border-blue-100 dark:border-blue-800 p-2"
+                                                                onClick={() => setSelectedImage(`${evalResult.shap_chart_after_url}?t=${timestamp}`)}
+                                                            >
+                                                                <Image
+                                                                    src={`${evalResult.shap_chart_after_url}?t=${timestamp}`}
+                                                                    alt="SHAP Importance After"
+                                                                    width={600}
+                                                                    height={400}
+                                                                    className="w-full h-auto max-h-[300px] object-contain"
+                                                                />
+                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-lg">
+                                                                    <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                )}
+                                                </div>
+
+                                                {/* 2.2 SHAP Beeswarm Chart */}
+                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                                    <div className="bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col items-center">
+                                                        <span className="font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide text-sm">Before Feature Selection</span>
+                                                        {evalResult.shap_beeswarm_before_url && (
+                                                            <div
+                                                                className="relative group cursor-pointer w-full rounded-lg overflow-hidden bg-white border border-gray-100 dark:border-gray-600 p-2"
+                                                                onClick={() => setSelectedImage(`${evalResult.shap_beeswarm_before_url}?t=${timestamp}`)}
+                                                            >
+                                                                <Image
+                                                                    src={`${evalResult.shap_beeswarm_before_url}?t=${timestamp}`}
+                                                                    alt="SHAP Beeswarm Before"
+                                                                    width={600}
+                                                                    height={400}
+                                                                    className="w-full h-auto max-h-[300px] object-contain"
+                                                                />
+                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-lg">
+                                                                    <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30 rounded-xl p-4 flex flex-col items-center">
+                                                        <span className="font-semibold text-blue-700 dark:text-blue-300 mb-3 uppercase tracking-wide text-sm">After Feature Selection</span>
+                                                        {evalResult.shap_beeswarm_after_url && (
+                                                            <div
+                                                                className="relative group cursor-pointer w-full rounded-lg overflow-hidden bg-white border border-blue-100 dark:border-blue-800 p-2"
+                                                                onClick={() => setSelectedImage(`${evalResult.shap_beeswarm_after_url}?t=${timestamp}`)}
+                                                            >
+                                                                <Image
+                                                                    src={`${evalResult.shap_beeswarm_after_url}?t=${timestamp}`}
+                                                                    alt="SHAP Beeswarm After"
+                                                                    width={600}
+                                                                    height={400}
+                                                                    className="w-full h-auto max-h-[300px] object-contain"
+                                                                />
+                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-lg">
+                                                                    <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
 
-                                            {/* 2.2 SHAP Beeswarm Chart */}
-                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                                {evalResult.shap_beeswarm_before_url && (
-                                                    <div
-                                                        className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white p-2"
-                                                        onClick={() => setSelectedImage(`${evalResult.shap_beeswarm_before_url}?t=${timestamp}`)}
-                                                    >
-                                                        <Image
-                                                            src={`${evalResult.shap_beeswarm_before_url}?t=${timestamp}`}
-                                                            alt="SHAP Beeswarm Before"
-                                                            width={600}
-                                                            height={400}
-                                                            className="w-full h-auto object-contain"
+                                            {/* LIME LOCAL EXPLANATIONS SECTION */}
+                                            <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                                    <h3 className="font-bold text-gray-800 dark:text-gray-200">Local explanations (LIME)</h3>
+
+                                                    {/* LIME Data Input Row */}
+                                                    <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900/50 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700">
+                                                        <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                                            Row index:
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            min={0}
+                                                            value={limeRowIndex}
+                                                            onChange={(e) => setLimeRowIndex(Number(e.target.value))}
+                                                            className="w-20 p-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#4361EE] outline-none text-center"
                                                         />
-                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-xl">
-                                                            <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
-                                                        </div>
+                                                        <button
+                                                            className="px-4 py-1.5 cursor-pointer flex items-center justify-center min-w-[100px] bg-[#4361EE] text-white text-sm font-semibold rounded-md hover:bg-[#3a52d5] transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            onClick={handleGenerateLime}
+                                                            disabled={isLimeLoading}
+                                                        >
+                                                            {isLimeLoading ? (
+                                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                            ) : (
+                                                                "Generate"
+                                                            )}
+                                                        </button>
                                                     </div>
-                                                )}
-                                                {evalResult.shap_beeswarm_after_url && (
-                                                    <div
-                                                        className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white p-2"
-                                                        onClick={() => setSelectedImage(`${evalResult.shap_beeswarm_after_url}?t=${timestamp}`)}
-                                                    >
-                                                        <Image
-                                                            src={`${evalResult.shap_beeswarm_after_url}?t=${timestamp}`}
-                                                            alt="SHAP Beeswarm After"
-                                                            width={600}
-                                                            height={400}
-                                                            className="w-full h-auto object-contain"
-                                                        />
-                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-xl">
-                                                            <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                </div>
+
+                                                {/* 2.3 LIME Local Explanation */}
+                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
+
+                                                    {/* Loading Overlay mapped directly over LIME charts */}
+                                                    {isLimeLoading && (
+                                                        <div className="absolute inset-0 z-10 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700">
+                                                            <div className="w-8 h-8 border-4 border-[#4361EE] border-t-transparent rounded-full animate-spin mb-3"></div>
+                                                            <p className="font-semibold text-gray-700 dark:text-gray-300">Generating LIME for row {limeRowIndex}...</p>
                                                         </div>
+                                                    )}
+
+                                                    <div className={`bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col items-center transition-opacity duration-300 ${isLimeLoading ? "opacity-30" : "opacity-100"}`}>
+                                                        <span className="font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide text-sm">Before Feature Selection</span>
+                                                        {evalResult.lime_chart_before_url && (
+                                                            <div
+                                                                className="relative group cursor-pointer w-full rounded-lg overflow-hidden bg-white border border-gray-100 dark:border-gray-600 p-2"
+                                                                onClick={() => setSelectedImage(`${evalResult.lime_chart_before_url}?t=${timestamp}`)}
+                                                            >
+                                                                <Image
+                                                                    src={`${evalResult.lime_chart_before_url}?t=${timestamp}`}
+                                                                    alt="LIME Before"
+                                                                    width={600}
+                                                                    height={400}
+                                                                    className="w-full h-auto max-h-[300px] object-contain"
+                                                                />
+                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-lg">
+                                                                    <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                )}
+
+                                                    <div className={`bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30 rounded-xl p-4 flex flex-col items-center transition-opacity duration-300 ${isLimeLoading ? "opacity-30" : "opacity-100"}`}>
+                                                        <span className="font-semibold text-blue-700 dark:text-blue-300 mb-3 uppercase tracking-wide text-sm">After Feature Selection</span>
+                                                        {evalResult.lime_chart_after_url && (
+                                                            <div
+                                                                className="relative group cursor-pointer w-full rounded-lg overflow-hidden bg-white border border-blue-100 dark:border-blue-800 p-2"
+                                                                onClick={() => setSelectedImage(`${evalResult.lime_chart_after_url}?t=${timestamp}`)}
+                                                            >
+                                                                <Image
+                                                                    src={`${evalResult.lime_chart_after_url}?t=${timestamp}`}
+                                                                    alt="LIME After"
+                                                                    width={600}
+                                                                    height={400}
+                                                                    className="w-full h-auto max-h-[300px] object-contain"
+                                                                />
+                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-lg">
+                                                                    <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
 
-                                            {/* 2.3 LIME Local Explanation */}
-                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                                {evalResult.lime_chart_before_url && (
-                                                    <div
-                                                        className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white p-2"
-                                                        onClick={() => setSelectedImage(`${evalResult.lime_chart_before_url}?t=${timestamp}`)}
-                                                    >
-                                                        <Image
-                                                            src={`${evalResult.lime_chart_before_url}?t=${timestamp}`}
-                                                            alt="LIME Before"
-                                                            width={600}
-                                                            height={400}
-                                                            className="w-full h-auto object-contain"
-                                                        />
-                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-xl">
-                                                            <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {evalResult.lime_chart_after_url && (
-                                                    <div
-                                                        className="relative group cursor-pointer rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-white p-2"
-                                                        onClick={() => setSelectedImage(`${evalResult.lime_chart_after_url}?t=${timestamp}`)}
-                                                    >
-                                                        <Image
-                                                            src={`${evalResult.lime_chart_after_url}?t=${timestamp}`}
-                                                            alt="LIME After"
-                                                            width={600}
-                                                            height={400}
-                                                            className="w-full h-auto object-contain"
-                                                        />
-                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/10 transition-opacity rounded-xl">
-                                                            <span className="bg-black/70 text-white text-xs px-3 py-1.5 rounded-md font-medium shadow-sm backdrop-blur-sm">Click to expand</span>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
                                         </div>
                                     </div>
                                 ) : (
@@ -600,7 +734,6 @@ export default function FeatureSelectionTab({
                                     Algorithm parameters
                                 </h3>
                             </div>
-                            {/* Layout Grid được nới rộng ra để chứa thêm ô Balancing */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 p-6">
 
                                 {/* Data Balancing Method Dropdown */}

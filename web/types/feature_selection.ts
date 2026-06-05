@@ -22,7 +22,6 @@ export interface Metrics {
 }
 
 export interface EvalResult {
-  status: string;
   model_evaluated: string;
   metrics_before: Metrics;
   metrics_after: Metrics;

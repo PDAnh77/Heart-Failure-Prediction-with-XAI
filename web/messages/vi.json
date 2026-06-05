@@ -298,7 +298,7 @@
       "shapBarTitle": "Tầm quan trọng của các đặc trưng",
       "shapBarDescription": "Xếp hạng các chỉ số sức khỏe theo mức ảnh hưởng tuyệt đối lên dự đoán này. Giá trị càng cao thể hiện AI xem yếu tố đó càng quan trọng với bệnh nhân.",
       "limeTitle": "Diễn giải cục bộ",
-      "limeDescription": "Đối chiếu độc lập: Phân tích các đặc trưng cụ thể đang ủng hộ chẩn đoán \"Nguy cơ cao\" so với các đặc trưng ủng hộ chẩn đoán \"Bình thường\"."
+      "limeDescription": "Phân tích mức độ đóng góp của các đặc trưng vào dự đoán, cho thấy những yếu tố đang ủng hộ chẩn đoán \"Nguy cơ cao\" hoặc \"Bình thường\"."
     },
     "patientFields": {
       "age": "Age",
@@ -387,7 +387,7 @@
         "shapBarTitle": "Tầm quan trọng của các đặc trưng",
         "shapBarDesc": "Xếp hạng các chỉ số sức khỏe theo mức ảnh hưởng tuyệt đối lên dự đoán này. Giá trị càng cao thể hiện yếu tố đó càng đóng góp mạnh vào quyết định của mô hình cho bệnh nhân này.",
         "limeTitle": "Diễn giải cục bộ",
-        "limeDesc": "Hiển thị tác động của đặc trưng cục bộ bằng cách phân tích các phạm vi dữ liệu cụ thể đã ảnh hưởng đến dự đoán chính xác này."
+        "limeDesc": "Phân tích mức độ đóng góp của các đặc trưng vào dự đoán, cho thấy những yếu tố đang ủng hộ chẩn đoán \"Nguy cơ cao\" hoặc \"Bình thường\"."
       }
     }
   },

@@ -117,3 +117,26 @@ def get_feature_selection_evaluation(
         model_name=model_name,
         test_size=test_size,
     )
+
+
+@router.get("/{dataset_id}/feature-selection-evaluation/lime")
+def get_standalone_lime_explanation(
+    dataset_id: str,
+    fs_dataset_id: str,
+    target_column: str,
+    instance_idx: int = Query(..., ge=0, description="Exact index of the row to explain"),
+    model_name: str = Query(None),
+    test_size: float = Query(0.3, ge=0.1, le=0.5),
+    owner_id: str = Query(None),
+    user=Depends(require_roles(["admin", "user"])),
+):
+    return dataset_service.generate_lime_explanation(
+        dataset_id=dataset_id,
+        fs_dataset_id=fs_dataset_id,
+        target_column=target_column,
+        owner_id=owner_id,
+        user=user,
+        model_name=model_name,
+        test_size=test_size,
+        instance_idx=instance_idx,
+    )

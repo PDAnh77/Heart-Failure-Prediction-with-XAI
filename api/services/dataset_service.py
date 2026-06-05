@@ -790,6 +790,7 @@ def evaluate_feature_selection(
     user: dict,
     model_name: str,
     test_size: float,
+    lime_instance_idx: int = 0,
 ):
     target_user_id = owner_id if (user["role"] == "admin" and owner_id) else user["user_id"]
 
@@ -1020,66 +1021,8 @@ def evaluate_feature_selection(
         print(f"Error generating SHAP plots: {e}")
         plt.close("all")
 
-    # =================================================================
-    # VẼ BIỂU ĐỒ LIME LOCAL EXPLANATION
-    # =================================================================
-    lime_chart_before_url = None
-    lime_chart_after_url = None
-
-    try:
-        from lime import lime_tabular
-
-        # Chọn dòng đầu tiên của tập test để giải thích
-        instance_idx = 0
-
-        # LIME Before
-        explainer_before = lime_tabular.LimeTabularExplainer(
-            training_data=X_train_orig.values,
-            feature_names=X_train_orig.columns.tolist(),
-            class_names=["Class 0", "Class 1"],
-            mode="classification",
-            random_state=42,
-        )
-
-        exp_before = explainer_before.explain_instance(
-            data_row=X_test_orig.iloc[instance_idx].values,
-            predict_fn=_predict_proba_with_columns(model_before, X_train_orig.columns),
-            num_features=10,  # Top 10 feature quan trọng nhất cho mẫu này
-        )
-
-        # as_pyplot_figure() tự động tạo một matplotlib figure
-        fig_before = exp_before.as_pyplot_figure()
-        plt.title(f"LIME Local Explanation - Instance {instance_idx} (Before Feature Selection)", pad=15)
-        plt.tight_layout()
-        lime_chart_before_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/lime_before.png")
-
-        # LIME After
-        explainer_after = lime_tabular.LimeTabularExplainer(
-            training_data=X_train_sel.values,
-            feature_names=X_train_sel.columns.tolist(),
-            class_names=["Class 0", "Class 1"],
-            mode="classification",
-            random_state=42,
-        )
-
-        exp_after = explainer_after.explain_instance(
-            data_row=X_test_sel.iloc[instance_idx].values,
-            predict_fn=_predict_proba_with_columns(model_after, X_train_sel.columns),
-            num_features=10,
-        )
-
-        fig_after = exp_after.as_pyplot_figure()
-        plt.title(f"LIME Local Explanation - Instance {instance_idx} (After Feature Selection)", pad=15)
-        plt.tight_layout()
-        lime_chart_after_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/lime_after.png")
-
-    except Exception as e:
-        print(f"Error generating LIME plots: {e}")
-        plt.close("all")
-
     return _sanitize(
         {
-            "status": "success",
             "model_evaluated": final_model_name,
             "metrics_before": metrics_before,
             "metrics_after": metrics_after,
@@ -1089,6 +1032,119 @@ def evaluate_feature_selection(
             "shap_chart_after_url": shap_chart_after_url,
             "shap_beeswarm_before_url": shap_beeswarm_before_url,
             "shap_beeswarm_after_url": shap_beeswarm_after_url,
+        }
+    )
+
+
+def generate_lime_explanation(
+    dataset_id: str,
+    fs_dataset_id: str,
+    target_column: str,
+    owner_id: str,
+    user: dict,
+    model_name: str,
+    test_size: float,
+    instance_idx: int,
+):
+    target_user_id = owner_id if (user["role"] == "admin" and owner_id) else user["user_id"]
+
+    # 1. Load data
+    df_original = load_dataset(dataset_id, target_user_id)
+    df_selected = load_dataset(fs_dataset_id, target_user_id)
+
+    if target_column not in df_original.columns:
+        raise HTTPException(status_code=400, detail=f"Target column '{target_column}' not found.")
+
+    # 2. Split data (Must keep random_state=42 to match the evaluation API)
+    Y_orig = df_original[target_column]
+    X_orig = df_original.drop(columns=[target_column])
+    Y_sel = df_selected[target_column]
+    X_sel = df_selected.drop(columns=[target_column])
+
+    X_train_orig, X_test_orig, Y_train_orig, Y_test_orig = train_test_split(
+        X_orig, Y_orig, test_size=test_size, random_state=42
+    )
+    X_train_sel, X_test_sel, Y_train_sel, Y_test_sel = train_test_split(
+        X_sel, Y_sel, test_size=test_size, random_state=42
+    )
+
+    # Validate index
+    max_idx = len(X_test_orig) - 1
+    if instance_idx < 0 or instance_idx > max_idx:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid row index. The test set only contains {len(X_test_orig)} rows.",
+        )
+
+    # 3. Model Setup & Fast Retrain
+    final_model_name = model_name if (user["role"] == "admin" and model_name) else SELECTED_MODEL
+    if final_model_name not in AVAILABLE_MODELS:
+        final_model_name = "decision_tree"
+
+    model_before = copy.deepcopy(AVAILABLE_MODELS[final_model_name])
+    model_after = copy.deepcopy(AVAILABLE_MODELS[final_model_name])
+
+    model_before.fit(X_train_orig, Y_train_orig)
+    model_after.fit(X_train_sel, Y_train_sel)
+
+    # Helpers
+    def _to_frame(data, columns):
+        return data if isinstance(data, pd.DataFrame) else pd.DataFrame(data, columns=columns)
+
+    def _predict_proba_with_columns(model, columns):
+        return lambda data: model.predict_proba(_to_frame(data, columns))
+
+    # 4. Generate LIME
+    lime_chart_before_url = None
+    lime_chart_after_url = None
+
+    try:
+        from lime import lime_tabular
+
+        # LIME Before
+        explainer_before = lime_tabular.LimeTabularExplainer(
+            training_data=X_train_orig.values,
+            feature_names=X_train_orig.columns.tolist(),
+            class_names=["Class 0", "Class 1"],
+            mode="classification",
+            random_state=42,
+        )
+        exp_before = explainer_before.explain_instance(
+            data_row=X_test_orig.iloc[instance_idx].values,
+            predict_fn=_predict_proba_with_columns(model_before, X_train_orig.columns),
+            num_features=10,
+        )
+        fig_before = exp_before.as_pyplot_figure()
+        plt.title(f"LIME Local Explanation - Instance {instance_idx} (Before FS)", pad=15)
+        plt.tight_layout()
+        lime_chart_before_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/lime_before_idx_{instance_idx}.png")
+
+        # LIME After
+        explainer_after = lime_tabular.LimeTabularExplainer(
+            training_data=X_train_sel.values,
+            feature_names=X_train_sel.columns.tolist(),
+            class_names=["Class 0", "Class 1"],
+            mode="classification",
+            random_state=42,
+        )
+        exp_after = explainer_after.explain_instance(
+            data_row=X_test_sel.iloc[instance_idx].values,
+            predict_fn=_predict_proba_with_columns(model_after, X_train_sel.columns),
+            num_features=10,
+        )
+        fig_after = exp_after.as_pyplot_figure()
+        plt.title(f"LIME Local Explanation - Instance {instance_idx} (After FS)", pad=15)
+        plt.tight_layout()
+        lime_chart_after_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/lime_after_idx_{instance_idx}.png")
+
+    except Exception as e:
+        print(f"Error generating LIME plots: {e}")
+        plt.close("all")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to generate LIME explanations.")
+
+    return _sanitize(
+        {
+            "instance_idx": instance_idx,
             "lime_chart_before_url": lime_chart_before_url,
             "lime_chart_after_url": lime_chart_after_url,
         }
