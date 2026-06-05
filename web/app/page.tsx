@@ -18,7 +18,7 @@ export default async function Home() {
     {
       title: t("quickLinks.analysis.title"),
       description: t("quickLinks.analysis.description"),
-      href: "/analyze/dashboard",
+      href: "/analyze/upload",
     },
   ];
 
