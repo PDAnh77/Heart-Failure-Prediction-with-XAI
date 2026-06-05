@@ -482,7 +482,7 @@ export default function FeatureSelectionTab({
                                             <div className="flex flex-col gap-4 lg:col-span-1">
                                                 {/* Model Evaluated Box */}
                                                 <div className="flex flex-col items-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800/30">
-                                                    <span className="text-xs font-bold text-blue-500 dark:text-blue-400 uppercase tracking-wider">Evaluated Model</span>
+                                                    <span className="text-xs font-bold text-blue-500 dark:text-blue-400 uppercase tracking-wider">Model Using</span>
                                                     <span className="mt-2 text-lg font-bold text-gray-800 dark:text-gray-200">
                                                         {formatModelName(evalResult.model_evaluated)}
                                                     </span>
