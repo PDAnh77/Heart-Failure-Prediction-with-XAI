@@ -22,7 +22,6 @@ export interface Metrics {
 }
 
 export interface EvalResult {
-  status: string;
   model_evaluated: string;
   metrics_before: Metrics;
   metrics_after: Metrics;
@@ -34,4 +33,6 @@ export interface EvalResult {
   shap_beeswarm_after_url: string | null;
   lime_chart_before_url: string | null;
   lime_chart_after_url: string | null;
+  xai_score_before?: number | null;
+  xai_score_after?: number | null;
 }
