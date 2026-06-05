@@ -33,4 +33,6 @@ export interface EvalResult {
   shap_beeswarm_after_url: string | null;
   lime_chart_before_url: string | null;
   lime_chart_after_url: string | null;
+  xai_score_before?: number | null;
+  xai_score_after?: number | null;
 }

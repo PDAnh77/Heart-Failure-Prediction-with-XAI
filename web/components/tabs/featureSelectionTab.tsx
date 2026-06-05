@@ -125,9 +125,10 @@ export default function FeatureSelectionTab({
                     ...prev,
                     lime_chart_before_url: res.data.lime_chart_before_url,
                     lime_chart_after_url: res.data.lime_chart_after_url,
+                    xai_score_before: res.data.xai_score_before,
+                    xai_score_after: res.data.xai_score_after,
                 };
             });
-            toast.success(`Generated LIME explanation for row ${rowIndex}`);
         } catch (error: any) {
             toast.error(error.response?.data?.detail || "Failed to generate LIME explanations.");
         } finally {
@@ -635,7 +636,12 @@ export default function FeatureSelectionTab({
                                             {/* LIME LOCAL EXPLANATIONS SECTION */}
                                             <div className="space-y-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                                    <h3 className="font-bold text-gray-800 dark:text-gray-200">Local explanations (LIME)</h3>
+                                                    <div>
+                                                        <h3 className="font-bold text-gray-800 dark:text-gray-200">Local explanations (LIME)</h3>
+                                                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-2xl">
+                                                            The <strong>XAI Score (R²)</strong> indicates the reliability of the explanation for the chosen row. A score closer to 1.0 means the explanation is highly trustworthy.
+                                                        </p>
+                                                    </div>
 
                                                     {/* LIME Data Input Row */}
                                                     <div className="flex items-center gap-3 bg-gray-50 dark:bg-gray-900/50 p-2.5 rounded-xl border border-gray-200 dark:border-gray-700">
@@ -665,17 +671,23 @@ export default function FeatureSelectionTab({
 
                                                 {/* 2.3 LIME Local Explanation */}
                                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 relative">
-
-                                                    {/* Loading Overlay mapped directly over LIME charts */}
                                                     {isLimeLoading && (
-                                                        <div className="absolute inset-0 z-10 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm flex flex-col items-center justify-center rounded-xl border border-gray-200 dark:border-gray-700">
-                                                            <div className="w-8 h-8 border-4 border-[#4361EE] border-t-transparent rounded-full animate-spin mb-3"></div>
+                                                        <div className="absolute inset-0 z-10 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm flex flex-row items-center justify-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700">
+                                                            <div className="w-6 h-6 border-2 border-[#4361EE] border-t-transparent rounded-full animate-spin"></div>
                                                             <p className="font-semibold text-gray-700 dark:text-gray-300">Generating LIME for row {limeRowIndex}...</p>
                                                         </div>
                                                     )}
 
                                                     <div className={`bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-700 rounded-xl p-4 flex flex-col items-center transition-opacity duration-300 ${isLimeLoading ? "opacity-30" : "opacity-100"}`}>
-                                                        <span className="font-semibold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide text-sm">Before Feature Selection</span>
+                                                        <span className="font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide text-sm">Before Feature Selection</span>
+
+                                                        {/* XAI Score Before */}
+                                                        {evalResult.xai_score_before !== undefined && evalResult.xai_score_before !== null && (
+                                                            <span className="mb-3 px-3 py-1 text-xs font-bold bg-white dark:bg-gray-800 text-[#4361EE] border border-gray-200 dark:border-gray-700 rounded-md shadow-sm">
+                                                                XAI Score (R²): {evalResult.xai_score_before.toFixed(4)}
+                                                            </span>
+                                                        )}
+
                                                         {evalResult.lime_chart_before_url && (
                                                             <div
                                                                 className="relative group cursor-pointer w-full rounded-lg overflow-hidden bg-white border border-gray-100 dark:border-gray-600 p-2"
@@ -696,7 +708,15 @@ export default function FeatureSelectionTab({
                                                     </div>
 
                                                     <div className={`bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30 rounded-xl p-4 flex flex-col items-center transition-opacity duration-300 ${isLimeLoading ? "opacity-30" : "opacity-100"}`}>
-                                                        <span className="font-semibold text-blue-700 dark:text-blue-300 mb-3 uppercase tracking-wide text-sm">After Feature Selection</span>
+                                                        <span className="font-semibold text-blue-700 dark:text-blue-300 mb-2 uppercase tracking-wide text-sm">After Feature Selection</span>
+
+                                                        {/* XAI Score After */}
+                                                        {evalResult.xai_score_after !== undefined && evalResult.xai_score_after !== null && (
+                                                            <span className="mb-3 px-3 py-1 text-xs font-bold bg-white dark:bg-gray-800 text-[#4361EE] border border-blue-200 dark:border-blue-800/30 rounded-md shadow-sm">
+                                                                XAI Score (R²): {evalResult.xai_score_after.toFixed(4)}
+                                                            </span>
+                                                        )}
+
                                                         {evalResult.lime_chart_after_url && (
                                                             <div
                                                                 className="relative group cursor-pointer w-full rounded-lg overflow-hidden bg-white border border-blue-100 dark:border-blue-800 p-2"

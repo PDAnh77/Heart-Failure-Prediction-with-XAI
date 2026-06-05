@@ -3,6 +3,7 @@ from random import randint
 import uuid
 import copy
 import shap
+from lime import lime_tabular
 from datetime import datetime
 from fastapi import HTTPException, UploadFile, status
 from fastapi.responses import StreamingResponse
@@ -1097,11 +1098,13 @@ def generate_lime_explanation(
     # 4. Generate LIME
     lime_chart_before_url = None
     lime_chart_after_url = None
+    xai_score_before = None
+    xai_score_after = None
 
     try:
-        from lime import lime_tabular
-
-        # LIME Before
+        # ==========================================
+        # LIME Before Feature Selection
+        # ==========================================
         explainer_before = lime_tabular.LimeTabularExplainer(
             training_data=X_train_orig.values,
             feature_names=X_train_orig.columns.tolist(),
@@ -1114,12 +1117,22 @@ def generate_lime_explanation(
             predict_fn=_predict_proba_with_columns(model_before, X_train_orig.columns),
             num_features=10,
         )
-        fig_before = exp_before.as_pyplot_figure()
-        plt.title(f"LIME Local Explanation - Instance {instance_idx} (Before FS)", pad=15)
+
+        # Extract XAI Score (R-squared of the local model)
+        xai_score_before = exp_before.score
+
+        # Render and save plot
+        exp_before.as_pyplot_figure()
+        plt.title(
+            f"LIME Local Explanation - Instance {instance_idx} (Before FS)",
+            pad=15,
+        )
         plt.tight_layout()
         lime_chart_before_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/lime_before_idx_{instance_idx}.png")
 
-        # LIME After
+        # ==========================================
+        # LIME After Feature Selection
+        # ==========================================
         explainer_after = lime_tabular.LimeTabularExplainer(
             training_data=X_train_sel.values,
             feature_names=X_train_sel.columns.tolist(),
@@ -1132,20 +1145,32 @@ def generate_lime_explanation(
             predict_fn=_predict_proba_with_columns(model_after, X_train_sel.columns),
             num_features=10,
         )
-        fig_after = exp_after.as_pyplot_figure()
-        plt.title(f"LIME Local Explanation - Instance {instance_idx} (After FS)", pad=15)
+
+        # Extract XAI Score (R-squared of the local model)
+        xai_score_after = exp_after.score
+
+        # Render and save plot
+        exp_after.as_pyplot_figure()
+        plt.title(
+            f"LIME Local Explanation - Instance {instance_idx} (After FS)",
+            pad=15,
+        )
         plt.tight_layout()
         lime_chart_after_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/lime_after_idx_{instance_idx}.png")
 
     except Exception as e:
         print(f"Error generating LIME plots: {e}")
         plt.close("all")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to generate LIME explanations.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to generate LIME explanations."
+        )
 
     return _sanitize(
         {
             "instance_idx": instance_idx,
             "lime_chart_before_url": lime_chart_before_url,
             "lime_chart_after_url": lime_chart_after_url,
+            "xai_score_before": round(xai_score_before, 4) if xai_score_before is not None else None,
+            "xai_score_after": round(xai_score_after, 4) if xai_score_after is not None else None,
         }
     )
