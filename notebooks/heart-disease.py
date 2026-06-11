@@ -1,6 +1,7 @@
 import os
 import time
 import warnings
+import textwrap
 import shap
 import lime
 import lime.lime_tabular
@@ -117,62 +118,57 @@ def plot(score, x, y, c="b"):
 
 def save_df_as_image(df, filepath, title):
     df_copy = df.copy()
+    df_copy = df_copy.round(4)
+
     has_features = "Selected_Features" in df_copy.columns
+    col_widths = None
 
     if has_features:
+        # 1. Chuyển list thành string và ngắt dòng
         df_copy["Selected_Features"] = df_copy["Selected_Features"].apply(
             lambda x: ", ".join(x) if isinstance(x, list) else str(x)
         )
+        df_copy["Selected_Features"] = df_copy["Selected_Features"].apply(
+            lambda x: textwrap.fill(x, width=60)
+        )
+        
+        width_dict = {
+            "Classifier": 0.16,
+            "Selected_Features": 0.38,
+            "Feature_Count": 0.12,
+            "Best_Generation": 0.12,
+            "Execution_Time_Seconds": 0.22
+        }
+        
+        cols = df_copy.columns.tolist()
+        col_widths = [width_dict.get(col, 1.0 / len(cols)) for col in cols]
 
-    df_copy = df_copy.round(4)
+    cell_data = df_copy.values.tolist()
+    headers = df_copy.columns.tolist()
 
-    if has_features:
-        top_cols = [c for c in df_copy.columns if c != "Selected_Features"]
-        cell_data = []
-        for index, row in df_copy.iterrows():
-            cell_data.append([str(row[c]) for c in top_cols])
-            cell_data.append(["Selected_Features"] + [""] * (len(top_cols) - 1))
-            cell_data.append([str(row["Selected_Features"])] + [""] * (len(top_cols) - 1))
-        headers = top_cols
-    else:
-        cell_data = df_copy.values.tolist()
-        headers = df_copy.columns.tolist()
-
-    fig_height = 0.4 * len(cell_data) + 1.5
+    # Tính toán chiều cao linh hoạt
+    fig_height = 0.7 * len(cell_data) + 1.5 if has_features else 0.4 * len(cell_data) + 1.5
     fig, ax = plt.subplots(figsize=(14, fig_height))
     ax.axis("off")
 
-    table = ax.table(cellText=cell_data, colLabels=headers, loc="center", cellLoc="center")
+    # Tạo bảng
+    table = ax.table(
+        cellText=cell_data, 
+        colLabels=headers, 
+        loc="center", 
+        cellLoc="center",
+        colWidths=col_widths
+    )
+    
     table.auto_set_font_size(False)
     table.set_fontsize(10)
-    table.scale(1.0, 1.8)
+    
+    table.scale(1.0, 3.0 if has_features else 1.8)
 
-    if has_features:
-        num_cols = len(top_cols)
-        for i in range(1, len(cell_data) + 1):
-            if i % 3 == 2:
-                for j in range(num_cols):
-                    cell = table[i, j]
-                    if j == 0:
-                        cell.visible_edges = "LT"
-                        cell.set_text_props(weight="bold", ha="left")
-                        cell.get_text().set_text("   " + cell.get_text().get_text())
-                    elif j == num_cols - 1:
-                        cell.visible_edges = "RT"
-                    else:
-                        cell.visible_edges = "T"
-
-            elif i % 3 == 0:
-                for j in range(num_cols):
-                    cell = table[i, j]
-                    if j == 0:
-                        cell.visible_edges = "LB"
-                        cell.set_text_props(ha="left")
-                        cell.get_text().set_text("   " + cell.get_text().get_text())
-                    elif j == num_cols - 1:
-                        cell.visible_edges = "RB"
-                    else:
-                        cell.visible_edges = "B"
+    # Làm đậm tiêu đề cột
+    for (row, col), cell in table.get_celld().items():
+        if row == 0:
+            cell.set_text_props(weight="bold")
 
     plt.title(title, fontweight="bold", fontsize=16, pad=20)
     plt.tight_layout()
@@ -430,31 +426,37 @@ def plot_comparison_metrics(model_before, model_after, X_test_before, X_test_aft
 # MAIN EXECUTION PIPELINE
 # ==========================================
 
-data = pd.read_csv("../input/heart-failure-prediction/heart.csv")
+data = pd.read_csv("../input/heart-disease/heart.csv")
 df1 = data.copy(deep=True)
 
-# Label Encoding
-le_sex, le_chest, le_ecg, le_angina, le_slope = LabelEncoder(), LabelEncoder(), LabelEncoder(), LabelEncoder(), LabelEncoder()
+# 1. DROP DUPLICATES
+print(f"Dataset shape before dropping duplicates: {df1.shape}")
+df1 = df1.drop_duplicates()
+print(f"Dataset shape after dropping duplicates: {df1.shape}")
 
-df1["Sex"] = le_sex.fit_transform(df1["Sex"])
-df1["ChestPainType"] = le_chest.fit_transform(df1["ChestPainType"])
-df1["RestingECG"] = le_ecg.fit_transform(df1["RestingECG"])
-df1["ExerciseAngina"] = le_angina.fit_transform(df1["ExerciseAngina"])
-df1["ST_Slope"] = le_slope.fit_transform(df1["ST_Slope"])
+# 2. DATA PREPROCESSING (With Full Encoding)
+# Categorical columns that need to be label encoded
+cat_cols = ['sex', 'cp', 'fbs', 'restecg', 'exang', 'slope', 'ca', 'thal']
 
-# MinMaxScaler & StandardScaler
+for col in cat_cols:
+    le = LabelEncoder()
+    # Chuyển đổi sang kiểu string trước khi encode để tránh lỗi nếu dữ liệu bị trộn lẫn (mixed types)
+    df1[col] = le.fit_transform(df1[col].astype(str))
+
+# MinMaxScaler for oldpeak
 mms = MinMaxScaler()
-df1["Oldpeak"] = mms.fit_transform(df1[["Oldpeak"]])
+df1["oldpeak"] = mms.fit_transform(df1[["oldpeak"]])
 
-std_cols = ["Age", "RestingBP", "Cholesterol", "MaxHR"]
+# StandardScaler for continuous numerical columns
+std_cols = ["age", "trestbps", "chol", "thalach"]
 ss = StandardScaler()
 df1[std_cols] = ss.fit_transform(df1[std_cols])
 
-target = df1["HeartDisease"]
-features = df1[df1.columns.drop(["HeartDisease"])]
+# 3. SPLIT FEATURES AND TARGET
+target = df1["target"]
+features = df1.drop(columns=["target"])
 
-print("Heart Failure dataset:\n", features.shape[0], "Records\n", features.shape[1], "Features")
-print("All the features in this dataset have continuous values")
+print("Heart Disease dataset:\n", features.shape[0], "Records\n", features.shape[1], "Features")
 
 # Calculate Score Before GA
 score_before_ga = acc_score(features, target)
@@ -523,8 +525,21 @@ print("\n--- COMPARISON TABLE AFTER GA ---")
 df_final_comparison.reset_index(drop=True, inplace=True)
 print(df_final_comparison.to_string())
 
-save_path_after_ga = os.path.join(image_dir, "Table_After_GA.png")
-save_df_as_image(df_final_comparison, save_path_after_ga, "Model Comparison After GA Feature Selection")
+# 1. Metrics DataFrame (Accuracy, Precision, Recall, F1_Score)
+metrics_cols = ["Classifier", "Accuracy", "Precision", "Recall", "F1_Score"]
+df_metrics = df_final_comparison[metrics_cols]
+
+# 2. Details DataFrame (Selected_Features, Feature_Count, Best_Generation, Execution_Time_Seconds)
+details_cols = ["Classifier", "Selected_Features", "Feature_Count", "Best_Generation", "Execution_Time_Seconds"]
+df_details = df_final_comparison[details_cols]
+
+# Save Image 1: Model Metrics
+save_path_metrics = os.path.join(image_dir, "Table_After_GA_Metrics.png")
+save_df_as_image(df_metrics, save_path_metrics, "Model Metrics After GA Feature Selection")
+
+# Save Image 2: Model Details & Features
+save_path_details = os.path.join(image_dir, "Table_After_GA_Details.png")
+save_df_as_image(df_details, save_path_details, "Model Details & Features After GA")
 
 # ---------------------------------------------------------
 # VISUALIZATIONS FOR THE BEST PERFORMING MODEL
