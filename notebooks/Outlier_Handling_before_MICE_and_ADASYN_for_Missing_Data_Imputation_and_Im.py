@@ -26,7 +26,7 @@ from sklearn.metrics import RocCurveDisplay
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import classification_report
 from sklearn.metrics import accuracy_score
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, OrdinalEncoder
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.model_selection import RepeatedStratifiedKFold
 
@@ -135,79 +135,67 @@ print("Tổng hợp số lượng ô bị khuyết vừa tạo ra:")
 print(df1.isnull().sum()[df1.isnull().sum() > 0])
 
 # ----------------------------------------------------------
-# 1. MISSING DATA IMPUTATION (Dựa trên bài báo)
+# 1. TÁCH TẬP DỮ LIỆU (SPLITTING) TRƯỚC TIÊN — tránh Data Leakage
 # ----------------------------------------------------------
-print("--- Đang kiểm tra và xử lý Missing Data ---")
-# Tính phần trăm dữ liệu thiếu cho mỗi cột
-missing_percentages = df1.isnull().mean() * 100
+print("--- Chia tập Train/Test trước khi tiền xử lý ---")
 
-# Phân loại các cột theo tỷ lệ missing
+features = df1.drop(columns=["HeartDisease", "RestingBP", "RestingECG"])
+target = df1["HeartDisease"]
+
+# stratify=target giữ nguyên tỷ lệ nhãn giữa hai tập
+x_train, x_test, y_train, y_test = train_test_split(
+    features, target, test_size=0.20, random_state=2, stratify=target
+)
+
+# ----------------------------------------------------------
+# 2. MISSING DATA IMPUTATION (fit trên Train, transform trên Test)
+# ----------------------------------------------------------
+print("--- Đang xử lý Missing Data ---")
+
+# Tính tỷ lệ missing chỉ trên tập Train
+missing_percentages = x_train.isnull().mean() * 100
 cols_missing_under_5 = missing_percentages[(missing_percentages > 0) & (missing_percentages <= 5)].index.tolist()
 cols_missing_over_5 = missing_percentages[missing_percentages > 5].index.tolist()
 
-# BƯỚC 1.1: Xử lý các cột thiếu <= 5% (Mean cho Numeric, Mode cho Categorical)
+# BƯỚC 2.1: Xử lý các cột thiếu <= 5% (Mean cho Numeric, Mode cho Categorical)
 for col in cols_missing_under_5:
-    if df1[col].dtype in ['int64', 'float64']:
-        imputer_mean = SimpleImputer(strategy='mean')
-        df1[col] = imputer_mean.fit_transform(df1[[col]])
+    if x_train[col].dtype in ['int64', 'float64']:
+        imputer = SimpleImputer(strategy='mean')
     else:
-        imputer_mode = SimpleImputer(strategy='most_frequent')
-        df1[col] = imputer_mode.fit_transform(df1[[col]]).ravel()
+        imputer = SimpleImputer(strategy='most_frequent')
+    x_train[col] = imputer.fit_transform(x_train[[col]]).ravel()
+    x_test[col]  = imputer.transform(x_test[[col]]).ravel()
 
+# BƯỚC 2.2: Label Encoding — học từ điển nhãn chỉ trên Train
+# Dùng OrdinalEncoder để tránh lỗi khi test set có nhãn chưa thấy trong train
+categorical_cols = ["Sex", "ChestPainType", "ExerciseAngina", "ST_Slope"]
+oe = OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1, dtype=float)
+x_train[categorical_cols] = oe.fit_transform(x_train[categorical_cols])
+x_test[categorical_cols]  = oe.transform(x_test[categorical_cols])
 
-# BƯỚC 1.2: Label Encoding
-le_sex = LabelEncoder()
-le_chest = LabelEncoder()
-le_ecg = LabelEncoder()
-le_angina = LabelEncoder()
-le_slope = LabelEncoder()
-
-# Chỉ fit/transform trên các giá trị không bị NaN (nếu có cột categorical nào lọt vào nhóm >5% missing)
-def encode_non_nulls(encoder, series):
-    non_nulls = series.dropna()
-    encoded = encoder.fit_transform(non_nulls)
-    series.loc[series.notnull()] = encoded
-    return series
-
-df1["Sex"] = encode_non_nulls(le_sex, df1["Sex"]).astype('float')
-df1["ChestPainType"] = encode_non_nulls(le_chest, df1["ChestPainType"]).astype('float')
-df1["RestingECG"] = encode_non_nulls(le_ecg, df1["RestingECG"]).astype('float')
-df1["ExerciseAngina"] = encode_non_nulls(le_angina, df1["ExerciseAngina"]).astype('float')
-df1["ST_Slope"] = encode_non_nulls(le_slope, df1["ST_Slope"]).astype('float')
-
-# BƯỚC 1.3: Xử lý các cột thiếu > 5% bằng MICE (IterativeImputer)
+# BƯỚC 2.3: Xử lý các cột thiếu > 5% bằng MICE (IterativeImputer)
 if len(cols_missing_over_5) > 0:
     print(f"[> 5%] Áp dụng MICE Imputation cho các cột: {cols_missing_over_5}")
-    # IterativeImputer mô phỏng phương pháp MICE (Multiple Imputation by Chained Equations)
-    mice_imputer = IterativeImputer(max_iter=10, random_state=0) 
-    
-    # MICE sử dụng toàn bộ các cột để dự đoán các giá trị thiếu
-    # Tạm thời loại bỏ biến mục tiêu 'HeartDisease' khỏi quá trình impute để tránh Data Leakage
-    impute_features = df1.columns.drop("HeartDisease")
-    df1[impute_features] = mice_imputer.fit_transform(df1[impute_features])
+    mice_imputer = IterativeImputer(max_iter=10, random_state=0)
+    mice_imputer.fit(x_train)
+    x_train[:] = mice_imputer.transform(x_train)
+    x_test[:]  = mice_imputer.transform(x_test)
 
 # ----------------------------------------------------------
-# 2. Scaling & Splitting (Giữ nguyên logic cũ)
+# 3. SCALING (fit trên Train, transform trên Test)
 # ----------------------------------------------------------
 # MinMaxScaler cho Oldpeak
 mms = MinMaxScaler()
-df1["Oldpeak"] = mms.fit_transform(df1[["Oldpeak"]])
+x_train["Oldpeak"] = mms.fit_transform(x_train[["Oldpeak"]])
+x_test["Oldpeak"]  = mms.transform(x_test[["Oldpeak"]])
 
-# StandardScaler cho numerical
-std_cols = ["Age", "RestingBP", "Cholesterol", "MaxHR"]
+# StandardScaler cho các cột numerical
+std_cols = ["Age", "Cholesterol", "MaxHR"]
 ss = StandardScaler()
-df1[std_cols] = ss.fit_transform(df1[std_cols])
+x_train[std_cols] = ss.fit_transform(x_train[std_cols])
+x_test[std_cols]  = ss.transform(x_test[std_cols])
 
-# Drop RestingBP, RestingECG
-features = df1[df1.columns.drop(["HeartDisease", "RestingBP", "RestingECG"])]
-target = df1["HeartDisease"]
-
-# ----------------------------------------------------------
-# 3. Splitting & LightGBM preparation
-# ----------------------------------------------------------
-x_train, x_test, y_train, y_test = train_test_split(
-    features, target, test_size=0.20, random_state=2
-)
+print("--- TIỀN XỬ LÝ HOÀN TẤT. SẴN SÀNG HUẤN LUYỆN ---")
 
 # ----------------------------------------------------------
 # 3. IMBALANCED DATA HANDLING (ADASYN)
