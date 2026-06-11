@@ -265,6 +265,8 @@ def generations(model, df, label, size, n_feat, n_parents, mutation_rate, n_gen,
 
 def generate_explainability_plots(model, X_train, X_test, model_name, state_prefix, instance_idx=0):
     print(f"\n--- Generating SHAP and LIME Explanations ({state_prefix}) ---")
+
+    num_features = len(X_train.columns)
     
     # 1. LIME Local Explanation
     lime_explainer = lime.lime_tabular.LimeTabularExplainer(
@@ -277,7 +279,8 @@ def generate_explainability_plots(model, X_train, X_test, model_name, state_pref
     predict_fn = model.predict_proba if hasattr(model, 'predict_proba') else model.predict
     exp = lime_explainer.explain_instance(
         data_row=X_test.iloc[instance_idx].values,
-        predict_fn=predict_fn
+        predict_fn=predict_fn,
+        num_features=num_features
     )
     
     fig = exp.as_pyplot_figure()
@@ -329,9 +332,11 @@ def generate_explainability_plots(model, X_train, X_test, model_name, state_pref
             feature_names=X_test.columns.tolist()
         )
 
+    num_features = len(X_train.columns)
+
     # Global Beeswarm
     plt.figure(figsize=(10, 6))
-    shap.plots.beeswarm(shap_values, show=False)
+    shap.plots.beeswarm(shap_values, max_display=num_features, show=False)
     plt.title(f"SHAP Global Beeswarm - {model_name} ({state_prefix})", fontsize=14)
     plt.tight_layout()
     path_beeswarm = os.path.join(image_dir, f"SHAP_Beeswarm_{state_prefix}_{model_name}.png")
@@ -341,7 +346,7 @@ def generate_explainability_plots(model, X_train, X_test, model_name, state_pref
 
     # Global Bar
     plt.figure(figsize=(10, 6))
-    shap.plots.bar(shap_values, show=False)
+    shap.plots.bar(shap_values, max_display=num_features, show=False)
     plt.title(f"SHAP Global Bar Chart - {model_name} ({state_prefix})", fontsize=14)
     plt.tight_layout()
     path_global_bar = os.path.join(image_dir, f"SHAP_Global_Bar_{state_prefix}_{model_name}.png")
@@ -361,7 +366,7 @@ def generate_explainability_plots(model, X_train, X_test, model_name, state_pref
     
     # Local Bar
     plt.figure(figsize=(10, 6))
-    shap.plots.bar(shap_values[instance_idx], show=False)
+    shap.plots.bar(shap_values[instance_idx], max_display=num_features, show=False)
     plt.title(f"SHAP Local Bar Chart (Instance {instance_idx}) - {model_name} ({state_prefix})", fontsize=14)
     plt.tight_layout()
     path_local_bar = os.path.join(image_dir, f"SHAP_Local_Bar_{state_prefix}_{model_name}.png")
