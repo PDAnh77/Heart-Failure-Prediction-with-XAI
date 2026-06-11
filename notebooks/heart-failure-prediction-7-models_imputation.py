@@ -229,50 +229,6 @@ model(lgbm_basic)
 model_evaluation(lgbm_basic)
 
 # ----------------------------------------------------------
-# GridSearch để tìm bộ tham số có điểm ROC AUC cao nhất
-# ----------------------------------------------------------
-
-# param_grid = {
-#     'n_estimators': [50, 100, 150, 200],       # Số lượng cây
-#     'learning_rate': [0.01, 0.105, 0.2],       # Tốc độ học
-#     'max_depth': [3, 5, 7],                    # Độ sâu cây (thấp để tránh overfit)
-#     'subsample': [0.8, 0.9, 1.0],              # Tỷ lệ mẫu dùng để train mỗi cây
-#     'colsample_bytree': [0.8, 0.9, 1.0],       # Tỷ lệ đặc trưng dùng cho mỗi cây
-# }
-
-# # 1. Thiết lập tìm kiếm
-# # Dùng lại cv giống model() để đảm bảo tính nhất quán
-# cv_search = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
-
-# grid_search = GridSearchCV(
-#     estimator=XGBClassifier(
-#         random_state=0,
-#         eval_metric='logloss',
-#     ),
-#     param_grid=param_grid,
-#     scoring='roc_auc',  # Tối ưu hóa theo ROC AUC
-#     cv=cv_search,
-#     n_jobs=-1,          # Chạy song song full CPU
-#     verbose=1
-# )
-
-# # 2. Chạy tìm kiếm
-# print("Đang tối ưu hóa XGBoost...")
-# grid_search.fit(x_train, y_train)
-
-# # 3. Lấy tham số tốt nhất
-# print("\n--- KẾT QUẢ TỐI ƯU ---")
-# print(f"Tham số tốt nhất: {grid_search.best_params_}")
-# print(f"ROC AUC (Cross-Validation) cao nhất: {grid_search.best_score_:.2%}")
-
-# # 4. Lấy model đã tối ưu gán vào biến classifier_xgb
-# classifier_xgb = grid_search.best_estimator_
-
-# print("\n--- CHẠY ĐÁNH GIÁ VỚI MODEL TỐI ƯU ---")
-# model(classifier_xgb)
-# model_evaluation(classifier_xgb)
-
-# ----------------------------------------------------------
 # Local
 # ----------------------------------------------------------
 i = 0  # sample
