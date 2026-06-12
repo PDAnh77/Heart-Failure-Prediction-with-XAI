@@ -17,6 +17,7 @@ from sklearn.base import clone
 from sklearn.metrics import (accuracy_score, precision_score, recall_score, f1_score,
                              confusion_matrix, ConfusionMatrixDisplay, roc_curve, auc)
 from sklearn.model_selection import train_test_split
+from sklearn.feature_selection import f_classif, chi2
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
@@ -35,7 +36,7 @@ os.makedirs(image_dir, exist_ok=True)
 print(f"Created directory for saving images: {image_dir}")
 
 TEST_SIZE = 0.3
-LOCAL_INSTANCE_IDX = 0 # Choose a local instance for specific explanations (e.g., the first test record)
+LOCAL_INSTANCE_IDX = 20 
 
 classifiers = [
     "SVC",
@@ -77,6 +78,94 @@ models = [
     ),
 ]
 
+
+# ==========================================
+# EXPLORATORY DATA ANALYSIS (EDA) FUNCTIONS
+# ==========================================
+
+def generate_eda_plots(df, target_col, save_dir):
+    print("\n--- Generating Exploratory Data Analysis (EDA) Plots ---")
+    
+    # 1. Target Distribution (Pie and Bar Chart)
+    fig, ax = plt.subplots(1, 2, figsize=(14, 6))
+    colors = ['#a8c4f9', '#f3bca8']
+    
+    # Pie chart
+    target_counts = df[target_col].value_counts().sort_index()
+    ax[0].pie(target_counts, labels=target_counts.index, autopct='%1.1f%%', 
+              startangle=90, colors=colors, wedgeprops={'edgecolor': 'black'})
+    ax[0].set_title(f"{target_col} %", fontsize=14)
+    
+    # Bar chart
+    sns.countplot(x=target_col, data=df, ax=ax[1], palette=colors, edgecolor='black')
+    ax[1].set_title(f"Cases of {target_col}", fontsize=14)
+    
+    plt.tight_layout()
+    dist_path = os.path.join(save_dir, "EDA_Target_Distribution.png")
+    plt.savefig(dist_path, bbox_inches="tight", dpi=300)
+    print(f"Saved Target Distribution plot: {dist_path}")
+    plt.close()
+
+    # Calculate correlation matrix
+    corr = df.corr()
+
+    # 2. Full Correlation Heatmap
+    plt.figure(figsize=(12, 10))
+    sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", cbar=True, square=True)
+    plt.title("Full Correlation Matrix", fontsize=14)
+    full_corr_path = os.path.join(save_dir, "EDA_Full_Correlation.png")
+    plt.savefig(full_corr_path, bbox_inches="tight", dpi=300)
+    print(f"Saved Full Correlation Heatmap: {full_corr_path}")
+    plt.close()
+
+    # 3. Target Correlation
+    plt.figure(figsize=(6, 10))
+    target_corr = corr[[target_col]].sort_values(by=target_col, ascending=False).drop(target_col)
+    sns.heatmap(target_corr, annot=True, fmt=".2f", cmap="coolwarm", cbar=True)
+    plt.title(f"Correlation w.r.t {target_col}", fontsize=14)
+    target_corr_path = os.path.join(save_dir, "EDA_Target_Correlation.png")
+    plt.savefig(target_corr_path, bbox_inches="tight", dpi=300)
+    print(f"Saved Target Correlation plot: {target_corr_path}")
+    plt.close()
+
+    # Define feature groups for statistical tests
+    num_cols = ["Age", "RestingBP", "Cholesterol", "MaxHR", "Oldpeak"]
+    cat_cols = ["Sex", "ChestPainType", "FastingBS", "RestingECG", "ExerciseAngina", "ST_Slope"]
+    
+    X_num = df[num_cols]
+    X_cat = df[cat_cols]
+    y = df[target_col]
+
+    # 4. Numerical Importance (ANOVA F-Test)
+    f_scores, _ = f_classif(X_num, y)
+    anova_df = pd.DataFrame({'Score': f_scores}, index=num_cols).sort_values(by='Score', ascending=False)
+    
+    plt.figure(figsize=(6, 8))
+    sns.heatmap(anova_df, annot=True, fmt=".2f", cmap="YlOrRd", cbar=True)
+    plt.title("Numerical Importance (ANOVA)", fontsize=14)
+    anova_path = os.path.join(save_dir, "EDA_ANOVA_Importance.png")
+    plt.savefig(anova_path, bbox_inches="tight", dpi=300)
+    print(f"Saved ANOVA F-Test plot: {anova_path}")
+    plt.close()
+
+    # 5. Categorical Importance (Chi-Square)
+    # Ensure all categorical values are non-negative for Chi-Square
+    X_cat_positive = X_cat - X_cat.min() 
+    chi_scores, _ = chi2(X_cat_positive, y)
+    chi_df = pd.DataFrame({'Score': chi_scores}, index=cat_cols).sort_values(by='Score', ascending=False)
+    
+    plt.figure(figsize=(6, 8))
+    sns.heatmap(chi_df, annot=True, fmt=".2f", cmap="YlGnBu", cbar=True)
+    plt.title("Categorical Importance (Chi-Square)", fontsize=14)
+    chi_path = os.path.join(save_dir, "EDA_ChiSquare_Importance.png")
+    plt.savefig(chi_path, bbox_inches="tight", dpi=300)
+    print(f"Saved Chi-Square plot: {chi_path}")
+    plt.close()
+
+
+# ==========================================
+# UTILITY AND GA FUNCTIONS
+# ==========================================
 
 def split(features, target):
     X_train, X_test, Y_train, Y_test = train_test_split(features, target, test_size=TEST_SIZE, random_state=42)
@@ -124,7 +213,6 @@ def save_df_as_image(df, filepath, title):
     col_widths = None
 
     if has_features:
-        # 1. Chuyển list thành string và ngắt dòng
         df_copy["Selected_Features"] = df_copy["Selected_Features"].apply(
             lambda x: ", ".join(x) if isinstance(x, list) else str(x)
         )
@@ -146,12 +234,10 @@ def save_df_as_image(df, filepath, title):
     cell_data = df_copy.values.tolist()
     headers = df_copy.columns.tolist()
 
-    # Tính toán chiều cao linh hoạt
     fig_height = 0.7 * len(cell_data) + 1.5 if has_features else 0.4 * len(cell_data) + 1.5
     fig, ax = plt.subplots(figsize=(14, fig_height))
     ax.axis("off")
 
-    # Tạo bảng
     table = ax.table(
         cellText=cell_data, 
         colLabels=headers, 
@@ -165,7 +251,6 @@ def save_df_as_image(df, filepath, title):
     
     table.scale(1.0, 3.0 if has_features else 1.8)
 
-    # Làm đậm tiêu đề cột
     for (row, col), cell in table.get_celld().items():
         if row == 0:
             cell.set_text_props(weight="bold")
@@ -304,7 +389,6 @@ def generate_explainability_plots(model, X_train, X_test, model_name, state_pref
         print(f"Standard SHAP explainer failed, using KernelExplainer. Error: {e}")
         X_train_summary = shap.kmeans(X_train, 10)
 
-        # Wrap in a plain function to avoid SHAP introspecting LightGBM's read-only properties
         def safe_predict(X):
             return model.predict_proba(X) if hasattr(model, 'predict_proba') else model.predict(X)
 
@@ -446,6 +530,9 @@ std_cols = ["Age", "RestingBP", "Cholesterol", "MaxHR"]
 ss = StandardScaler()
 df1[std_cols] = ss.fit_transform(df1[std_cols])
 
+# ---> Execute EDA Plots Generation here <---
+generate_eda_plots(df=df1, target_col="HeartDisease", save_dir=image_dir)
+
 target = df1["HeartDisease"]
 features = df1[df1.columns.drop(["HeartDisease"])]
 
@@ -538,7 +625,7 @@ save_df_as_image(df_details, save_path_details, "Model Details & Features After 
 # ---------------------------------------------------------
 # VISUALIZATIONS FOR THE BEST PERFORMING MODEL
 # ---------------------------------------------------------
-# Step 1: Identify the absolute best algorithm from the post-GA results
+# Identify the absolute best algorithm from the post-GA results
 best_row_after = df_final_comparison.iloc[0]
 best_model_name = best_row_after["Classifier"]
 best_features_list = best_row_after["Selected_Features"]
@@ -548,17 +635,17 @@ print(f"Using features: {best_features_list}")
 
 best_model_idx = classifiers.index(best_model_name)
 
-# Step 2: Create a Baseline version of this best algorithm (trained on ALL features)
+# Baseline version of best algorithm
 model_baseline = clone(models[best_model_idx])
 model_baseline.fit(X_train, Y_train)
 
-# Step 3: Create an Optimized version of this best algorithm (trained on SELECTED features)
+# Optimized version of best algorithm
 model_optimized = clone(models[best_model_idx])
 X_train_shap = X_train[best_features_list]
 X_test_shap = X_test[best_features_list]
 model_optimized.fit(X_train_shap, Y_train)
 
-# Step 4: Generate explanations for the Baseline model
+# Explanations for Baseline
 generate_explainability_plots(
     model=model_baseline, 
     X_train=X_train, 
@@ -568,7 +655,7 @@ generate_explainability_plots(
     instance_idx=LOCAL_INSTANCE_IDX
 )
 
-# Step 5: Generate explanations for the Optimized model
+# Explanations for Optimized
 generate_explainability_plots(
     model=model_optimized, 
     X_train=X_train_shap, 
@@ -578,7 +665,7 @@ generate_explainability_plots(
     instance_idx=LOCAL_INSTANCE_IDX
 )
 
-# Step 6: Compare performance metrics (Confusion Matrix & ROC) directly
+# Compare performance metrics
 plot_comparison_metrics(
     model_before=model_baseline,
     model_after=model_optimized,
