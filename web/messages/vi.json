@@ -201,7 +201,7 @@
         "label": "Đau thắt ngực do gắng sức",
         "yes": "Có",
         "no": "Không",
-        "description": "Cơn đau xuất hiện cụ thể khi gắng sức.",
+        "description": "Cơn đau xuất hiện khi gắng sức.",
         "required": "Vui lòng chọn một tùy chọn."
       },
       "oldpeak": {

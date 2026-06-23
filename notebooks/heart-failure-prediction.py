@@ -353,7 +353,7 @@ def generate_explainability_plots(model, X_train, X_test, model_name, state_pref
     lime_explainer = lime.lime_tabular.LimeTabularExplainer(
         training_data=X_train.values,
         feature_names=X_train.columns.tolist(),
-        class_names=['No Disease', 'Disease'],
+        class_names=['Normal', 'Heart Disease'],
         mode='classification'
     )
     
@@ -512,6 +512,11 @@ def plot_comparison_metrics(model_before, model_after, X_test_before, X_test_aft
 
 data = pd.read_csv("../input/heart-failure-prediction/heart.csv")
 df1 = data.copy(deep=True)
+
+# Drop Duplicates
+print(f"Dataset shape before dropping duplicates: {df1.shape}")
+df1 = df1.drop_duplicates()
+print(f"Dataset shape after dropping duplicates: {df1.shape}")
 
 # Label Encoding
 le_sex, le_chest, le_ecg, le_angina, le_slope = LabelEncoder(), LabelEncoder(), LabelEncoder(), LabelEncoder(), LabelEncoder()

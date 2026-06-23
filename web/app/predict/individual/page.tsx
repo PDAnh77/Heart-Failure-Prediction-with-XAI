@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import toast from "react-hot-toast";
 import { FaHeartbeat, FaUserAlt, FaNotesMedical } from "react-icons/fa";
 import { useTranslations } from "next-intl";
+import CustomSelect, { CustomSelectHandle } from "@/components/ui/customSelect";
 
 export default function Predict() {
     const t = useTranslations("predictIndividual");
@@ -18,6 +19,13 @@ export default function Predict() {
     const formRef = useRef<HTMLFormElement>(null);
     const autoFillBtnRef = useRef<HTMLButtonElement>(null);
     const topRef = useRef<HTMLDivElement>(null);
+
+    // Refs để autoFill có thể set value cho các CustomSelect
+    const genderRef = useRef<CustomSelectHandle | null>(null);
+    const chestPainRef = useRef<CustomSelectHandle | null>(null);
+    const fastingBsRef = useRef<CustomSelectHandle | null>(null);
+    const restingEcgRef = useRef<CustomSelectHandle | null>(null);
+    const stSlopeRef = useRef<CustomSelectHandle | null>(null);
     const { user, loading: authLoading, logout, pushNewHistoryItem } = useAuth();
     const { savePrediction } = useSettings();
 
@@ -26,6 +34,13 @@ export default function Predict() {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const fieldName = e.target.name;
         if (invalidFields.includes(fieldName)) {
+            setInvalidFields(prev => prev.filter(item => item !== fieldName));
+        }
+    };
+
+    // Dùng cho CustomSelect onChange
+    const handleSelectChange = (fieldName: string) => (value: string) => {
+        if (value && invalidFields.includes(fieldName)) {
             setInvalidFields(prev => prev.filter(item => item !== fieldName));
         }
     };
@@ -96,14 +111,21 @@ export default function Predict() {
 
             if (!patient) return;
 
-            // Hàm set value được nâng cấp để hỗ trợ radio buttons
+            // Hàm set value hỗ trợ radio buttons và CustomSelect refs
             const setValue = (name: string, value: any) => {
                 if (name === "exercise-angina") {
                     const radio = form.querySelector(`input[name="exercise-angina"][value="${value}"]`) as HTMLInputElement;
                     if (radio) radio.checked = true;
                     return;
                 }
-                const element = form.querySelector(`[name="${name}"]`) as HTMLInputElement | HTMLSelectElement;
+                // CustomSelect: set qua ref
+                if (name === "gender") { genderRef.current?.setValue(String(value)); return; }
+                if (name === "chest-pain-type") { chestPainRef.current?.setValue(String(value)); return; }
+                if (name === "fasting-bs") { fastingBsRef.current?.setValue(String(value)); return; }
+                if (name === "resting-ecg") { restingEcgRef.current?.setValue(String(value)); return; }
+                if (name === "st-slope") { stSlopeRef.current?.setValue(String(value)); return; }
+                // Input thường
+                const element = form.querySelector(`[name="${name}"]`) as HTMLInputElement;
                 if (element) element.value = String(value);
             }
 
@@ -141,6 +163,12 @@ export default function Predict() {
         setInvalidFields([]);
         setSubmitting(false);
         toast.dismiss();
+        // Reset custom selects về giá trị mặc định
+        genderRef.current?.setValue("M");
+        chestPainRef.current?.setValue("");
+        fastingBsRef.current?.setValue("");
+        restingEcgRef.current?.setValue("");
+        stSlopeRef.current?.setValue("");
 
         topRef.current?.scrollIntoView({
             behavior: "smooth",
@@ -235,10 +263,18 @@ export default function Predict() {
                         {/* Gender */}
                         <div>
                             <label htmlFor="gender" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">{t("fields.gender.label")} <RequiredMark /></label>
-                            <select id="gender" name="gender" defaultValue="M" onChange={handleInputChange} className={getInputClass("gender")}>
-                                <option value="M">{t("fields.gender.male")}</option>
-                                <option value="F">{t("fields.gender.female")}</option>
-                            </select>
+                            <CustomSelect
+                                id="gender"
+                                name="gender"
+                                defaultValue="M"
+                                options={[
+                                    { value: "M", label: t("fields.gender.male") },
+                                    { value: "F", label: t("fields.gender.female") },
+                                ]}
+                                isInvalid={invalidFields.includes("gender")}
+                                onChange={handleSelectChange("gender")}
+                                selectRef={genderRef}
+                            />
                             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("fields.gender.description")}</p>
                         </div>
                         {/* Age */}
@@ -301,34 +337,55 @@ export default function Predict() {
                         {/* Chest Pain Type */}
                         <div>
                             <label htmlFor="chest-pain-type" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">{t("fields.chestPainType.label")} <RequiredMark /></label>
-                            <select id="chest-pain-type" defaultValue="" name="chest-pain-type" onChange={handleInputChange} className={getInputClass("chest-pain-type")}>
-                                <option value="" disabled>{t("fields.chestPainType.placeholder")}</option>
-                                <option value="TA">{t("fields.chestPainType.ta")}</option>
-                                <option value="ATA">{t("fields.chestPainType.ata")}</option>
-                                <option value="NAP">{t("fields.chestPainType.nap")}</option>
-                                <option value="ASY">{t("fields.chestPainType.asy")}</option>
-                            </select>
+                            <CustomSelect
+                                id="chest-pain-type"
+                                name="chest-pain-type"
+                                placeholder={t("fields.chestPainType.placeholder")}
+                                options={[
+                                    { value: "TA", label: t("fields.chestPainType.ta") },
+                                    { value: "ATA", label: t("fields.chestPainType.ata") },
+                                    { value: "NAP", label: t("fields.chestPainType.nap") },
+                                    { value: "ASY", label: t("fields.chestPainType.asy") },
+                                ]}
+                                isInvalid={invalidFields.includes("chest-pain-type")}
+                                onChange={handleSelectChange("chest-pain-type")}
+                                selectRef={chestPainRef}
+                            />
                             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("fields.chestPainType.description")}</p>
                         </div>
                         {/* Fasting BS */}
                         <div>
                             <label htmlFor="fasting-bs" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">{t("fields.fastingBs.label")} <RequiredMark /></label>
-                            <select id="fasting-bs" name="fasting-bs" defaultValue="" onChange={handleInputChange} className={getInputClass("fasting-bs")}>
-                                <option value="" disabled>{t("fields.fastingBs.placeholder")}</option>
-                                <option value="1">{t("fields.fastingBs.yes")}</option>
-                                <option value="0">{t("fields.fastingBs.no")}</option>
-                            </select>
+                            <CustomSelect
+                                id="fasting-bs"
+                                name="fasting-bs"
+                                placeholder={t("fields.fastingBs.placeholder")}
+                                options={[
+                                    { value: "1", label: t("fields.fastingBs.yes") },
+                                    { value: "0", label: t("fields.fastingBs.no") },
+                                ]}
+                                isInvalid={invalidFields.includes("fasting-bs")}
+                                onChange={handleSelectChange("fasting-bs")}
+                                selectRef={fastingBsRef}
+                            />
                             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("fields.fastingBs.description")}</p>
                         </div>
                         {/* Resting ECG */}
                         <div>
                             <label htmlFor="resting-ecg" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">{t("fields.restingEcg.label")} <RequiredMark /></label>
-                            <select id="resting-ecg" defaultValue="" name="resting-ecg" onChange={handleInputChange} className={getInputClass("resting-ecg")}>
-                                <option value="" disabled>{t("fields.restingEcg.placeholder")}</option>
-                                <option value="Normal">{t("fields.restingEcg.normal")}</option>
-                                <option value="ST">{t("fields.restingEcg.st")}</option>
-                                <option value="LVH">{t("fields.restingEcg.lvh")}</option>
-                            </select>
+                            <CustomSelect
+                                id="resting-ecg"
+                                name="resting-ecg"
+                                placeholder={t("fields.restingEcg.placeholder")}
+                                options={[
+                                    { value: "Normal", label: t("fields.restingEcg.normal") },
+                                    { value: "ST", label: t("fields.restingEcg.st") },
+                                    { value: "LVH", label: t("fields.restingEcg.lvh") },
+                                ]}
+                                isInvalid={invalidFields.includes("resting-ecg")}
+                                onChange={handleSelectChange("resting-ecg")}
+                                selectRef={restingEcgRef}
+                            />
                             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("fields.restingEcg.description")}</p>
                         </div>
                         {/* Exercise Angina */}
@@ -358,12 +415,19 @@ export default function Predict() {
                         {/* ST Slope */}
                         <div>
                             <label htmlFor="st-slope" className="block text-base font-semibold text-gray-800 dark:text-gray-200 mb-2">{t("fields.stSlope.label")} <RequiredMark /></label>
-                            <select id="st-slope" defaultValue="" name="st-slope" onChange={handleInputChange} className={getInputClass("st-slope")}>
-                                <option value="" disabled>{t("fields.stSlope.placeholder")}</option>
-                                <option value="Up">{t("fields.stSlope.up")}</option>
-                                <option value="Flat">{t("fields.stSlope.flat")}</option>
-                                <option value="Down">{t("fields.stSlope.down")}</option>
-                            </select>
+                            <CustomSelect
+                                id="st-slope"
+                                name="st-slope"
+                                placeholder={t("fields.stSlope.placeholder")}
+                                options={[
+                                    { value: "Up", label: t("fields.stSlope.up") },
+                                    { value: "Flat", label: t("fields.stSlope.flat") },
+                                    { value: "Down", label: t("fields.stSlope.down") },
+                                ]}
+                                isInvalid={invalidFields.includes("st-slope")}
+                                onChange={handleSelectChange("st-slope")}
+                                selectRef={stSlopeRef}
+                            />
                             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{t("fields.stSlope.description")}</p>
                         </div>
                     </div>
