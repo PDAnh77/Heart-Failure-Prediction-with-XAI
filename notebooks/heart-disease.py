@@ -339,7 +339,7 @@ def generate_explainability_plots(model, X_train, X_test, model_name, state_pref
     lime_explainer = lime.lime_tabular.LimeTabularExplainer(
         training_data=X_train.values,
         feature_names=X_train.columns.tolist(),
-        class_names=['No Disease', 'Disease'],
+        class_names=['Normal', 'Heart Disease'],
         mode='classification'
     )
     
