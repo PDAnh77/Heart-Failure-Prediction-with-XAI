@@ -2,7 +2,7 @@ pandas==2.3.3
 numpy==2.3.3
 scikit-learn==1.7.2
 joblib==1.5.2
-fastapi==0.121.0
+fastapi==0.138.1
 uvicorn==0.34.0
 python-multipart
 python-dotenv==1.2.2
