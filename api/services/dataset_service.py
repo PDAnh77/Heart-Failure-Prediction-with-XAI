@@ -12,6 +12,8 @@ from sklearn.feature_selection import SelectKBest, chi2, f_classif
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler, MinMaxScaler
 from sklearn.neighbors import KNeighborsClassifier
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -109,11 +111,16 @@ def load_dataset(dataset_id: str, user_id: str) -> pd.DataFrame:
     return df
 
 
-def upload_plot(plt_obj, path, bucket=EDA_BUCKET):
+def upload_plot(plot_target, path, bucket=EDA_BUCKET):
     img_buf = io.BytesIO()
-    plt_obj.savefig(img_buf, format="png", bbox_inches="tight")
+    plot_target.savefig(img_buf, format="png", bbox_inches="tight")
     img_buf.seek(0)
-    plt_obj.close()  # Giải phóng RAM
+    
+    import matplotlib.pyplot as plt
+    if plot_target == plt:
+        plt.close() 
+    else:
+        plt.close(plot_target)
 
     try:
         supabase.storage.from_(bucket).upload(
@@ -160,6 +167,26 @@ def upload_raw_dataset(file: UploadFile, user_id: str):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid file format or corrupted file: {str(e)}"
         )
+
+    df = df.dropna(axis=1, how='all')
+
+    cols_to_drop = []
+    for col in df.columns:
+        col_name_str = str(col).strip().lower()
+        if 'unnamed' in col_name_str:
+            # Nếu cột unnamed trống hơn 90% => xóa
+            if df[col].isna().mean() > 0.9: 
+                cols_to_drop.append(col)
+                continue
+
+        if (col_name_str in ["id", "name"] or 
+            col_name_str.endswith(" id") or 
+            col_name_str.endswith(" no") or 
+            col_name_str.endswith(" no.")):
+            cols_to_drop.append(col)
+
+    if cols_to_drop:
+        df = df.drop(columns=cols_to_drop)
 
     # Dataset validation
     if df.empty:
@@ -296,7 +323,17 @@ def preprocess(dataset_id: str, owner_id: str, user: dict, target_column, imputa
     unprocessed_columns = []
 
     for col in features_to_process:
-        is_numeric = pd.api.types.is_numeric_dtype(df[col])
+        # Attempt to convert the column to numeric. Invalid parsing will be set as NaN.
+        temp_numeric = pd.to_numeric(df[col], errors='coerce')
+        
+        # If more than 50% of the data is valid numbers, it is safe to assume it's a numeric column
+        if temp_numeric.notna().mean() > 0.5:
+            df[col] = temp_numeric
+            is_numeric = True
+        else:
+            is_numeric = pd.api.types.is_numeric_dtype(df[col])
+
+        # Recalculate unique count after potential coercion
         unique_count = df[col].nunique()
 
         if is_numeric and unique_count > 6:
@@ -464,9 +501,9 @@ def get_eda(dataset_id: str, target_column: str, owner_id: str, user: dict):
 
     # Phân loại features
     features_only = [col for col in df.columns if col != target_column]
-    categorical_features = [col for col in features_only if df[col].nunique() <= 6]
-    numerical_features = [col for col in features_only if df[col].nunique() > 6]
     numeric_df = df.select_dtypes(include=["number"])
+    numerical_features = [col for col in features_only if col in numeric_df.columns and df[col].nunique() > 6]
+    categorical_features = [col for col in features_only if col not in numerical_features]
 
     stats = df.describe().to_dict()
     charts = {}
@@ -475,7 +512,8 @@ def get_eda(dataset_id: str, target_column: str, owner_id: str, user: dict):
     plt.figure(figsize=(10, 8))
     sns.heatmap(numeric_df.corr(), annot=True, cmap="coolwarm", fmt=".2f")
     plt.title("Full Correlation Heatmap")
-    charts["full_correlation"] = upload_plot(plt, f"{target_user_id}/{dataset_id}/full_corr.png")
+    fig_full_corr = plt.gcf()
+    charts["full_correlation"] = upload_plot(fig_full_corr, f"{target_user_id}/{dataset_id}/full_corr.png")
 
     if target_column and target_column in df.columns:
         target = df[target_column]
@@ -505,7 +543,8 @@ def get_eda(dataset_id: str, target_column: str, owner_id: str, user: dict):
         ax[1].set_title(f"Cases of {target_column}")
         ax[1].set_xlabel(target_column)
         ax[1].set_ylabel("count")
-        charts["target_distribution"] = upload_plot(plt, f"{target_user_id}/{dataset_id}/dist.png")
+        fig_dist = plt.gcf()
+        charts["target_distribution"] = upload_plot(fig_dist, f"{target_user_id}/{dataset_id}/dist.png")
 
         # --- 3. TARGET CORRELATION (Pearson - Tương quan tuyến tính với nhãn) ---
         if target_column in numeric_df.columns:
@@ -514,7 +553,8 @@ def get_eda(dataset_id: str, target_column: str, owner_id: str, user: dict):
             plt.figure(figsize=(6, 10))
             sns.heatmap(target_corr, annot=True, cmap="coolwarm", fmt=".2f", linewidths=0.5)
             plt.title(f"Correlation w.r.t {target_column}")
-            charts["target_correlation"] = upload_plot(plt, f"{target_user_id}/{dataset_id}/target_corr.png")
+            fig_target_corr = plt.gcf()
+            charts["target_correlation"] = upload_plot(fig_target_corr, f"{target_user_id}/{dataset_id}/target_corr.png")
 
         # --- 4. CHI-SQUARE SCORE (Ý nghĩa của biến phân loại) ---
         if categorical_features:
@@ -522,11 +562,12 @@ def get_eda(dataset_id: str, target_column: str, owner_id: str, user: dict):
             fit_cat = SelectKBest(score_func=chi2, k="all").fit(X_cat, target)
             cat_scores = pd.DataFrame(data=fit_cat.scores_, index=categorical_features, columns=["Score"]).sort_values(
                 by="Score", ascending=False
-            )
+            ).head(20)
             plt.figure(figsize=(6, 8))
             sns.heatmap(cat_scores, annot=True, cmap="YlGnBu", fmt=".2f")
             plt.title("Categorical Importance (Chi-Square)")
-            charts["chi_square_score"] = upload_plot(plt, f"{target_user_id}/{dataset_id}/chi2.png")
+            fig_chi2 = plt.gcf()
+            charts["chi_square_score"] = upload_plot(fig_chi2, f"{target_user_id}/{dataset_id}/chi2.png")
 
         # --- 5. ANOVA SCORE (Ý nghĩa của biến số) ---
         if numerical_features:
@@ -534,11 +575,12 @@ def get_eda(dataset_id: str, target_column: str, owner_id: str, user: dict):
             fit_num = SelectKBest(score_func=f_classif, k="all").fit(X_num, target)
             num_scores = pd.DataFrame(data=fit_num.scores_, index=numerical_features, columns=["Score"]).sort_values(
                 by="Score", ascending=False
-            )
+            ).head(20)
             plt.figure(figsize=(6, 8))
             sns.heatmap(num_scores, annot=True, cmap="YlOrRd", fmt=".2f")
             plt.title("Numerical Importance (ANOVA)")
-            charts["anova_score"] = upload_plot(plt, f"{target_user_id}/{dataset_id}/anova.png")
+            fig_anova = plt.gcf()
+            charts["anova_score"] = upload_plot(fig_anova, f"{target_user_id}/{dataset_id}/anova.png")
 
     return _sanitize({"statistics": stats, "charts": charts})
 
@@ -556,6 +598,10 @@ def initialization_of_population(size, n_feat):
 def fitness_score(population, model, X_train, X_test, Y_train, Y_test):
     scores = []
     for chromosome in population:
+        if not np.any(chromosome):
+            scores.append(0.0)
+            continue
+
         X_train_selected = X_train.iloc[:, chromosome]
         X_test_selected = X_test.iloc[:, chromosome]
         model.fit(X_train_selected, Y_train)
@@ -903,7 +949,7 @@ def evaluate_feature_selection(
     axes_cm[1].set_ylabel("Actual Label")
 
     plt.tight_layout()
-    chart_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/confusion_matrix_comparison.png")
+    chart_url = upload_plot(fig_cm, f"{target_user_id}/{dataset_id}/confusion_matrix_comparison.png")
 
     # =================================================================
     # VẼ BIỂU ĐỒ ROC CURVE SO SÁNH
@@ -944,7 +990,7 @@ def evaluate_feature_selection(
         ax_roc.legend(loc="lower right", frameon=True, shadow=True)
 
         plt.tight_layout()
-        roc_chart_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/roc_comparison.png")
+        roc_chart_url = upload_plot(fig_roc, f"{target_user_id}/{dataset_id}/roc_comparison.png")
     except Exception as e:
         print(f"Error gen ROC plot: {e}")
 
@@ -992,14 +1038,16 @@ def evaluate_feature_selection(
         shap.summary_plot(shap_values_before, X_sample_orig, plot_type="bar", show=False)
         plt.title("SHAP Global Feature Importance (Before Feature Selection)", pad=15, fontsize=12)
         plt.tight_layout()
-        shap_chart_before_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/shap_before.png")
+        fig_shap_bar_before = plt.gcf()
+        shap_chart_before_url = upload_plot(fig_shap_bar_before, f"{target_user_id}/{dataset_id}/shap_before.png")
 
         # Beeswarm Chart Before (Tận dụng luôn shap_values_before đã tính)
         plt.figure(figsize=(8, 5))
         shap.summary_plot(shap_values_before, X_sample_orig, show=False)  # Mặc định là dot/beeswarm
         plt.title("SHAP Beeswarm Distribution (Before Feature Selection)", pad=15, fontsize=12)
         plt.tight_layout()
-        shap_beeswarm_before_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/shap_beeswarm_before.png")
+        fig_shap_beeswarm_before = plt.gcf()
+        shap_beeswarm_before_url = upload_plot(fig_shap_beeswarm_before, f"{target_user_id}/{dataset_id}/shap_beeswarm_before.png")
 
         # --- 2. TÍNH TOÁN & VẼ SHAP AFTER ---
         shap_values_after = _compute_shap_values(model_after, X_sample_sel, X_train_sel)
@@ -1009,14 +1057,16 @@ def evaluate_feature_selection(
         shap.summary_plot(shap_values_after, X_sample_sel, plot_type="bar", show=False)
         plt.title("SHAP Global Feature Importance (After Feature Selection)", pad=15, fontsize=12)
         plt.tight_layout()
-        shap_chart_after_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/shap_after.png")
+        fig_shap_bar_after = plt.gcf()
+        shap_chart_after_url = upload_plot(fig_shap_bar_after, f"{target_user_id}/{dataset_id}/shap_after.png")
 
         # Beeswarm Chart After
         plt.figure(figsize=(8, 5))
         shap.summary_plot(shap_values_after, X_sample_sel, show=False)
         plt.title("SHAP Beeswarm Distribution (After Feature Selection)", pad=15, fontsize=12)
         plt.tight_layout()
-        shap_beeswarm_after_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/shap_beeswarm_after.png")
+        fig_shap_beeswarm_after = plt.gcf()
+        shap_beeswarm_after_url = upload_plot(fig_shap_beeswarm_after, f"{target_user_id}/{dataset_id}/shap_beeswarm_after.png")
 
     except Exception as e:
         print(f"Error generating SHAP plots: {e}")
@@ -1122,13 +1172,13 @@ def generate_lime_explanation(
         xai_score_before = exp_before.score
 
         # Render and save plot
-        exp_before.as_pyplot_figure()
+        fig_lime_before = exp_before.as_pyplot_figure()
         plt.title(
             f"LIME Local Explanation - Instance {instance_idx} (Before FS)",
             pad=15,
         )
         plt.tight_layout()
-        lime_chart_before_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/lime_before_idx_{instance_idx}.png")
+        lime_chart_before_url = upload_plot(fig_lime_before, f"{target_user_id}/{dataset_id}/lime_before_idx_{instance_idx}.png")
 
         # ==========================================
         # LIME After Feature Selection
@@ -1150,13 +1200,13 @@ def generate_lime_explanation(
         xai_score_after = exp_after.score
 
         # Render and save plot
-        exp_after.as_pyplot_figure()
+        fig_lime_after = exp_after.as_pyplot_figure()
         plt.title(
             f"LIME Local Explanation - Instance {instance_idx} (After FS)",
             pad=15,
         )
         plt.tight_layout()
-        lime_chart_after_url = upload_plot(plt, f"{target_user_id}/{dataset_id}/lime_after_idx_{instance_idx}.png")
+        lime_chart_after_url = upload_plot(fig_lime_after, f"{target_user_id}/{dataset_id}/lime_after_idx_{instance_idx}.png")
 
     except Exception as e:
         print(f"Error generating LIME plots: {e}")
