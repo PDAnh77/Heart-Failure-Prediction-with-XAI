@@ -7,6 +7,7 @@ import { toast } from "react-hot-toast";
 import { api } from "@/lib/api";
 import UpdatePasswordModal from "@/components/modals/updatePasswordModal";
 import { useTranslations } from "next-intl";
+import Image from 'next/image';
 
 interface ProfileModalProps {
     isOpen: boolean;
@@ -182,7 +183,14 @@ export default function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
                                         <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
                                             <div className="w-24 h-24 rounded-full bg-indigo-600 flex items-center justify-center text-white text-3xl font-bold overflow-hidden shadow-inner">
                                                 {avatarPreview ? (
-                                                    <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
+                                                    <Image 
+                                                        src={avatarPreview} 
+                                                        alt="Preview" 
+                                                        width={96}
+                                                        height={96}
+                                                        unoptimized={true}
+                                                        className="w-full h-full object-cover" 
+                                                    />
                                                 ) : (
                                                     <FaRocket className="w-10 h-10 text-white" />
                                                 )}

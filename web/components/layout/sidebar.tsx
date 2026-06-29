@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from 'next/image';
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { toast } from 'react-hot-toast';
@@ -379,7 +380,13 @@ export default function Sidebar() {
                         >
                             <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shrink-0 shadow-lg shadow-indigo-500/20 overflow-hidden">
                                 {user?.avatar_url ? (
-                                    <img src={user.avatar_url} alt={user.username} />
+                                    <Image 
+                                        src={user.avatar_url} 
+                                        alt={user?.username || "User avatar"} 
+                                        width={64} 
+                                        height={64}
+                                        className="w-full h-full object-cover"
+                                    />
                                 ) : (
                                     <FaRocket className="text-xs" />
                                 )}
