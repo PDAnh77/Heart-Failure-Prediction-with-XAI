@@ -1,22 +1,23 @@
 "use client";
 import Link from "next/link";
+import Image from 'next/image';
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { toast } from 'react-hot-toast';
 import { useLocale, useTranslations } from "next-intl";
-import LogoutModal from "@/components/logoutModal";
-import DeleteModal from "@/components/deletePredictionModal";
-import SettingsModal from "@/components/settingsModal";
-import ProfileModal from "@/components/profileModal";
+import LogoutModal from "@/components/modals/logoutModal";
+import DeleteModal from "@/components/modals/deletePredictionModal";
+import SettingsModal from "@/components/modals/settingsModal";
+import ProfileModal from "@/components/modals/profileModal";
 import { useAuth } from "@/context/authcontext"
 import { TbLayoutSidebarFilled } from "react-icons/tb";
 import { FaRocket, FaRegTrashCan } from "react-icons/fa6";
 import { FiHome } from "react-icons/fi";
-import { LuUserSearch, LuSettings, LuLogOut, LuLogIn, LuCircleUserRound, LuUsers } from "react-icons/lu";
+import { LuUserSearch, LuSettings, LuLogOut, LuLogIn, LuCircleUserRound, LuUsers, LuUser } from "react-icons/lu";
 import { MdInsertChartOutlined } from "react-icons/md";
 import { IoIosArrowForward, IoIosArrowDown } from "react-icons/io";
 import { api } from "@/lib/api";
-import { PredictionHistoryBase } from "@/types/prediction";
+import { UnifiedHistoryItem } from "@/types/prediction";
 import { PiHeartbeatFill } from "react-icons/pi";
 
 export default function Sidebar() {
@@ -31,9 +32,9 @@ export default function Sidebar() {
     const [showProfileModal, setShowProfileModal] = useState(false);
 
     const { user, logout, newHistoryItem } = useAuth();
-    const [result, setResult] = useState<PredictionHistoryBase[] | null>(null);
+    const [result, setResult] = useState<UnifiedHistoryItem[] | null>(null);
     const router = useRouter();
-    const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [deleteItem, setDeleteItem] = useState<UnifiedHistoryItem | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [offset, setOffset] = useState(0);
     const [hasMore, setHasMore] = useState(false);
@@ -54,7 +55,7 @@ export default function Sidebar() {
         }
         const loadPredictionHistory = async () => {
             try {
-                const res = await api.get(`predictions/me?limit=12&offset=0`);
+                const res = await api.get(`predictions/history/me?limit=12&offset=0`);
                 setResult(res.data);
                 setOffset(12);
                 setHasMore(res.data.length === 12);
@@ -100,15 +101,19 @@ export default function Sidebar() {
     };
 
     const handleConfirmDelete = async () => {
-        if (!deleteId) return;
+        if (!deleteItem) return;
         setIsDeleting(true);
         try {
-            await api.delete(`/predictions/${deleteId}`);
-            setResult((prevResult: any) => prevResult.filter((item: any) => item.id !== deleteId));
-            setDeleteId(null);
+            if (deleteItem.type === "batch") {
+                await api.delete(`/predictions/batch/${deleteItem.id}`);
+            } else {
+                await api.delete(`/predictions/${deleteItem.id}`);
+            }
+
+            setResult((prevResult) => prevResult?.filter((item) => item.id !== deleteItem.id) || null);
+            setDeleteItem(null);
         } catch (error) {
-            console.log(error);
-            toast.error("Failed to delete history:");
+            toast.error("Failed to delete history");
         } finally {
             setIsDeleting(false);
         }
@@ -139,28 +144,24 @@ export default function Sidebar() {
 
     const loadMoreItems = async () => {
         if (!hasMore || loadingMore) return;
-
         setLoadingMore(true);
         try {
-            const res = await api.get(`predictions/me?limit=12&offset=${offset}`);
-            const newItems: PredictionHistoryBase[] = res.data || [];
+            const res = await api.get(`predictions/history/me?limit=12&offset=${offset}`);
+            const newItems: UnifiedHistoryItem[] = res.data || [];
 
             setResult((prev) => {
                 const current = prev ?? [];
                 const filteredNewItems = newItems.filter(
                     (newItem) => !current.some((oldItem) => oldItem.id === newItem.id)
                 );
-
                 return [...current, ...filteredNewItems];
             });
 
             setOffset((prevOffset) => prevOffset + 12);
-
             if (newItems.length < 12) {
                 setHasMore(false);
             }
         } catch (error) {
-            console.log("Error loading more items:", error);
             // Dừng việc gọi API liên tục nếu server báo lỗi khi hết page
             setHasMore(false);
         } finally {
@@ -263,7 +264,13 @@ export default function Sidebar() {
                             <ul className="space-y-1">
                                 {result && result.length > 0 ? (
                                     [...result].map((item) => {
-                                        const isActive = pathname === `/prediction-history/${item.id}`;
+                                        const isBatch = item.type === "batch";
+                                        const itemUrl = isBatch
+                                            ? `/prediction-history/batch/${item.id}`
+                                            : `/prediction-history/${item.id}`;
+
+                                        const isActive = pathname === itemUrl;
+
                                         return (
                                             <li
                                                 key={item.id}
@@ -271,11 +278,16 @@ export default function Sidebar() {
                                                 onClick={() => setOpen(false)}
                                             >
                                                 <Link
-                                                    href={`/prediction-history/${item.id}`}
-                                                    className="flex flex-col p-2 gap-1 grow min-w-0"
+                                                    href={itemUrl}
+                                                    className="flex items-center p-2 gap-2 grow min-w-0"
                                                 >
-                                                    <div className="flex items-center gap-2">
-                                                        <span>{formatDateTime(item.created_at.toString())}</span>
+                                                    {isBatch ? (
+                                                        <LuUsers className="text-gray-400 shrink-0" />
+                                                    ) : (
+                                                        <LuUser className="text-gray-400 shrink-0" />
+                                                    )}
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="truncate">{formatDateTime(item.created_at.toString())}</span>
                                                     </div>
                                                 </Link>
 
@@ -284,7 +296,7 @@ export default function Sidebar() {
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
-                                                        setDeleteId(item.id);
+                                                        setDeleteItem(item);
                                                     }}
                                                 >
                                                     <FaRegTrashCan className="text-red-500" />
@@ -328,7 +340,7 @@ export default function Sidebar() {
                                             <div className="h-px bg-gray-100 dark:bg-white/5 my-1" />
                                         </>
                                     )}
-                                    
+
                                     <li>
                                         <button
                                             className="flex items-center transition w-full cursor-pointer gap-2 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 text-sm"
@@ -368,7 +380,13 @@ export default function Sidebar() {
                         >
                             <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shrink-0 shadow-lg shadow-indigo-500/20 overflow-hidden">
                                 {user?.avatar_url ? (
-                                    <img src={user.avatar_url} alt={user.username} />
+                                    <Image 
+                                        src={user.avatar_url} 
+                                        alt={user?.username || "User avatar"} 
+                                        width={64} 
+                                        height={64}
+                                        className="w-full h-full object-cover"
+                                    />
                                 ) : (
                                     <FaRocket className="text-xs" />
                                 )}
@@ -383,8 +401,8 @@ export default function Sidebar() {
                 </div>
             </aside>
             <DeleteModal
-                isOpen={!!deleteId}
-                onClose={() => setDeleteId(null)}
+                isOpen={!!deleteItem}
+                onClose={() => setDeleteItem(null)}
                 onConfirm={handleConfirmDelete}
                 isDeleting={isDeleting}
             />

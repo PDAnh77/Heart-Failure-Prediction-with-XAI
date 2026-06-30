@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-import Sidebar from "@/components/sidebar";
+import Sidebar from "@/components/layout/sidebar";
 import { AuthProvider } from "@/context/authcontext";
 import { SettingsProvider } from "@/context/settingscontext"; // Import mới
-import GlobalSnowWrapper from "@/components/globalSnowWrapper"; // Component mới hỗ trợ logic ẩn/hiện
+import GlobalSnowWrapper from "@/components/layout/globalSnowWrapper"; // Component mới hỗ trợ logic ẩn/hiện
 import { Analytics } from "@vercel/analytics/next"
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { ThemeProvider } from "next-themes";
-import AppToaster from "@/components/appToaster";
+import AppToaster from "@/components/ui/appToaster";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 
