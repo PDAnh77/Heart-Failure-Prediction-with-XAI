@@ -95,7 +95,8 @@ export default function FeatureSelectionTab({
                 params: {
                     fs_dataset_id: fsDatasetId,
                     target_column: targetColumn,
-                    test_size: localTestSize
+                    test_size: localTestSize,
+                    balancing_method: balancing
                 }
             });
             setEvalResult(res.data);

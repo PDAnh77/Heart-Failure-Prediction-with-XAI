@@ -105,6 +105,10 @@ def get_feature_selection_evaluation(
     target_column: str,
     model_name: str = Query(None),
     test_size: float = Query(0.3, ge=0.1, le=0.5),
+    balancing_method: Literal["none", "smote", "adasyn"] = Query(
+        "none",
+        description="Choose a data balancing method: 'none' (no balancing applied), 'smote' (SMOTE oversampling), or 'adasyn' (ADASYN oversampling)",
+    ),
     owner_id: str = Query(None),
     user=Depends(require_roles(["admin", "user"])),
 ):
@@ -116,6 +120,7 @@ def get_feature_selection_evaluation(
         user=user,
         model_name=model_name,
         test_size=test_size,
+        balancing_method=balancing_method,
     )
 
 

@@ -1,4 +1,5 @@
 import io
+import re
 from random import randint
 import uuid
 import copy
@@ -674,6 +675,10 @@ def genetic_selection(
     target_user_id = owner_id if (user["role"] == "admin" and owner_id) else user["user_id"]
     processed_df = load_dataset(dataset_id, target_user_id)
 
+    processed_df = processed_df.rename(columns=lambda x: re.sub(r'[\[\]{} :",]', '_', str(x)))
+    if target_column:
+        target_column = re.sub(r'[\[\]{} :",]', '_', str(target_column))
+
     if target_column and target_column not in processed_df.columns:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -838,12 +843,21 @@ def evaluate_feature_selection(
     model_name: str,
     test_size: float,
     lime_instance_idx: int = 0,
+    balancing_method: str = "none",
 ):
     target_user_id = owner_id if (user["role"] == "admin" and owner_id) else user["user_id"]
 
     # 2 tập dữ liệu từ Supabase Storage
     df_original = load_dataset(dataset_id, target_user_id)
     df_selected = load_dataset(fs_dataset_id, target_user_id)
+
+    # CLEAN COLUMN NAMES FOR LIGHTGBM
+    df_original = df_original.rename(columns=lambda x: re.sub(r'[\[\]{} :",]', '_', str(x)))
+    df_selected = df_selected.rename(columns=lambda x: re.sub(r'[\[\]{} :",]', '_', str(x)))
+    
+    # Clean target_column name to match the sanitized dataframes
+    if target_column:
+        target_column = re.sub(r'[\[\]{} :",]', '_', str(target_column))
 
     if target_column not in df_original.columns:
         raise HTTPException(status_code=400, detail=f"Target column '{target_column}' not found.")
@@ -862,6 +876,43 @@ def evaluate_feature_selection(
     X_train_sel, X_test_sel, Y_train_sel, Y_test_sel = train_test_split(
         X_sel, Y_sel, test_size=test_size, random_state=42
     )
+
+    # =================================================================
+    # ĐỒNG BỘ DATA BALANCING (SMOTE / ADASYN)
+    # =================================================================
+    def apply_balancing(X_tr, Y_tr, method):
+        if method == "none":
+            return X_tr, Y_tr
+            
+        class_counts = Y_tr.value_counts()
+        if len(class_counts) < 2 or class_counts.min() / class_counts.max() >= 0.9:
+            return X_tr, Y_tr 
+            
+        try:
+            if method == "smote":
+                from imblearn.over_sampling import SMOTE
+                sampler = SMOTE(random_state=42)
+            elif method == "adasyn":
+                from imblearn.over_sampling import ADASYN
+                sampler = ADASYN(random_state=42)
+            else:
+                return X_tr, Y_tr
+            
+            X_res, Y_res = sampler.fit_resample(X_tr, Y_tr)
+            X_res = pd.DataFrame(X_res, columns=X_tr.columns)
+            
+            cat_cols = [col for col in X_tr.columns if X_tr[col].nunique() <= 6]
+            for col in cat_cols:
+                X_res[col] = X_res[col].round()
+                
+            return X_res, pd.Series(Y_res, name=Y_tr.name)
+        except Exception as e:
+            print(f"Balancing failed in evaluation: {e}")
+            return X_tr, Y_tr
+
+    # Áp dụng cân bằng cho cả mô hình Before và After
+    X_train_orig, Y_train_orig = apply_balancing(X_train_orig, Y_train_orig, balancing_method)
+    X_train_sel, Y_train_sel = apply_balancing(X_train_sel, Y_train_sel, balancing_method)
 
     # Xác định mô hình sử dụng
     final_model_name = model_name if (user["role"] == "admin" and model_name) else SELECTED_MODEL
@@ -1102,6 +1153,14 @@ def generate_lime_explanation(
     # 1. Load data
     df_original = load_dataset(dataset_id, target_user_id)
     df_selected = load_dataset(fs_dataset_id, target_user_id)
+
+    # CLEAN COLUMN NAMES FOR LIGHTGBM
+    df_original = df_original.rename(columns=lambda x: re.sub(r'[\[\]{} :",]', '_', str(x)))
+    df_selected = df_selected.rename(columns=lambda x: re.sub(r'[\[\]{} :",]', '_', str(x)))
+    
+    # Clean target_column name to match the sanitized dataframes
+    if target_column:
+        target_column = re.sub(r'[\[\]{} :",]', '_', str(target_column))
 
     if target_column not in df_original.columns:
         raise HTTPException(status_code=400, detail=f"Target column '{target_column}' not found.")
