@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import toast from "react-hot-toast";
 import { EvalResult, FSResult } from "@/types/feature_selection";
 import ImageModal from "../modals/imageModal";
+import MetricCompare from "../ui/metricCompare";
 
 interface FeatureSelectionTabProps {
     targetColumn: string;
@@ -50,6 +51,8 @@ export default function FeatureSelectionTab({
     nParents,
     balancing
 }: FeatureSelectionTabProps) {
+    const pollInterval = useRef<NodeJS.Timeout | null>(null);
+    const evalPollInterval = useRef<NodeJS.Timeout | null>(null);
     // UI States
     const [isLoading, setIsLoading] = useState(true);
     const [loadingMessageIdx, setLoadingMessageIdx] = useState(0);
@@ -77,6 +80,13 @@ export default function FeatureSelectionTab({
         balancing.toLowerCase() === "yes" ? "adasyn" : (balancing.toLowerCase() || "none")
     );
 
+    useEffect(() => {
+        return () => {
+            if (pollInterval.current) clearInterval(pollInterval.current);
+            if (evalPollInterval.current) clearInterval(evalPollInterval.current);
+        };
+    }, []);
+
     // Rotate loading message every 5 seconds
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -91,19 +101,52 @@ export default function FeatureSelectionTab({
     const fetchEvaluation = async (fsDatasetId: string) => {
         setIsEvalLoading(true);
         try {
-            const res = await api.get(`/datasets/${processedId}/feature-selection-evaluation`, {
+            const startRes = await api.post(`/datasets/${processedId}/feature-selection-evaluation`, null, {
                 params: {
                     fs_dataset_id: fsDatasetId,
                     target_column: targetColumn,
-                    test_size: localTestSize
+                    test_size: localTestSize,
+                    balancing_method: localBalancing
                 }
             });
-            setEvalResult(res.data);
-            setLimeRowIndex(0);
-            await fetchLime(fsDatasetId, 0);
+
+            const taskId = startRes.data.task_id;
+
+            // Xóa interval cũ nếu có
+            if (evalPollInterval.current) clearInterval(evalPollInterval.current);
+
+            // Kiểm tra trạng thái mỗi 3s
+            evalPollInterval.current = setInterval(async () => {
+                try {
+                    const statusRes = await api.get(`/datasets/feature-selection/status/${taskId}`);
+                    const taskStatus = statusRes.data.status;
+
+                    if (taskStatus === "COMPLETED") {
+                        clearInterval(evalPollInterval.current!);
+
+                        // Lấy kết quả lưu vào state
+                        setEvalResult(statusRes.data.result);
+                        setIsEvalLoading(false);
+
+                        // Sinh đồ thị LIME sau khi Evaluation tải xong
+                        setLimeRowIndex(0);
+                        await fetchLime(fsDatasetId, 0);
+
+                    } else if (taskStatus === "FAILED") {
+                        clearInterval(evalPollInterval.current!);
+                        toast.error(statusRes.data.error || "Evaluation failed to generate charts.");
+                        setIsEvalLoading(false);
+                    }
+
+                } catch (err) {
+                    clearInterval(evalPollInterval.current!);
+                    toast.error("Lost connection to server while evaluating.");
+                    setIsEvalLoading(false);
+                }
+            }, 3000);
+
         } catch (error) {
-            toast.error("Could not load deep evaluation metrics.");
-        } finally {
+            toast.error("Could not start deep evaluation.");
             setIsEvalLoading(false);
         }
     };
@@ -156,24 +199,61 @@ export default function FeatureSelectionTab({
                 requestParams.n_parents = Number(localNParents);
             }
 
-            const res = await api.get(`/datasets/${processedId}/feature-selection`, {
+            const startRes = await api.post(`/datasets/${processedId}/feature-selection`, null, {
                 params: requestParams
             });
 
-            setResult(res.data);
+            const taskId = startRes.data.task_id;
 
-            if (isManualRerun) {
-                toast.success("Feature selection rerun completed successfully!");
-            } else {
-                toast.success("Feature selection completed successfully!");
+            if (!taskId) {
+                throw new Error("No task_id returned from server");
             }
 
-            if (res.data.fs_dataset_id) {
-                fetchEvaluation(res.data.fs_dataset_id);
-            }
+            // Xóa interval cũ nếu có để tránh chạy đè
+            if (pollInterval.current) clearInterval(pollInterval.current);
+
+            // KIỂM TRA TRẠNG THÁI MỖI 3 GIÂY
+            pollInterval.current = setInterval(async () => {
+                try {
+                    const statusRes = await api.get(`/datasets/feature-selection/status/${taskId}`);
+                    const taskStatus = statusRes.data.status;
+
+                    if (taskStatus === "COMPLETED") {
+                        // Dừng kiểm tra status
+                        clearInterval(pollInterval.current!);
+
+                        // Lấy kết quả thực sự nằm trong trường "result" trả về
+                        const finalResult = statusRes.data.result;
+                        setResult(finalResult);
+
+                        setIsLoading(false);
+
+                        if (isManualRerun) {
+                            toast.success("Feature selection rerun completed successfully!");
+                        } else {
+                            toast.success("Feature selection completed successfully!");
+                        }
+
+                        // Chạy tiếp bước Evaluate
+                        if (finalResult.fs_dataset_id) {
+                            fetchEvaluation(finalResult.fs_dataset_id);
+                        }
+                    } else if (taskStatus === "FAILED") {
+                        clearInterval(pollInterval.current!);
+                        toast.error(statusRes.data.error || "Feature selection failed.");
+                        setIsLoading(false);
+                    }
+                    // Nếu status là "PROCESSING" hoặc "PENDING", không làm gì cả, interval sẽ tiếp tục chạy sau 3 giây.
+
+                } catch (err) {
+                    clearInterval(pollInterval.current!);
+                    toast.error("Lost connection to server while checking task status.");
+                    setIsLoading(false);
+                }
+            }, 3000);
+
         } catch (error) {
-            toast.error("Feature selection failed. Please check your parameters.");
-        } finally {
+            toast.error("Failed to start feature selection.");
             setIsLoading(false);
             setEvalResult(null);
         }
@@ -263,27 +343,13 @@ export default function FeatureSelectionTab({
         await fetchLime(result.fs_dataset_id, limeRowIndex);
     };
 
+    const accuracyDiff = ((result?.best_ga_accuracy || 0) - (result?.baseline_accuracy || 0)) * 100;
+
     const inputClass = "w-full p-2 mt-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#4361EE] outline-none transition-shadow";
 
     // Extract balancing info returned from backend (shape: { method, before?, after?, skipped? })
     // Use only when the returned `method` matches the current `localBalancing` selection
     const balancingStats = result?.balancing && result.balancing.method === localBalancing ? result.balancing : null;
-
-    const MetricCompare = ({ label, before, after }: { label: string, before: number, after: number }) => {
-        const isBetter = after >= before;
-        return (
-            <div className="flex flex-col items-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-800">
-                <span className="text-xs font-bold text-gray-500 uppercase">{label}</span>
-                <div className="mt-2 flex items-center gap-3">
-                    <span className="text-lg font-medium text-gray-400">{(before * 100).toFixed(1)}%</span>
-                    <span className="text-gray-300 dark:text-gray-600">→</span>
-                    <span className={`text-xl font-bold ${isBetter ? 'text-[#4361EE] dark:text-indigo-300' : 'text-red-500'}`}>
-                        {(after * 100).toFixed(1)}%
-                    </span>
-                </div>
-            </div>
-        );
-    };
 
     const timestamp = useMemo(() => Date.now(), [evalResult]);
 
@@ -352,7 +418,8 @@ export default function FeatureSelectionTab({
                                 <div className="mt-4 flex items-center gap-1.5 text-sm font-bold text-[#1A535C] dark:text-teal-400">
                                     <FiTrendingUp className="text-base" />
                                     <span>
-                                        +{(((result?.best_ga_accuracy || 0) - (result?.baseline_accuracy || 0)) * 100).toFixed(2)}% vs Baseline
+                                        {accuracyDiff > 0 ? '+' : ''}
+                                        {accuracyDiff.toFixed(2)}% vs Baseline
                                     </span>
                                 </div>
                             </div>
@@ -488,10 +555,29 @@ export default function FeatureSelectionTab({
                                                     </span>
                                                 </div>
 
-                                                <MetricCompare label="Accuracy" before={evalResult.metrics_before.accuracy} after={evalResult.metrics_after.accuracy} />
-                                                <MetricCompare label="Recall (Sensitivity)" before={evalResult.metrics_before.recall} after={evalResult.metrics_after.recall} />
-                                                <MetricCompare label="Precision" before={evalResult.metrics_before.precision} after={evalResult.metrics_after.precision} />
-                                                <MetricCompare label="F1-Score" before={evalResult.metrics_before.f1_score} after={evalResult.metrics_after.f1_score} />
+                                                <MetricCompare
+                                                    label="Accuracy"
+                                                    before={evalResult.metrics_before.accuracy}
+                                                    after={evalResult.metrics_after.accuracy}
+                                                />
+
+                                                <MetricCompare
+                                                    label="Recall (Sensitivity)"
+                                                    before={evalResult.metrics_before.recall}
+                                                    after={evalResult.metrics_after.recall}
+                                                />
+
+                                                <MetricCompare
+                                                    label="Precision"
+                                                    before={evalResult.metrics_before.precision}
+                                                    after={evalResult.metrics_after.precision}
+                                                />
+
+                                                <MetricCompare
+                                                    label="F1-Score"
+                                                    before={evalResult.metrics_before.f1_score}
+                                                    after={evalResult.metrics_after.f1_score}
+                                                />
                                             </div>
 
                                             {/* Cột phải: Confusion Matrix & ROC (Chiếm 2/3) */}

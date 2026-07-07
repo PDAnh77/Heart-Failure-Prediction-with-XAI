@@ -10,7 +10,7 @@ TEMP_DOWNLOAD_PATH = f"/tmp/{MODEL_FILENAME}"
 
 # Đường dẫn model ở Local
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-LOCAL_MODEL_PATH = os.path.normpath(os.path.join(CURRENT_DIR, "../../models/model_predict.pkl"))
+LOCAL_MODEL_PATH = os.path.normpath(os.path.join(CURRENT_DIR, "../../notebooks/models/model_predict.pkl"))
 
 
 def load_model_startup():
