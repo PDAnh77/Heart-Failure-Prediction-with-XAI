@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import toast from "react-hot-toast";
 import { EvalResult, FSResult } from "@/types/feature_selection";
 import ImageModal from "../modals/imageModal";
+import MetricCompare from "../ui/metricCompare";
 
 interface FeatureSelectionTabProps {
     targetColumn: string;
@@ -264,27 +265,13 @@ export default function FeatureSelectionTab({
         await fetchLime(result.fs_dataset_id, limeRowIndex);
     };
 
+    const accuracyDiff = ((result?.best_ga_accuracy || 0) - (result?.baseline_accuracy || 0)) * 100;
+
     const inputClass = "w-full p-2 mt-1 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-[#4361EE] outline-none transition-shadow";
 
     // Extract balancing info returned from backend (shape: { method, before?, after?, skipped? })
     // Use only when the returned `method` matches the current `localBalancing` selection
     const balancingStats = result?.balancing && result.balancing.method === localBalancing ? result.balancing : null;
-
-    const MetricCompare = ({ label, before, after }: { label: string, before: number, after: number }) => {
-        const isBetter = after >= before;
-        return (
-            <div className="flex flex-col items-center p-3 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-800">
-                <span className="text-xs font-bold text-gray-500 uppercase">{label}</span>
-                <div className="mt-2 flex items-center gap-3">
-                    <span className="text-lg font-medium text-gray-400">{(before * 100).toFixed(1)}%</span>
-                    <span className="text-gray-300 dark:text-gray-600">→</span>
-                    <span className={`text-xl font-bold ${isBetter ? 'text-[#4361EE] dark:text-indigo-300' : 'text-red-500'}`}>
-                        {(after * 100).toFixed(1)}%
-                    </span>
-                </div>
-            </div>
-        );
-    };
 
     const timestamp = useMemo(() => Date.now(), [evalResult]);
 
@@ -353,7 +340,8 @@ export default function FeatureSelectionTab({
                                 <div className="mt-4 flex items-center gap-1.5 text-sm font-bold text-[#1A535C] dark:text-teal-400">
                                     <FiTrendingUp className="text-base" />
                                     <span>
-                                        +{(((result?.best_ga_accuracy || 0) - (result?.baseline_accuracy || 0)) * 100).toFixed(2)}% vs Baseline
+                                        {accuracyDiff > 0 ? '+' : ''}
+                                        {accuracyDiff.toFixed(2)}% vs Baseline
                                     </span>
                                 </div>
                             </div>
@@ -489,10 +477,29 @@ export default function FeatureSelectionTab({
                                                     </span>
                                                 </div>
 
-                                                <MetricCompare label="Accuracy" before={evalResult.metrics_before.accuracy} after={evalResult.metrics_after.accuracy} />
-                                                <MetricCompare label="Recall (Sensitivity)" before={evalResult.metrics_before.recall} after={evalResult.metrics_after.recall} />
-                                                <MetricCompare label="Precision" before={evalResult.metrics_before.precision} after={evalResult.metrics_after.precision} />
-                                                <MetricCompare label="F1-Score" before={evalResult.metrics_before.f1_score} after={evalResult.metrics_after.f1_score} />
+                                                <MetricCompare
+                                                    label="Accuracy"
+                                                    before={evalResult.metrics_before.accuracy}
+                                                    after={evalResult.metrics_after.accuracy}
+                                                />
+
+                                                <MetricCompare
+                                                    label="Recall (Sensitivity)"
+                                                    before={evalResult.metrics_before.recall}
+                                                    after={evalResult.metrics_after.recall}
+                                                />
+
+                                                <MetricCompare
+                                                    label="Precision"
+                                                    before={evalResult.metrics_before.precision}
+                                                    after={evalResult.metrics_after.precision}
+                                                />
+
+                                                <MetricCompare
+                                                    label="F1-Score"
+                                                    before={evalResult.metrics_before.f1_score}
+                                                    after={evalResult.metrics_after.f1_score}
+                                                />
                                             </div>
 
                                             {/* Cột phải: Confusion Matrix & ROC (Chiếm 2/3) */}
