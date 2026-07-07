@@ -51,6 +51,8 @@ export default function FeatureSelectionTab({
     nParents,
     balancing
 }: FeatureSelectionTabProps) {
+    const pollInterval = useRef<NodeJS.Timeout | null>(null);
+    const evalPollInterval = useRef<NodeJS.Timeout | null>(null);
     // UI States
     const [isLoading, setIsLoading] = useState(true);
     const [loadingMessageIdx, setLoadingMessageIdx] = useState(0);
@@ -78,6 +80,13 @@ export default function FeatureSelectionTab({
         balancing.toLowerCase() === "yes" ? "adasyn" : (balancing.toLowerCase() || "none")
     );
 
+    useEffect(() => {
+        return () => {
+            if (pollInterval.current) clearInterval(pollInterval.current);
+            if (evalPollInterval.current) clearInterval(evalPollInterval.current);
+        };
+    }, []);
+
     // Rotate loading message every 5 seconds
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -92,20 +101,52 @@ export default function FeatureSelectionTab({
     const fetchEvaluation = async (fsDatasetId: string) => {
         setIsEvalLoading(true);
         try {
-            const res = await api.get(`/datasets/${processedId}/feature-selection-evaluation`, {
+            const startRes = await api.post(`/datasets/${processedId}/feature-selection-evaluation`, null, {
                 params: {
                     fs_dataset_id: fsDatasetId,
                     target_column: targetColumn,
                     test_size: localTestSize,
-                    balancing_method: balancing
+                    balancing_method: localBalancing
                 }
             });
-            setEvalResult(res.data);
-            setLimeRowIndex(0);
-            await fetchLime(fsDatasetId, 0);
+
+            const taskId = startRes.data.task_id;
+
+            // Xóa interval cũ nếu có
+            if (evalPollInterval.current) clearInterval(evalPollInterval.current);
+
+            // Kiểm tra trạng thái mỗi 3s
+            evalPollInterval.current = setInterval(async () => {
+                try {
+                    const statusRes = await api.get(`/datasets/feature-selection/status/${taskId}`);
+                    const taskStatus = statusRes.data.status;
+
+                    if (taskStatus === "COMPLETED") {
+                        clearInterval(evalPollInterval.current!);
+
+                        // Lấy kết quả lưu vào state
+                        setEvalResult(statusRes.data.result);
+                        setIsEvalLoading(false);
+
+                        // Sinh đồ thị LIME sau khi Evaluation tải xong
+                        setLimeRowIndex(0);
+                        await fetchLime(fsDatasetId, 0);
+
+                    } else if (taskStatus === "FAILED") {
+                        clearInterval(evalPollInterval.current!);
+                        toast.error(statusRes.data.error || "Evaluation failed to generate charts.");
+                        setIsEvalLoading(false);
+                    }
+
+                } catch (err) {
+                    clearInterval(evalPollInterval.current!);
+                    toast.error("Lost connection to server while evaluating.");
+                    setIsEvalLoading(false);
+                }
+            }, 3000);
+
         } catch (error) {
-            toast.error("Could not load deep evaluation metrics.");
-        } finally {
+            toast.error("Could not start deep evaluation.");
             setIsEvalLoading(false);
         }
     };
@@ -158,24 +199,61 @@ export default function FeatureSelectionTab({
                 requestParams.n_parents = Number(localNParents);
             }
 
-            const res = await api.get(`/datasets/${processedId}/feature-selection`, {
+            const startRes = await api.post(`/datasets/${processedId}/feature-selection`, null, {
                 params: requestParams
             });
 
-            setResult(res.data);
+            const taskId = startRes.data.task_id;
 
-            if (isManualRerun) {
-                toast.success("Feature selection rerun completed successfully!");
-            } else {
-                toast.success("Feature selection completed successfully!");
+            if (!taskId) {
+                throw new Error("No task_id returned from server");
             }
 
-            if (res.data.fs_dataset_id) {
-                fetchEvaluation(res.data.fs_dataset_id);
-            }
+            // Xóa interval cũ nếu có để tránh chạy đè
+            if (pollInterval.current) clearInterval(pollInterval.current);
+
+            // KIỂM TRA TRẠNG THÁI MỖI 3 GIÂY
+            pollInterval.current = setInterval(async () => {
+                try {
+                    const statusRes = await api.get(`/datasets/feature-selection/status/${taskId}`);
+                    const taskStatus = statusRes.data.status;
+
+                    if (taskStatus === "COMPLETED") {
+                        // Dừng kiểm tra status
+                        clearInterval(pollInterval.current!);
+
+                        // Lấy kết quả thực sự nằm trong trường "result" trả về
+                        const finalResult = statusRes.data.result;
+                        setResult(finalResult);
+
+                        setIsLoading(false);
+
+                        if (isManualRerun) {
+                            toast.success("Feature selection rerun completed successfully!");
+                        } else {
+                            toast.success("Feature selection completed successfully!");
+                        }
+
+                        // Chạy tiếp bước Evaluate
+                        if (finalResult.fs_dataset_id) {
+                            fetchEvaluation(finalResult.fs_dataset_id);
+                        }
+                    } else if (taskStatus === "FAILED") {
+                        clearInterval(pollInterval.current!);
+                        toast.error(statusRes.data.error || "Feature selection failed.");
+                        setIsLoading(false);
+                    }
+                    // Nếu status là "PROCESSING" hoặc "PENDING", không làm gì cả, interval sẽ tiếp tục chạy sau 3 giây.
+
+                } catch (err) {
+                    clearInterval(pollInterval.current!);
+                    toast.error("Lost connection to server while checking task status.");
+                    setIsLoading(false);
+                }
+            }, 3000);
+
         } catch (error) {
-            toast.error("Feature selection failed. Please check your parameters.");
-        } finally {
+            toast.error("Failed to start feature selection.");
             setIsLoading(false);
             setEvalResult(null);
         }

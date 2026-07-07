@@ -4,6 +4,8 @@ from random import randint
 import numpy as np
 import pandas as pd
 import shap
+import uuid
+from typing import Dict, Any
 
 import matplotlib
 
@@ -20,6 +22,22 @@ from core.supabase_client import supabase
 
 from services.plot_service import upload_plot
 from services.dataset_service import load_dataset, _sanitize, DATASET_BUCKET, AVAILABLE_MODELS, SELECTED_MODEL
+
+task_store: Dict[str, Dict[str, Any]] = {}
+
+
+def create_task() -> str:
+    task_id = str(uuid.uuid4())
+    task_store[task_id] = {"status": "PROCESSING", "result": None, "error": None}
+    return task_id
+
+
+def get_task_status(task_id: str) -> Dict[str, Any]:
+    if task_id not in task_store:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task_store[task_id]
 
 
 def initialization_of_population(size, n_feat):
@@ -487,7 +505,7 @@ def evaluate_feature_selection(
     shap_beeswarm_after_url = None
 
     try:
-        limit = 25
+        limit = 100
         X_sample_orig = shap.utils.sample(X_test_orig, limit) if len(X_test_orig) > limit else X_test_orig
         X_sample_sel = shap.utils.sample(X_test_sel, limit) if len(X_test_sel) > limit else X_test_sel
 
@@ -501,7 +519,7 @@ def evaluate_feature_selection(
                 explainer = shap.LinearExplainer(model, X_train_full)
                 sv = explainer.shap_values(X_sample)
             else:
-                background = shap.kmeans(X_train_full, 2)
+                background = shap.kmeans(X_train_full, 10)
                 explainer = shap.KernelExplainer(
                     _predict_with_columns(model, X_train_full.columns),
                     background,
@@ -581,3 +599,81 @@ def evaluate_feature_selection(
             "shap_beeswarm_after_url": shap_beeswarm_after_url,
         }
     )
+
+
+def background_genetic_selection(
+    task_id: str,
+    dataset_id: str,
+    target_column: str,
+    owner_id: str,
+    user: dict,
+    size: int,
+    n_gen: int,
+    mutation_rate: float,
+    n_parents: int,
+    model_name: str,
+    test_size: float,
+    balancing_method: str = "none",
+):
+    """
+    This wrapper function runs in the background.
+    It executes the heavy GA process and updates the task_store upon completion.
+    """
+    try:
+        # Call your original heavy function
+        result = genetic_selection(
+            dataset_id=dataset_id,
+            target_column=target_column,
+            owner_id=owner_id,
+            user=user,
+            size=size,
+            n_gen=n_gen,
+            mutation_rate=mutation_rate,
+            n_parents=n_parents,
+            model_name=model_name,
+            test_size=test_size,
+            balancing_method=balancing_method,
+        )
+
+        # Update status to COMPLETED and store the result
+        task_store[task_id]["status"] = "COMPLETED"
+        task_store[task_id]["result"] = result
+    except Exception as e:
+        # Update status to FAILED and store the error message
+        print(f"Background task {task_id} failed: {e}")
+        task_store[task_id]["status"] = "FAILED"
+        task_store[task_id]["error"] = str(e)
+
+
+def background_evaluate_feature_selection(
+    task_id: str,
+    dataset_id: str,
+    fs_dataset_id: str,
+    target_column: str,
+    owner_id: str,
+    user: dict,
+    model_name: str,
+    test_size: float,
+    balancing_method: str = "none",
+):
+    try:
+        # Gọi hàm đánh giá (vẽ SHAP, tính accuracy, upload hình...)
+        result = evaluate_feature_selection(
+            dataset_id=dataset_id,
+            fs_dataset_id=fs_dataset_id,
+            target_column=target_column,
+            owner_id=owner_id,
+            user=user,
+            model_name=model_name,
+            test_size=test_size,
+            balancing_method=balancing_method,
+        )
+
+        # Cập nhật trạng thái thành công
+        task_store[task_id]["status"] = "COMPLETED"
+        task_store[task_id]["result"] = result
+
+    except Exception as e:
+        print(f"Background evaluation {task_id} failed: {e}")
+        task_store[task_id]["status"] = "FAILED"
+        task_store[task_id]["error"] = str(e)
