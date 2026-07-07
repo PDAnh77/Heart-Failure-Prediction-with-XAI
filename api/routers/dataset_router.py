@@ -1,7 +1,8 @@
 from typing import Literal
 from fastapi import APIRouter, Depends, Query, UploadFile
 from services.auth_service import require_roles
-from services import dataset_service
+
+from services import dataset_service, preprocessing_service, eda_service, feature_selection_service, xai_service
 
 router = APIRouter()
 
@@ -43,7 +44,7 @@ def preprocess_dataset(
     owner_id: str = Query(None),
     user=Depends(require_roles(["admin", "user"])),
 ):
-    return dataset_service.preprocess(dataset_id, owner_id, user, target_column, imputation_method)
+    return preprocessing_service.preprocess(dataset_id, owner_id, user, target_column, imputation_method)
 
 
 @router.get("/{dataset_id}/download")
@@ -63,7 +64,7 @@ def get_dataset_eda(
     owner_id: str = Query(None),
     user=Depends(require_roles(["admin", "user"])),
 ):
-    return dataset_service.get_eda(dataset_id, target_column, owner_id, user)
+    return eda_service.get_eda(dataset_id, target_column, owner_id, user)
 
 
 @router.get("/{dataset_id}/feature-selection")
@@ -83,7 +84,7 @@ def dataset_feature_selection(
         description="Choose a data balancing method: 'none' (no balancing applied), 'smote' (SMOTE oversampling), or 'adasyn' (ADASYN oversampling)",
     ),
 ):
-    return dataset_service.genetic_selection(
+    return feature_selection_service.genetic_selection(
         dataset_id,
         target_column,
         owner_id,
@@ -112,7 +113,7 @@ def get_feature_selection_evaluation(
     owner_id: str = Query(None),
     user=Depends(require_roles(["admin", "user"])),
 ):
-    return dataset_service.evaluate_feature_selection(
+    return feature_selection_service.evaluate_feature_selection(
         dataset_id=dataset_id,
         fs_dataset_id=fs_dataset_id,
         target_column=target_column,
@@ -135,7 +136,7 @@ def get_standalone_lime_explanation(
     owner_id: str = Query(None),
     user=Depends(require_roles(["admin", "user"])),
 ):
-    return dataset_service.generate_lime_explanation(
+    return xai_service.generate_lime_explanation(
         dataset_id=dataset_id,
         fs_dataset_id=fs_dataset_id,
         target_column=target_column,
