@@ -301,15 +301,11 @@ def evaluate_feature_selection(
     Y_orig = df_original[target_column]
     X_orig = df_original.drop(columns=[target_column])
 
-    Y_sel = df_selected[target_column]
-    X_sel = df_selected.drop(columns=[target_column])
+    selected_features = df_selected.drop(columns=[target_column]).columns.tolist()
 
     # Chia tập Train/Test
     X_train_orig, X_test_orig, Y_train_orig, Y_test_orig = train_test_split(
         X_orig, Y_orig, test_size=test_size, random_state=42
-    )
-    X_train_sel, X_test_sel, Y_train_sel, Y_test_sel = train_test_split(
-        X_sel, Y_sel, test_size=test_size, random_state=42
     )
 
     # =================================================================
@@ -349,7 +345,11 @@ def evaluate_feature_selection(
 
     # Áp dụng cân bằng cho cả mô hình Before và After
     X_train_orig, Y_train_orig = apply_balancing(X_train_orig, Y_train_orig, balancing_method)
-    X_train_sel, Y_train_sel = apply_balancing(X_train_sel, Y_train_sel, balancing_method)
+
+    X_train_sel = X_train_orig[selected_features].copy()
+    X_test_sel = X_test_orig[selected_features].copy()
+    Y_train_sel = Y_train_orig.copy()
+    Y_test_sel = Y_test_orig.copy()
 
     # Xác định mô hình sử dụng
     final_model_name = model_name if (user["role"] == "admin" and model_name) else SELECTED_MODEL
@@ -514,12 +514,12 @@ def evaluate_feature_selection(
                 sv = sv[:, :, 1]
             return sv
 
-        # --- 1. TÍNH TOÁN & VẼ SHAP BEFORE ---
+        # --- SHAP BEFORE ---
         shap_values_before = _compute_shap_values(model_before, X_sample_orig, X_train_orig)
 
         # Bar Chart Before
         plt.figure(figsize=(8, 5))
-        shap.summary_plot(shap_values_before, X_sample_orig, plot_type="bar", show=False)
+        shap.summary_plot(shap_values_before, X_sample_orig, plot_type="bar", show=False, max_display=15)
         plt.title("SHAP Global Feature Importance (Before Feature Selection)", pad=15, fontsize=12)
         plt.tight_layout()
         fig_shap_bar_before = plt.gcf()
@@ -529,7 +529,7 @@ def evaluate_feature_selection(
 
         # Beeswarm Chart Before (Tận dụng luôn shap_values_before đã tính)
         plt.figure(figsize=(8, 5))
-        shap.summary_plot(shap_values_before, X_sample_orig, show=False)  # Mặc định là dot/beeswarm
+        shap.summary_plot(shap_values_before, X_sample_orig, show=False, max_display=15)
         plt.title("SHAP Beeswarm Distribution (Before Feature Selection)", pad=15, fontsize=12)
         plt.tight_layout()
         fig_shap_beeswarm_before = plt.gcf()
@@ -539,12 +539,12 @@ def evaluate_feature_selection(
             bucket_name="eda-artifacts",
         )
 
-        # --- 2. TÍNH TOÁN & VẼ SHAP AFTER ---
+        # --- SHAP AFTER ---
         shap_values_after = _compute_shap_values(model_after, X_sample_sel, X_train_sel)
 
         # Bar Chart After
         plt.figure(figsize=(8, 5))
-        shap.summary_plot(shap_values_after, X_sample_sel, plot_type="bar", show=False)
+        shap.summary_plot(shap_values_after, X_sample_sel, plot_type="bar", show=False, max_display=15)
         plt.title("SHAP Global Feature Importance (After Feature Selection)", pad=15, fontsize=12)
         plt.tight_layout()
         fig_shap_bar_after = plt.gcf()
@@ -554,7 +554,7 @@ def evaluate_feature_selection(
 
         # Beeswarm Chart After
         plt.figure(figsize=(8, 5))
-        shap.summary_plot(shap_values_after, X_sample_sel, show=False)
+        shap.summary_plot(shap_values_after, X_sample_sel, show=False, max_display=15)
         plt.title("SHAP Beeswarm Distribution (After Feature Selection)", pad=15, fontsize=12)
         plt.tight_layout()
         fig_shap_beeswarm_after = plt.gcf()

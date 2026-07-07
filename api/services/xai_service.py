@@ -258,7 +258,7 @@ def generate_lime_explanation(
         exp_before = explainer_before.explain_instance(
             data_row=X_test_orig.iloc[instance_idx].values,
             predict_fn=_predict_proba_with_columns(model_before, X_train_orig.columns),
-            num_features=10,
+            num_features=15,
         )
 
         # Extract XAI Score (R-squared of the local model)
@@ -288,7 +288,7 @@ def generate_lime_explanation(
         exp_after = explainer_after.explain_instance(
             data_row=X_test_sel.iloc[instance_idx].values,
             predict_fn=_predict_proba_with_columns(model_after, X_train_sel.columns),
-            num_features=10,
+            num_features=15,
         )
 
         # Extract XAI Score (R-squared of the local model)
