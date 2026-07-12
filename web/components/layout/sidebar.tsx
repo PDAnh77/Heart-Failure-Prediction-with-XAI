@@ -229,16 +229,10 @@ export default function Sidebar() {
                                     <span>{t("home")}</span>
                                 </Link>
                             </li>
-                            <li className={itemClass(pathname === "/predict/individual")} onClick={() => setOpen(false)}>
-                                <Link href="/predict/individual" className="flex gap-2 p-2">
+                            <li className={itemClass(pathname.startsWith("/predict"))} onClick={() => setOpen(false)}>
+                                <Link href="/predict?type=individual" className="flex gap-2 p-2">
                                     <LuUserSearch className="text-lg" />
                                     <span>{t("predict")}</span>
-                                </Link>
-                            </li>
-                            <li className={itemClass(pathname === "/predict/batch")} onClick={() => setOpen(false)}>
-                                <Link href="/predict/batch" className="flex gap-2 p-2">
-                                    <LuUsers className="text-lg" />
-                                    <span>{t("predictBatch")}</span>
                                 </Link>
                             </li>
                             <li className={itemClass(pathname.startsWith("/analyze"))} onClick={() => setOpen(false)}>

@@ -8,12 +8,12 @@ export default async function Home() {
     {
       title: t("quickLinks.individual.title"),
       description: t("quickLinks.individual.description"),
-      href: "/predict/individual",
+      href: "/predict?type=individual",
     },
     {
       title: t("quickLinks.batch.title"),
       description: t("quickLinks.batch.description"),
-      href: "/predict/batch",
+      href: "/predict?type=batch",
     },
     {
       title: t("quickLinks.analysis.title"),

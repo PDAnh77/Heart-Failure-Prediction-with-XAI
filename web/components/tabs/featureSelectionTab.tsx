@@ -368,9 +368,6 @@ export default function FeatureSelectionTab({
                         <p className="text-[#4361EE] font-medium text-lg animate-pulse transition-all duration-500 text-center px-4">
                             {LOADING_MESSAGES[loadingMessageIdx]}
                         </p>
-                        <p className="text-sm text-gray-400 mt-6 bg-gray-50 dark:bg-gray-800 px-4 py-2 rounded-lg">
-                            This process may take 20-30 seconds. Please do not close the browser.
-                        </p>
                     </div>
                 ) : (
                     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
