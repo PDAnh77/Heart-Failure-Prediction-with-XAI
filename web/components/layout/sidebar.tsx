@@ -13,7 +13,7 @@ import { useAuth } from "@/context/authcontext"
 import { TbLayoutSidebarFilled } from "react-icons/tb";
 import { FaRocket, FaRegTrashCan } from "react-icons/fa6";
 import { FiHome } from "react-icons/fi";
-import { LuUserSearch, LuSettings, LuLogOut, LuLogIn, LuCircleUserRound, LuUsers, LuUser } from "react-icons/lu";
+import { LuUserSearch, LuSettings, LuLogOut, LuLogIn, LuCircleUserRound, LuUsers, LuUser, LuBrainCircuit } from "react-icons/lu";
 import { MdInsertChartOutlined } from "react-icons/md";
 import { IoIosArrowForward, IoIosArrowDown } from "react-icons/io";
 import { api } from "@/lib/api";
@@ -239,6 +239,12 @@ export default function Sidebar() {
                                 <Link href="/analyze/upload" className="flex gap-2 p-2">
                                     <MdInsertChartOutlined className="text-lg" />
                                     <span>{t("analyze")}</span>
+                                </Link>
+                            </li>
+                            <li className={itemClass(pathname.startsWith("/train"))} onClick={() => setOpen(false)}>
+                                <Link href="/train" className="flex gap-2 p-2">
+                                    <LuBrainCircuit className="text-lg" />
+                                    <span>{t("train")}</span>
                                 </Link>
                             </li>
                         </ul>

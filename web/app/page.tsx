@@ -11,14 +11,14 @@ export default async function Home() {
       href: "/predict?type=individual",
     },
     {
-      title: t("quickLinks.batch.title"),
-      description: t("quickLinks.batch.description"),
-      href: "/predict?type=batch",
-    },
-    {
       title: t("quickLinks.analysis.title"),
       description: t("quickLinks.analysis.description"),
       href: "/analyze/upload",
+    },
+    {
+      title: t("quickLinks.train.title"),
+      description: t("quickLinks.train.description"),
+      href: "/train",
     },
   ];
 
