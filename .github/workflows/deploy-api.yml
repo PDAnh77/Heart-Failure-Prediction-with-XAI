@@ -56,8 +56,8 @@ jobs:
         with:
           image-ref: ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           format: table
-          severity: CRITICAL,HIGH
-          version: v0.71.2
+          severity: CRITICAL
+          version: v0.73.0
           exit-code: 1
           ignore-unfixed: true
           vuln-type: os,library
@@ -68,8 +68,8 @@ jobs:
           image-ref: ${{ env.DOCKER_USERNAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           format: sarif
           output: trivy-results.sarif
-          severity: CRITICAL,HIGH
-          version: v0.71.2
+          severity: CRITICAL
+          version: v0.73.0
           ignore-unfixed: true
           vuln-type: os,library
 
