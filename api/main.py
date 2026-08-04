@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from routers import auth_router, user_router, prediction_router, patient_router, dataset_router
+from routers import auth_router, user_router, prediction_router, patient_router, dataset_router, train_router
 from contextlib import asynccontextmanager
 import httpx, asyncio
 from core.model_loader import load_model_startup
@@ -52,6 +52,7 @@ app.include_router(user_router.router, prefix="/api/users", tags=["User"])
 app.include_router(prediction_router.router, prefix="/api/predictions", tags=["Heart failure prediction"])
 app.include_router(patient_router.router, prefix="/api/patients", tags=["Patient"])
 app.include_router(dataset_router.router, prefix="/api/datasets", tags=["Dataset Analytics"])
+app.include_router(train_router.router, prefix="/api/train", tags=["Model Training"])
 
 
 @app.get("/")

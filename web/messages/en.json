@@ -22,6 +22,7 @@
     "predict": "Predict",
     "predictBatch": "Predict batch",
     "analyze": "Analyze",
+    "train": "Train",
     "recentPredictions": "Recent predictions",
     "logoutFailed": "Logout failed."
   },
@@ -114,13 +115,13 @@
         "title": "Individual Patient",
         "description": "Analyze heart failure risk based on patient profiles, supported by explainable AI (XAI) charts."
       },
-      "batch": {
-        "title": "Batch Prediction",
-        "description": "Predict outcomes for multiple patients simultaneously."
-      },
       "analysis": {
         "title": "Data Analysis",
         "description": "Preprocessing, exploratory data analysis (EDA), and feature selection for the selected dataset."
+      },
+      "train": {
+        "title": "Train Model",
+        "description": "Upload a preprocessed dataset and train a custom machine learning model on it."
       }
     }
   },
@@ -221,7 +222,7 @@
   },
   "predictBatch": {
     "title": "Batch Prediction",
-    "subtitle": "Upload a raw CSV or Excel file containing multiple patient records.",
+    "subtitle": "Upload a raw CSV or Excel file containing multiple patient records",
     "dropzone": {
       "dragDrop": "Drag and drop your file here",
       "formatLimit": "CSV or Excel (Max: 10MB)",
@@ -462,6 +463,53 @@
       "invalidTestSize": "Test size must be between 0.1 and 0.5.",
       "invalidNParentsMin": "Number of parents must be greater than 0.",
       "invalidNParentsMax": "Number of parents must be less than Population size."
+    }
+  },
+  "trainModel": {
+    "title": "Train Model",
+    "subtitle": "Upload your preprocessed dataset, select a model to train",
+    "dropzone": {
+      "dragDrop": "Drag and drop your dataset here",
+      "clickUpload": "Or click to select a file",
+      "chooseFile": "Choose .CSV or .XLSX"
+    },
+    "configuration": {
+      "title": "Training configuration",
+      "targetColumn": {
+        "label": "Target column name",
+        "desc": "Type the exact name of the target column in your dataset.",
+        "loading": "Loading columns...",
+        "select": "-- Select target column --"
+      },
+      "modelSelection": {
+        "label": "Select model",
+        "desc": "Choose the machine learning algorithm to train."
+      },
+      "confirmBtn": "Start training",
+      "training": "Training model..."
+    },
+    "result": {
+      "title": "Training Results",
+      "model": "Model",
+      "target": "Target",
+      "metrics": {
+        "accuracy": "Accuracy",
+        "precision": "Precision",
+        "recall": "Recall",
+        "f1": "F1 Score",
+        "cv": "Cross Validation (5-fold)",
+        "cvDesc": "Evaluated using 5-fold cross validation",
+        "avgScore": "Average Score"
+      },
+      "downloadModel": "Download model (.pkl)",
+      "trainAnother": "Train another model"
+    },
+    "toast": {
+      "invalidFile": "Please select a valid CSV or Excel file.",
+      "fileTooLarge": "File size exceeds 10MB.",
+      "targetRequired": "Please enter the target column name.",
+      "trainError": "An error occurred during training.",
+      "trainSuccess": "Model trained successfully!"
     }
   }
 }

@@ -22,6 +22,7 @@
     "predict": "Dự đoán",
     "predictBatch": "Dự đoán hàng loạt",
     "analyze": "Phân tích",
+    "train": "Huấn luyện",
     "recentPredictions": "Gần đây",
     "logoutFailed": "Đăng xuất thất bại."
   },
@@ -114,13 +115,13 @@
         "title": " Đánh giá bệnh nhân",
         "description": "Phân tích nguy cơ suy tim dựa trên thông tin hồ sơ bệnh nhân cùng các biểu đồ giải thích (XAI)."
       },
-      "batch": {
-        "title": "Dự đoán nhiều bệnh nhân",
-        "description": "Xử lý và dự đoán bệnh của nhiều bệnh nhân cùng lúc."
-      },
       "analysis": {
         "title": "Phân tích dữ liệu",
         "description": "Tiền xử lý, phân tích khám phá (EDA) và lựa chọn đặc trưng từ tập dữ liệu."
+      },
+      "train": {
+        "title": "Huấn luyện mô hình",
+        "description": "Tải lên tập dữ liệu đã xử lý và huấn luyện mô hình học máy tùy chọn trên đó."
       }
     }
   },
@@ -221,7 +222,7 @@
   },
   "predictBatch": {
     "title": "Dự đoán hàng loạt",
-    "subtitle": "Tải lên tệp CSV hoặc Excel thông tin của nhiều bệnh nhân.",
+    "subtitle": "Tải lên tệp CSV hoặc Excel thông tin của nhiều bệnh nhân",
     "dropzone": {
       "dragDrop": "Kéo thả tệp của bạn vào đây",
       "formatLimit": "CSV hoặc Excel (Tối đa: 10MB)",
@@ -462,6 +463,53 @@
       "invalidTestSize": "Tỷ lệ tập kiểm tra phải từ 0.1 đến 0.5.",
       "invalidNParentsMin": "Số lượng cha mẹ phải lớn hơn 0.",
       "invalidNParentsMax": "Số lượng cha mẹ phải nhỏ hơn Kích thước quần thể."
+    }
+  },
+  "trainModel": {
+    "title": "Huấn luyện Mô hình Tùy chỉnh",
+    "subtitle": "Tải lên tập dữ liệu đã tiền xử lý, chọn mô hình để huấn luyện",
+    "dropzone": {
+      "dragDrop": "Kéo thả tập dữ liệu của bạn vào đây",
+      "clickUpload": "Hoặc nhấp để chọn tệp",
+      "chooseFile": "Chọn .CSV hoặc .XLSX"
+    },
+    "configuration": {
+      "title": "Cấu hình",
+      "targetColumn": {
+        "label": "Cột mục tiêu",
+        "desc": "Nhập chính xác tên cột mục tiêu trong tập dữ liệu của bạn.",
+        "loading": "Đang tải các cột...",
+        "select": "-- Chọn cột mục tiêu --"
+      },
+      "modelSelection": {
+        "label": "Chọn mô hình",
+        "desc": "Chọn thuật toán học máy để huấn luyện."
+      },
+      "confirmBtn": "Xác nhận",
+      "training": "Đang huấn luyện mô hình..."
+    },
+    "result": {
+      "title": "Kết quả huấn luyện",
+      "model": "Mô hình",
+      "target": "Nhãn mục tiêu",
+      "metrics": {
+        "accuracy": "Độ chính xác (Accuracy)",
+        "precision": "Độ chuẩn xác (Precision)",
+        "recall": "Độ nhạy (Recall)",
+        "f1": "Điểm F1",
+        "cv": "Kiểm định chéo (5-fold)",
+        "cvDesc": "Đánh giá sử dụng cross validation 5-fold",
+        "avgScore": "Điểm trung bình"
+      },
+      "downloadModel": "Tải xuống mô hình (.pkl)",
+      "trainAnother": "Huấn luyện mô hình Khác"
+    },
+    "toast": {
+      "invalidFile": "Vui lòng chọn tệp CSV hoặc Excel hợp lệ.",
+      "fileTooLarge": "Kích thước tệp vượt quá 10MB.",
+      "targetRequired": "Vui lòng nhập tên cột mục tiêu.",
+      "trainError": "Đã xảy ra lỗi trong quá trình huấn luyện.",
+      "trainSuccess": "Huấn luyện mô hình thành công!"
     }
   }
 }

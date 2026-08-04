@@ -9,7 +9,7 @@ import { FiFileText, FiInfo } from "react-icons/fi";
 import { IoMdClose } from "react-icons/io";
 import { useTranslations } from "next-intl";
 
-export default function PredictBatch() {
+export default function PredictBatchTab() {
     const router = useRouter();
     const t = useTranslations("predictBatch");
     const tCommon = useTranslations("common");
@@ -86,7 +86,7 @@ export default function PredictBatch() {
         if (authLoading) return;
 
         if (!user) {
-            toast.error(tCommon("signInRequired")); 
+            toast.error(tCommon("signInRequired"));
             router.push("/login");
             return;
         }
@@ -144,7 +144,7 @@ export default function PredictBatch() {
                 type: "batch",
                 created_at: res.data.created_at || new Date().toISOString()
             });
-            
+
             router.push(`/prediction-history/batch/${historyId}`);
         } catch (error: any) {
             if (error.response) {
@@ -189,7 +189,7 @@ export default function PredictBatch() {
                 </div>
             </div>
 
-            <div className={`flex flex-col ${!datasetId ? "justify-center" : "justify-start"} align-middle h-full items-center flex-1 my-10`}>
+            <div className={`flex flex-col ${!datasetId ? "justify-center" : "justify-start"} align-middle h-full items-center flex-1 mt-10`}>
                 <div className="w-full max-w-2xl">
                     {/* Dropzone Area */}
                     <div

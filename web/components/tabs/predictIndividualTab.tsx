@@ -11,7 +11,7 @@ import { FaHeartbeat, FaUserAlt, FaNotesMedical } from "react-icons/fa";
 import { useTranslations } from "next-intl";
 import CustomSelect, { CustomSelectHandle } from "@/components/ui/customSelect";
 
-export default function Predict() {
+export default function PredictIndividualTab() {
     const t = useTranslations("predictIndividual");
     const router = useRouter();
     const [submitting, setSubmitting] = useState(false);

@@ -21,7 +21,7 @@ DATASET_BUCKET = "heart-failure-datasets"
 SELECTED_MODEL = settings.FEATURE_SELECTION_MODEL
 
 AVAILABLE_MODELS = {
-    "svm": SVC(kernel="linear", C=0.1),
+    "svc": SVC(kernel="linear", C=0.1, probability=True),
     "logistic_regression": LogisticRegression(random_state=0, C=10, penalty="l2"),
     "random_forest": RandomForestClassifier(max_depth=4, random_state=0),
     "decision_tree": DecisionTreeClassifier(random_state=1000, max_depth=4, min_samples_leaf=1),
